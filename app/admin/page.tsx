@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import DrawTransitionLink from "./draw-transition-link";
 
 type Participant = { id:number; luckyNumber:string; name:string; store:string; phone:string; instagram:string; createdAt:string; status:string };
 
@@ -37,7 +38,7 @@ export default function AdminPage() {
       <img src="/fashiondate-logo.png" alt="Fashion Date"/>
       <nav>
         <Link className="stitch-nav active" href="/admin"><span className="material-symbols-outlined">groups</span>Participantes</Link>
-        <Link className="stitch-nav" href="/admin/sorteio"><span className="material-symbols-outlined">casino</span>Sorteio</Link>
+        <DrawTransitionLink className="stitch-nav"><span className="material-symbols-outlined">casino</span>Sorteio</DrawTransitionLink>
         <Link className="stitch-nav" href="/admin/vencedores"><span className="material-symbols-outlined">emoji_events</span>Vencedores</Link>
       </nav>
       <button className="stitch-nav stitch-logout" onClick={()=>{sessionStorage.removeItem("fashion-date-admin-key");setKey("")}}><span className="material-symbols-outlined">logout</span>Sair</button>
@@ -46,7 +47,7 @@ export default function AdminPage() {
     <section className="stitch-content">
       <header className="stitch-header">
         <div><h1>Painel Fashion Date</h1><span className="stitch-status"><i/>Inscrições {open?"Abertas":"Encerradas"}</span></div>
-        <div className="stitch-actions"><button className="stitch-button outline" onClick={toggle}>{open?"Encerrar":"Abrir"} Inscrições</button><Link className="stitch-button filled" href="/admin/sorteio"><span className="material-symbols-outlined">play_arrow</span>Iniciar Sorteio</Link></div>
+        <div className="stitch-actions"><button className="stitch-button outline" onClick={toggle}>{open?"Encerrar":"Abrir"} Inscrições</button><DrawTransitionLink className="stitch-button filled"><span className="material-symbols-outlined">play_arrow</span>Iniciar Sorteio</DrawTransitionLink></div>
       </header>
 
       <div className="stitch-stats">

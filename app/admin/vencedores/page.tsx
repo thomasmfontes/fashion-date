@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import DrawTransitionLink from "../draw-transition-link";
 
 type Participant = {
   id: number;
@@ -57,7 +58,7 @@ export default function WinnersPage() {
       <img src="/fashiondate-logo.png" alt="Fashion Date"/>
       <nav>
         <Link className="stitch-nav" href="/admin"><span className="material-symbols-outlined">groups</span>Participantes</Link>
-        <Link className="stitch-nav" href="/admin/sorteio"><span className="material-symbols-outlined">casino</span>Sorteio</Link>
+        <DrawTransitionLink className="stitch-nav"><span className="material-symbols-outlined">casino</span>Sorteio</DrawTransitionLink>
         <Link className="stitch-nav active" href="/admin/vencedores"><span className="material-symbols-outlined">emoji_events</span>Vencedores</Link>
       </nav>
       <button className="stitch-nav stitch-logout" onClick={() => {sessionStorage.removeItem("fashion-date-admin-key"); location.replace("/admin");}}><span className="material-symbols-outlined">logout</span>Sair</button>
@@ -72,7 +73,7 @@ export default function WinnersPage() {
         </div>
         <div className="stitch-actions">
           <Link className="stitch-button outline" href="/admin"><span className="material-symbols-outlined">arrow_back</span>Voltar ao Painel</Link>
-          <Link className="stitch-button filled" href="/admin/sorteio"><span className="material-symbols-outlined">casino</span>Novo Sorteio</Link>
+          <DrawTransitionLink className="stitch-button filled"><span className="material-symbols-outlined">casino</span>Novo Sorteio</DrawTransitionLink>
         </div>
       </header>
 
@@ -96,7 +97,7 @@ export default function WinnersPage() {
           <td data-label="Cadastro">{new Date(row.createdAt).toLocaleString("pt-BR", {day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"})}</td>
           <td data-label="Situação"><span className="stitch-badge winner"><span className="material-symbols-outlined">workspace_premium</span>Vencedor</span></td>
         </tr>)}</tbody>
-      </table> : <div className="winners-empty"><span className="material-symbols-outlined">emoji_events</span><h2>{rows.length ? "Nenhum vencedor encontrado" : "Nenhum vencedor ainda"}</h2><p>{rows.length ? "Tente buscar por outro nome, loja ou número." : "Depois do primeiro sorteio, o vencedor aparecerá aqui."}</p>{!rows.length && <Link className="stitch-button filled" href="/admin/sorteio">Realizar Sorteio</Link>}</div>}</div>
+      </table> : <div className="winners-empty"><span className="material-symbols-outlined">emoji_events</span><h2>{rows.length ? "Nenhum vencedor encontrado" : "Nenhum vencedor ainda"}</h2><p>{rows.length ? "Tente buscar por outro nome, loja ou número." : "Depois do primeiro sorteio, o vencedor aparecerá aqui."}</p>{!rows.length && <DrawTransitionLink className="stitch-button filled">Realizar Sorteio</DrawTransitionLink>}</div>}</div>
       <footer className="stitch-footer">© 2026 Fashion Date. Todos os direitos reservados.</footer>
     </section>
   </main>;
