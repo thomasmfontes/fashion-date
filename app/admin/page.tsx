@@ -1,13 +1,17 @@
 "use client";
 
-import {FormEvent, useCallback, useEffect, useState} from "react";
+import {FormEvent, MouseEvent, useCallback, useEffect, useMemo, useState} from "react";
 import DrawTransitionLink from "./draw-transition-link";
 
 type Participant = {id:number; luckyNumber:string; name:string; store:string; phone:string; instagram:string; createdAt:string; status:string};
 type EditForm = {name:string; store:string; phone:string; instagram:string};
+type AdminView = "participants" | "winners";
 
-export default function AdminPage() {
+export function AdminDashboard({initialView = "participants"}:{initialView?:AdminView}) {
   const [key, setKey] = useState("");
+  const [hydrated, setHydrated] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<AdminView>(initialView);
   const [input, setInput] = useState("");
   const [rows, setRows] = useState<Participant[]>([]);
   const [query, setQuery] = useState("");
@@ -19,18 +23,38 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => setKey(sessionStorage.getItem("fashion-date-admin-key") || ""), []);
+  useEffect(() => {
+    setKey(sessionStorage.getItem("fashion-date-admin-key") || "");
+    setHydrated(true);
+    const handleHistory = () => setView(location.pathname.endsWith("/vencedores") ? "winners" : "participants");
+    window.addEventListener("popstate", handleHistory);
+    return () => window.removeEventListener("popstate", handleHistory);
+  }, []);
   const load = useCallback(async () => {
     if (!key) return;
+    setLoading(true);
     const response = await fetch("/api/admin/participants", {headers:{"x-admin-key":key}});
-    if (!response.ok) { setError("Senha incorreta ou acesso indisponível."); return; }
+    if (!response.ok) { setError("Senha incorreta ou acesso indisponível."); setLoading(false); return; }
     const data = await response.json();
-    setRows(data.participants); setOpen(data.registrationsOpen); setError("");
+    setRows(data.participants); setOpen(data.registrationsOpen); setError(""); setLoading(false);
   }, [key]);
   useEffect(() => { load(); }, [load]);
 
   function login(event: FormEvent) { event.preventDefault(); sessionStorage.setItem("fashion-date-admin-key", input); setKey(input); }
-  async function toggle() { await fetch("/api/admin/settings", {method:"POST", headers:{"content-type":"application/json", "x-admin-key":key}, body:JSON.stringify({registrationsOpen:!open})}); load(); }
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    const response = await fetch("/api/admin/settings", {method:"POST", headers:{"content-type":"application/json", "x-admin-key":key}, body:JSON.stringify({registrationsOpen:next})});
+    if (!response.ok) setOpen(!next);
+  }
+  function navigate(next: AdminView, event?: MouseEvent<HTMLAnchorElement>) {
+    event?.preventDefault();
+    if (next === view) return;
+    history.pushState({}, "", next === "winners" ? "/admin/vencedores" : "/admin");
+    setView(next);
+    setQuery("");
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
   function startEdit(participant: Participant) {
     setEditing(participant);
     setEditForm({name:participant.name, store:participant.store, phone:participant.phone, instagram:participant.instagram});
@@ -57,8 +81,11 @@ export default function AdminPage() {
 
   const today = rows.filter(item => new Date(item.createdAt).toDateString() === new Date().toDateString()).length;
   const winners = rows.filter(item => item.status === "winner").length;
-  const filtered = rows.filter(item => `${item.luckyNumber} ${item.name} ${item.store} ${item.phone} ${item.instagram}`.toLowerCase().includes(query.toLowerCase()));
+  const filtered = useMemo(() => rows.filter(item => `${item.luckyNumber} ${item.name} ${item.store} ${item.phone} ${item.instagram}`.toLowerCase().includes(query.toLowerCase())), [query, rows]);
+  const winnerRows = useMemo(() => rows.filter(item => item.status === "winner"), [rows]);
+  const filteredWinners = useMemo(() => winnerRows.filter(item => `${item.luckyNumber} ${item.name} ${item.store} ${item.phone} ${item.instagram}`.toLowerCase().includes(query.toLowerCase())), [query, winnerRows]);
 
+  if (!hydrated) return <main className="admin-boot" aria-label="Preparando painel"><img src="/fashiondate-logo.png" alt="Fashion Date"/><span/></main>;
   if (!key || error) return <main className="admin-login-page">
     <a className="admin-login-home" href="/"><span className="material-symbols-outlined">arrow_back</span>Voltar ao site</a>
     <section className="admin-login-brand">
@@ -84,14 +111,15 @@ export default function AdminPage() {
     <aside className="stitch-sidebar">
       <img src="/fashiondate-logo.png" alt="Fashion Date"/>
       <nav>
-        <a className="stitch-nav active" href="/admin"><span className="material-symbols-outlined">groups</span>Participantes</a>
+        <a className={`stitch-nav${view === "participants" ? " active" : ""}`} href="/admin" onClick={event => navigate("participants", event)}><span className="material-symbols-outlined">groups</span>Participantes</a>
         <DrawTransitionLink className="stitch-nav"><span className="material-symbols-outlined">casino</span>Sorteio</DrawTransitionLink>
-        <a className="stitch-nav" href="/admin/vencedores"><span className="material-symbols-outlined">emoji_events</span>Vencedores</a>
+        <a className={`stitch-nav${view === "winners" ? " active" : ""}`} href="/admin/vencedores" onClick={event => navigate("winners", event)}><span className="material-symbols-outlined">emoji_events</span>Vencedores</a>
       </nav>
       <button className="stitch-nav stitch-logout" onClick={() => {sessionStorage.removeItem("fashion-date-admin-key"); setKey("");}}><span className="material-symbols-outlined">logout</span>Sair</button>
     </aside>
 
-    <section className="stitch-content">
+    <section className={`stitch-content${view === "winners" ? " winners-content" : ""}`}>
+      {loading ? <div className="stitch-content-loading" aria-live="polite"><span/><p>Carregando informações...</p></div> : view === "participants" ? <>
       <header className="stitch-header">
         <div><h1>Painel Fashion Date</h1><span className="stitch-status"><i/>Inscrições {open ? "Abertas" : "Encerradas"}</span></div>
         <div className="stitch-actions"><button className="stitch-button outline" onClick={toggle}>{open ? "Encerrar" : "Abrir"} Inscrições</button><DrawTransitionLink className="stitch-button filled"><span className="material-symbols-outlined">play_arrow</span>Iniciar Sorteio</DrawTransitionLink></div>
@@ -106,7 +134,16 @@ export default function AdminPage() {
       <div className="stitch-toolbar"><label><span className="material-symbols-outlined">search</span><input aria-label="Buscar participantes" placeholder="Buscar por nome, loja ou número..." value={query} onChange={event => setQuery(event.target.value)}/></label><a href={`/api/admin/export?key=${encodeURIComponent(key)}`}><span className="material-symbols-outlined">download</span>Exportar Lista</a></div>
 
       <div className="stitch-table-wrap">{filtered.length ? <table><thead><tr><th>Nº</th><th>Nome</th><th>Loja</th><th>Contato</th><th>Data/Hora</th><th>Situação</th><th>Ações</th></tr></thead><tbody>{filtered.map(item => <tr key={item.id}><td data-label="Número">{item.luckyNumber}</td><td data-label="Nome" className="stitch-name">{item.name}</td><td data-label="Loja">{item.store}</td><td data-label="Contato"><div className="stitch-contacts"><a className="social-icon whatsapp" href={`https://wa.me/55${item.phone}`} target="_blank" rel="noreferrer" aria-label={`Abrir WhatsApp de ${item.name}`} title="Abrir WhatsApp"><img src="https://cdn.simpleicons.org/whatsapp/128C7E" alt=""/></a><a className="social-icon instagram" href={`https://instagram.com/${item.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" aria-label={`Abrir Instagram de ${item.name}`} title={`@${item.instagram.replace(/^@/, "")}`}><img src="https://cdn.simpleicons.org/instagram/E1306C" alt=""/></a></div></td><td data-label="Data/Hora">{new Date(item.createdAt).toLocaleString("pt-BR", {day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"})}</td><td data-label="Situação"><span className="stitch-badge">{item.status === "winner" ? "Vencedor" : "Inscrito"}</span></td><td data-label="Ações"><div className="participant-actions"><button onClick={() => startEdit(item)} aria-label={`Editar ${item.name}`} title="Editar"><span className="material-symbols-outlined">edit</span></button><button className="danger" onClick={() => removeParticipant(item)} aria-label={`Excluir ${item.name}`} title="Excluir"><span className="material-symbols-outlined">delete</span></button></div></td></tr>)}</tbody></table> : <div className="empty">Nenhum participante encontrado.</div>}</div>
-      <footer className="stitch-footer">© 2026 Fashion Date. Todos os direitos reservados.</footer>
+      </> : <>
+        <header className="stitch-header winners-header">
+          <div><span className="stitch-kicker">Histórico do sorteio</span><h1>Vencedores</h1><p className="winners-description">Consulte as pessoas sorteadas e acesse rapidamente os contatos.</p></div>
+          <div className="stitch-actions"><a className="stitch-button outline" href="/admin" onClick={event => navigate("participants", event)}><span className="material-symbols-outlined">arrow_back</span>Voltar ao Painel</a><DrawTransitionLink className="stitch-button filled"><span className="material-symbols-outlined">casino</span>Novo Sorteio</DrawTransitionLink></div>
+        </header>
+        <section className="winners-overview" aria-label="Resumo dos vencedores"><span className="material-symbols-outlined">workspace_premium</span><div><strong>{winnerRows.length}</strong><p>{winnerRows.length === 1 ? "vencedor registrado" : "vencedores registrados"}</p></div></section>
+        <div className="stitch-toolbar winners-toolbar"><label><span className="material-symbols-outlined">search</span><input aria-label="Buscar vencedores" placeholder="Buscar por nome, loja ou número..." value={query} onChange={event => setQuery(event.target.value)}/></label><span className="winner-result-count">{filteredWinners.length} {filteredWinners.length === 1 ? "resultado" : "resultados"}</span></div>
+        <div className="stitch-table-wrap">{filteredWinners.length ? <table><thead><tr><th>Nº sorteado</th><th>Vencedor</th><th>Loja</th><th>Contato</th><th>Cadastro</th><th>Situação</th></tr></thead><tbody>{filteredWinners.map(item => <tr key={item.id}><td data-label="Número">{item.luckyNumber}</td><td data-label="Vencedor" className="stitch-name">{item.name}</td><td data-label="Loja">{item.store}</td><td data-label="Contato"><div className="stitch-contacts"><a className="social-icon whatsapp" href={`https://wa.me/55${item.phone}`} target="_blank" rel="noreferrer" aria-label={`Abrir WhatsApp de ${item.name}`} title="Abrir WhatsApp"><img src="https://cdn.simpleicons.org/whatsapp/128C7E" alt=""/></a><a className="social-icon instagram" href={`https://instagram.com/${item.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" aria-label={`Abrir Instagram de ${item.name}`} title={`@${item.instagram.replace(/^@/, "")}`}><img src="https://cdn.simpleicons.org/instagram/E1306C" alt=""/></a></div></td><td data-label="Cadastro">{new Date(item.createdAt).toLocaleString("pt-BR", {day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"})}</td><td data-label="Situação"><span className="stitch-badge winner"><span className="material-symbols-outlined">workspace_premium</span>Vencedor</span></td></tr>)}</tbody></table> : <div className="winners-empty"><span className="material-symbols-outlined">emoji_events</span><h2>{winnerRows.length ? "Nenhum vencedor encontrado" : "Nenhum vencedor ainda"}</h2><p>{winnerRows.length ? "Tente buscar por outro nome, loja ou número." : "Depois do primeiro sorteio, o vencedor aparecerá aqui."}</p>{!winnerRows.length && <DrawTransitionLink className="stitch-button filled">Realizar Sorteio</DrawTransitionLink>}</div>}</div>
+      </>}
+      {!loading && <footer className="stitch-footer">© 2026 Fashion Date. Todos os direitos reservados.</footer>}
     </section>
 
     {editing && <div className="edit-modal-backdrop" role="presentation" onMouseDown={event => {if (event.target === event.currentTarget && !saving) setEditing(null);}}>
@@ -124,3 +161,5 @@ export default function AdminPage() {
     </div>}
   </main>;
 }
+
+export default function AdminPage() { return <AdminDashboard/>; }
