@@ -2,7 +2,6 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 const hero = "https://lh3.googleusercontent.com/aida/AP1WRLvLCvLUF_CntcplggYaQdDKvcXYz_78xKIcIrBvYjIUpaYmRt2IKM2V87xiHLupjRJiCHOrzHuc0E9_4NB-fi947VXJyzWMRWty25uw-rPDhxrn5acE7JgBKTL08hIBCGrrtVm7ZLN5LSiaolflPHlEwdRWwdeyX1RQv7aLYbi-9tlR1dbcYZXgyWZPXb4xu18tiy_5k7zoB_JrOnm8EgUz4QPzU_sXExoRXUfGUO72MINkpqh3pQn09Q";
 
@@ -51,7 +50,7 @@ export default function Home() {
   }
 
   return <main className="signup-page">
-    <Link className="signup-admin-link" href="/admin"><span className="material-symbols-outlined">lock</span><span>Área da organização</span></Link>
+    <a className="signup-admin-link" href="/admin"><span className="material-symbols-outlined">lock</span><span>Área da organização</span></a>
     <section className="signup-visual" style={{backgroundImage:`url(${hero})`}} aria-label="Fashion Date">
       <div className="signup-shade"/>
       <header className="signup-brand"><span>FD</span><i/><div>Fashion Date<br/>Crente Chic<small>by Renata Castanheira</small></div></header>
