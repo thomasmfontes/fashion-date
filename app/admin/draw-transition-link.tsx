@@ -20,7 +20,7 @@ export default function DrawTransitionLink({children, className}: DrawTransition
       return;
     }
     setActive(true);
-    window.setTimeout(() => window.location.assign("/admin/sorteio"), 1050);
+    window.setTimeout(() => window.location.assign("/admin/sorteio"), 2400);
   }
 
   return <>
