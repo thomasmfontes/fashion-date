@@ -11,8 +11,9 @@ const colors = ["#c99b36", "#530017", "#e8c66d", "#8b2f47", "#f8efe1"];
 export default function LiveDrawAlert({luckyNumber}: LiveDrawAlertProps) {
   const [enabled, setEnabled] = useState(false);
   const [connected, setConnected] = useState(false);
-  const [celebration, setCelebration] = useState<"test" | "winner" | null>(null);
+  const [celebration, setCelebration] = useState<"test" | "winner" | "not-winner" | null>(null);
   const [alarmActive, setAlarmActive] = useState(false);
+  const [drawnNumber, setDrawnNumber] = useState("");
   const lastDraw = useRef<string | null>(null);
   const wakeLock = useRef<WakeLockLike | null>(null);
   const audio = useRef<AudioContext | null>(null);
@@ -41,9 +42,10 @@ export default function LiveDrawAlert({luckyNumber}: LiveDrawAlertProps) {
     } catch {}
   }, []);
 
-  const celebrate = useCallback((mode:"test" | "winner") => {
+  const celebrate = useCallback((mode:"test" | "winner" | "not-winner", winnerNumber = "") => {
+    setDrawnNumber(winnerNumber);
     setCelebration(mode);
-    setAlarmActive(true);
+    setAlarmActive(mode !== "not-winner");
     if (testTimer.current) window.clearTimeout(testTimer.current);
     if (mode === "test") testTimer.current = window.setTimeout(() => {
       setAlarmActive(false);
@@ -65,7 +67,8 @@ export default function LiveDrawAlert({luckyNumber}: LiveDrawAlertProps) {
       if (baseline) { lastDraw.current = data.drawId; return; }
       if (data.drawId && data.drawId !== lastDraw.current) {
         lastDraw.current = data.drawId;
-        if (data.winnerNumber === luckyNumber) celebrate("winner");
+        if (data.winnerNumber === luckyNumber) celebrate("winner", data.winnerNumber);
+        else if (data.winnerNumber) celebrate("not-winner", data.winnerNumber);
       }
     } catch { setConnected(false); }
   }, [celebrate, luckyNumber]);
@@ -144,20 +147,20 @@ export default function LiveDrawAlert({luckyNumber}: LiveDrawAlertProps) {
 
     {celebration && <div className={`live-winner-overlay ${celebration}${alarmActive ? " is-alarming" : " is-silenced"}`} role="status" aria-live="assertive">
       <div className="live-screen-flash"/>
-      <div className="live-confetti" aria-hidden="true">{Array.from({length:48}, (_, index) => <i key={index} style={{left:`${(index * 37) % 101}%`, background:colors[index % colors.length], animationDelay:`-${(index % 11) * .14}s`, animationDuration:`${2.8 + (index % 7) * .22}s`, "--drift":`${(index % 2 ? 1 : -1) * (25 + index % 60)}px`} as CSSProperties}/>)}</div>
+      {celebration !== "not-winner" && <div className="live-confetti" aria-hidden="true">{Array.from({length:48}, (_, index) => <i key={index} style={{left:`${(index * 37) % 101}%`, background:colors[index % colors.length], animationDelay:`-${(index % 11) * .14}s`, animationDuration:`${2.8 + (index % 7) * .22}s`, "--drift":`${(index % 2 ? 1 : -1) * (25 + index % 60)}px`} as CSSProperties}/>)}</div>}
       <div className="live-winner-content">
         <header className="live-winner-brand">
           <img src="/fashiondate-logo.png" alt="Fashion Date"/>
           <span>Fashion Date · 2026</span>
         </header>
-        <div className="live-winner-kicker"><i/>{celebration === "winner" ? "Resultado ao vivo" : "Teste do alerta"}<i/></div>
-        <h2>{celebration === "winner" ? "Você ganhou!" : "Tudo pronto!"}</h2>
+        <div className="live-winner-kicker"><i/>{celebration === "winner" ? "Resultado ao vivo" : celebration === "not-winner" ? "Sorteio realizado" : "Teste do alerta"}<i/></div>
+        <h2>{celebration === "winner" ? "Você ganhou!" : celebration === "not-winner" ? "Não foi dessa vez" : "Tudo pronto!"}</h2>
         <div className="live-winning-ticket">
-          <span>{celebration === "winner" ? "Número vencedor" : "Seu número da sorte"}</span>
-          <strong>{luckyNumber || "----"}</strong>
+          <span>{celebration === "not-winner" ? "Número sorteado" : celebration === "winner" ? "Número vencedor" : "Seu número da sorte"}</span>
+          <strong>{celebration === "not-winner" ? drawnNumber : luckyNumber || "----"}</strong>
         </div>
-        <p>{celebration === "winner" ? "Parabéns! Apresente esta tela à organização do evento para receber seu prêmio." : "Quando o seu número for sorteado, esta celebração aparecerá automaticamente no seu celular."}</p>
-        {celebration === "test" ? <button onClick={() => {setAlarmActive(false); setCelebration(null);}}>Fechar teste</button> : <><button onClick={() => setAlarmActive(false)} disabled={!alarmActive}><span className="material-symbols-outlined">{alarmActive ? "volume_off" : "notifications_paused"}</span>{alarmActive ? "Silenciar alerta" : "Alerta silenciado"}</button><span className="live-winner-note">Procure a equipe Fashion Date</span></>}
+        <p>{celebration === "winner" ? "Parabéns! Apresente esta tela à organização do evento para receber seu prêmio." : celebration === "not-winner" ? `O seu número ${luckyNumber} não foi sorteado, mas continua válido para os próximos sorteios.` : "Quando o seu número for sorteado, esta celebração aparecerá automaticamente no seu celular."}</p>
+        {celebration === "test" ? <button onClick={() => {setAlarmActive(false); setCelebration(null);}}>Fechar teste</button> : celebration === "not-winner" ? <button onClick={() => setCelebration(null)}><span className="material-symbols-outlined">check</span>Entendi</button> : <><button onClick={() => setAlarmActive(false)} disabled={!alarmActive}><span className="material-symbols-outlined">{alarmActive ? "volume_off" : "notifications_paused"}</span>{alarmActive ? "Silenciar alerta" : "Alerta silenciado"}</button><span className="live-winner-note">Procure a equipe Fashion Date</span></>}
       </div>
     </div>}
   </>;
