@@ -12,6 +12,7 @@ export default function LiveDrawAlert({luckyNumber}: LiveDrawAlertProps) {
   const [enabled, setEnabled] = useState(false);
   const [connected, setConnected] = useState(false);
   const [celebration, setCelebration] = useState<"test" | "winner" | null>(null);
+  const [alarmActive, setAlarmActive] = useState(false);
   const lastDraw = useRef<string | null>(null);
   const wakeLock = useRef<WakeLockLike | null>(null);
   const audio = useRef<AudioContext | null>(null);
@@ -42,11 +43,13 @@ export default function LiveDrawAlert({luckyNumber}: LiveDrawAlertProps) {
 
   const celebrate = useCallback((mode:"test" | "winner") => {
     setCelebration(mode);
-    playVictory();
-    navigator.vibrate?.([250, 110, 250, 110, 500]);
+    setAlarmActive(true);
     if (testTimer.current) window.clearTimeout(testTimer.current);
-    if (mode === "test") testTimer.current = window.setTimeout(() => setCelebration(null), 4200);
-  }, [playVictory]);
+    if (mode === "test") testTimer.current = window.setTimeout(() => {
+      setAlarmActive(false);
+      setCelebration(null);
+    }, 4200);
+  }, []);
 
   const requestWakeLock = useCallback(async () => {
     try { wakeLock.current = await (navigator as WakeNavigator).wakeLock?.request("screen") || null; } catch {}
@@ -81,6 +84,23 @@ export default function LiveDrawAlert({luckyNumber}: LiveDrawAlertProps) {
     document.addEventListener("visibilitychange", visibility);
     return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", visibility); };
   }, [checkDraw, enabled, requestWakeLock]);
+
+  useEffect(() => {
+    if (!celebration || !alarmActive) {
+      navigator.vibrate?.(0);
+      return;
+    }
+    const pulse = () => {
+      playVictory();
+      navigator.vibrate?.([650, 100, 200]);
+    };
+    pulse();
+    const interval = window.setInterval(pulse, 1000);
+    return () => {
+      window.clearInterval(interval);
+      navigator.vibrate?.(0);
+    };
+  }, [alarmActive, celebration, playVictory]);
 
   useEffect(() => {
     if (!celebration) return;
@@ -122,7 +142,7 @@ export default function LiveDrawAlert({luckyNumber}: LiveDrawAlertProps) {
       <div className="live-alert-actions">{enabled ? <><span className={`live-connection${connected ? " online" : ""}`}><i/>{connected ? "Conectado" : "Reconectando"}</span><button onClick={() => celebrate("test")}><span className="material-symbols-outlined">campaign</span>Testar alerta</button></> : <button className="activate" onClick={enable} disabled={!luckyNumber}><span className="material-symbols-outlined">power_settings_new</span>Ativar alerta</button>}</div>
     </section>
 
-    {celebration && <div className={`live-winner-overlay ${celebration}`} role="status" aria-live="assertive">
+    {celebration && <div className={`live-winner-overlay ${celebration}${alarmActive ? " is-alarming" : " is-silenced"}`} role="status" aria-live="assertive">
       <div className="live-screen-flash"/>
       <div className="live-confetti" aria-hidden="true">{Array.from({length:48}, (_, index) => <i key={index} style={{left:`${(index * 37) % 101}%`, background:colors[index % colors.length], animationDelay:`-${(index % 11) * .14}s`, animationDuration:`${2.8 + (index % 7) * .22}s`, "--drift":`${(index % 2 ? 1 : -1) * (25 + index % 60)}px`} as CSSProperties}/>)}</div>
       <div className="live-winner-content">
@@ -137,7 +157,7 @@ export default function LiveDrawAlert({luckyNumber}: LiveDrawAlertProps) {
           <strong>{luckyNumber || "----"}</strong>
         </div>
         <p>{celebration === "winner" ? "Parabéns! Apresente esta tela à organização do evento para receber seu prêmio." : "Quando o seu número for sorteado, esta celebração aparecerá automaticamente no seu celular."}</p>
-        {celebration === "test" ? <button onClick={() => setCelebration(null)}>Fechar teste</button> : <span className="live-winner-note">Procure a equipe Fashion Date</span>}
+        {celebration === "test" ? <button onClick={() => {setAlarmActive(false); setCelebration(null);}}>Fechar teste</button> : <><button onClick={() => setAlarmActive(false)} disabled={!alarmActive}><span className="material-symbols-outlined">{alarmActive ? "volume_off" : "notifications_paused"}</span>{alarmActive ? "Silenciar alerta" : "Alerta silenciado"}</button><span className="live-winner-note">Procure a equipe Fashion Date</span></>}
       </div>
     </div>}
   </>;
