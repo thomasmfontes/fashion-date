@@ -82,7 +82,7 @@ export default function LiveDrawAlert({luckyNumber}: LiveDrawAlertProps) {
 
   useEffect(() => {
     if (!enabled) return;
-    const interval = window.setInterval(() => checkDraw(), 2500);
+    const interval = window.setInterval(() => checkDraw(), 1000);
     const visibility = () => { if (document.visibilityState === "visible") { requestWakeLock(); checkDraw(); } };
     document.addEventListener("visibilitychange", visibility);
     return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", visibility); };

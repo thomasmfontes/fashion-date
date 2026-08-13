@@ -1,9 +1,10 @@
 "use client";
 
 import {FormEvent, MouseEvent, useCallback, useEffect, useMemo, useState} from "react";
+import {Toast, type ToastMessage} from "../../components/ui/toast";
 import DrawTransitionLink from "./draw-transition-link";
 
-type Participant = {id:number; luckyNumber:string; name:string; store:string; phone:string; instagram:string; createdAt:string; status:string};
+type Participant = {id:number; luckyNumber:string; name:string; store:string; phone:string; instagram:string; createdAt:string; status:string; wonAt:string|null};
 type EditForm = {name:string; store:string; phone:string; instagram:string};
 type AdminView = "participants" | "winners";
 
@@ -21,7 +22,15 @@ export function AdminDashboard({initialView = "participants"}:{initialView?:Admi
   const [editForm, setEditForm] = useState<EditForm>({name:"", store:"", phone:"", instagram:""});
   const [actionError, setActionError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<Participant | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
+  const [notice, setNotice] = useState<ToastMessage | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  const dismissNotice = useCallback(() => setNotice(null), []);
+  function notify(text:string, tone:ToastMessage["tone"] = "success") {
+    setNotice({id:Date.now(), text, tone});
+  }
 
   useEffect(() => {
     setKey(sessionStorage.getItem("fashion-date-admin-key") || "");
@@ -33,10 +42,16 @@ export function AdminDashboard({initialView = "participants"}:{initialView?:Admi
   const load = useCallback(async () => {
     if (!key) return;
     setLoading(true);
-    const response = await fetch("/api/admin/participants", {headers:{"x-admin-key":key}});
-    if (!response.ok) { setError("Senha incorreta ou acesso indisponível."); setLoading(false); return; }
-    const data = await response.json();
-    setRows(data.participants); setOpen(data.registrationsOpen); setError(""); setLoading(false);
+    try {
+      const response = await fetch("/api/admin/participants", {headers:{"x-admin-key":key}, cache:"no-store"});
+      if (!response.ok) { setError("Senha incorreta ou acesso indisponível."); return; }
+      const data = await response.json();
+      setRows(data.participants); setOpen(data.registrationsOpen); setError("");
+    } catch {
+      setError("Não foi possível conectar ao painel. Verifique sua internet.");
+    } finally {
+      setLoading(false);
+    }
   }, [key]);
   useEffect(() => { load(); }, [load]);
 
@@ -44,8 +59,14 @@ export function AdminDashboard({initialView = "participants"}:{initialView?:Admi
   async function toggle() {
     const next = !open;
     setOpen(next);
-    const response = await fetch("/api/admin/settings", {method:"POST", headers:{"content-type":"application/json", "x-admin-key":key}, body:JSON.stringify({registrationsOpen:next})});
-    if (!response.ok) setOpen(!next);
+    try {
+      const response = await fetch("/api/admin/settings", {method:"POST", headers:{"content-type":"application/json", "x-admin-key":key}, body:JSON.stringify({registrationsOpen:next})});
+      if (!response.ok) throw new Error();
+      notify(`Inscrições ${next ? "abertas" : "encerradas"} com sucesso.`);
+    } catch {
+      setOpen(!next);
+      notify("Não foi possível alterar as inscrições.", "error");
+    }
   }
   function navigate(next: AdminView, event?: MouseEvent<HTMLAnchorElement>) {
     event?.preventDefault();
@@ -70,13 +91,38 @@ export function AdminDashboard({initialView = "participants"}:{initialView?:Admi
     if (!response.ok) { setActionError(data.error || "Não foi possível salvar."); return; }
     setRows(current => current.map(item => item.id === editing.id ? data.participant : item));
     setEditing(null);
+    notify("Cadastro atualizado com sucesso.");
   }
-  async function removeParticipant(participant: Participant) {
-    const confirmed = window.confirm(`Excluir ${participant.name}, número ${participant.luckyNumber}?\n\nEssa ação não pode ser desfeita.`);
-    if (!confirmed) return;
-    const response = await fetch("/api/admin/participants", {method:"DELETE", headers:{"content-type":"application/json", "x-admin-key":key}, body:JSON.stringify({id:participant.id})});
-    if (!response.ok) { const data = await response.json(); window.alert(data.error || "Não foi possível excluir."); return; }
-    setRows(current => current.filter(item => item.id !== participant.id));
+  async function confirmRemove() {
+    if (!deleting) return;
+    setDeletingBusy(true);
+    try {
+      const response = await fetch("/api/admin/participants", {method:"DELETE", headers:{"content-type":"application/json", "x-admin-key":key}, body:JSON.stringify({id:deleting.id})});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Não foi possível excluir.");
+      setRows(current => current.filter(item => item.id !== deleting.id));
+      setDeleting(null);
+      notify("Participante excluído com sucesso.");
+    } catch (requestError) {
+      notify(requestError instanceof Error ? requestError.message : "Não foi possível excluir.", "error");
+    } finally {
+      setDeletingBusy(false);
+    }
+  }
+  async function exportList() {
+    try {
+      const response = await fetch("/api/admin/export", {headers:{"x-admin-key":key}});
+      if (!response.ok) throw new Error();
+      const url = URL.createObjectURL(await response.blob());
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "participantes-fashion-date.csv";
+      anchor.click();
+      URL.revokeObjectURL(url);
+      notify("Lista exportada com sucesso.");
+    } catch {
+      notify("Não foi possível exportar a lista.", "error");
+    }
   }
 
   const today = rows.filter(item => new Date(item.createdAt).toDateString() === new Date().toDateString()).length;
@@ -131,9 +177,9 @@ export function AdminDashboard({initialView = "participants"}:{initialView?:Admi
         <article><div><span>Sorteados</span><b className="material-symbols-outlined">workspace_premium</b></div><strong>{winners}</strong></article>
       </div>
 
-      <div className="stitch-toolbar"><label><span className="material-symbols-outlined">search</span><input aria-label="Buscar participantes" placeholder="Buscar por nome, loja ou número..." value={query} onChange={event => setQuery(event.target.value)}/></label><a href={`/api/admin/export?key=${encodeURIComponent(key)}`}><span className="material-symbols-outlined">download</span>Exportar Lista</a></div>
+      <div className="stitch-toolbar"><label><span className="material-symbols-outlined">search</span><input aria-label="Buscar participantes" placeholder="Buscar por nome, loja ou número..." value={query} onChange={event => setQuery(event.target.value)}/></label><button className="stitch-export" type="button" onClick={exportList}><span className="material-symbols-outlined">download</span>Exportar Lista</button></div>
 
-      <div className="stitch-table-wrap">{filtered.length ? <table><thead><tr><th>Nº</th><th>Nome</th><th>Loja</th><th>Contato</th><th>Data/Hora</th><th>Situação</th><th>Ações</th></tr></thead><tbody>{filtered.map(item => <tr key={item.id}><td data-label="Número">{item.luckyNumber}</td><td data-label="Nome" className="stitch-name">{item.name}</td><td data-label="Loja">{item.store}</td><td data-label="Contato"><div className="stitch-contacts"><a className="social-icon whatsapp" href={`https://wa.me/55${item.phone}`} target="_blank" rel="noreferrer" aria-label={`Abrir WhatsApp de ${item.name}`} title="Abrir WhatsApp"><img src="https://cdn.simpleicons.org/whatsapp/128C7E" alt=""/></a><a className="social-icon instagram" href={`https://instagram.com/${item.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" aria-label={`Abrir Instagram de ${item.name}`} title={`@${item.instagram.replace(/^@/, "")}`}><img src="https://cdn.simpleicons.org/instagram/E1306C" alt=""/></a></div></td><td data-label="Data/Hora">{new Date(item.createdAt).toLocaleString("pt-BR", {day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"})}</td><td data-label="Situação"><span className="stitch-badge">{item.status === "winner" ? "Vencedor" : "Inscrito"}</span></td><td data-label="Ações"><div className="participant-actions"><button onClick={() => startEdit(item)} aria-label={`Editar ${item.name}`} title="Editar"><span className="material-symbols-outlined">edit</span></button><button className="danger" onClick={() => removeParticipant(item)} aria-label={`Excluir ${item.name}`} title="Excluir"><span className="material-symbols-outlined">delete</span></button></div></td></tr>)}</tbody></table> : <div className="empty">Nenhum participante encontrado.</div>}</div>
+      <div className="stitch-table-wrap">{filtered.length ? <table><thead><tr><th>Nº</th><th>Nome</th><th>Loja</th><th>Contato</th><th>Data/Hora</th><th>Situação</th><th>Ações</th></tr></thead><tbody>{filtered.map(item => <tr key={item.id}><td data-label="Número">{item.luckyNumber}</td><td data-label="Nome" className="stitch-name">{item.name}</td><td data-label="Loja">{item.store}</td><td data-label="Contato"><div className="stitch-contacts"><a className="social-icon whatsapp" href={`https://wa.me/55${item.phone}`} target="_blank" rel="noreferrer" aria-label={`Abrir WhatsApp de ${item.name}`} title="Abrir WhatsApp"><img src="https://cdn.simpleicons.org/whatsapp/128C7E" alt=""/></a><a className="social-icon instagram" href={`https://instagram.com/${item.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" aria-label={`Abrir Instagram de ${item.name}`} title={`@${item.instagram.replace(/^@/, "")}`}><img src="https://cdn.simpleicons.org/instagram/E1306C" alt=""/></a></div></td><td data-label="Data/Hora">{new Date(item.createdAt).toLocaleString("pt-BR", {day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"})}</td><td data-label="Situação"><span className="stitch-badge">{item.status === "winner" ? "Vencedor" : "Inscrito"}</span></td><td data-label="Ações"><div className="participant-actions"><button onClick={() => startEdit(item)} aria-label={`Editar ${item.name}`} title="Editar"><span className="material-symbols-outlined">edit</span></button><button className="danger" onClick={() => setDeleting(item)} aria-label={`Excluir ${item.name}`} title="Excluir"><span className="material-symbols-outlined">delete</span></button></div></td></tr>)}</tbody></table> : <div className="empty">Nenhum participante encontrado.</div>}</div>
       </> : <>
         <header className="stitch-header winners-header">
           <div><span className="stitch-kicker">Histórico do sorteio</span><h1>Vencedores</h1><p className="winners-description">Consulte as pessoas sorteadas e acesse rapidamente os contatos.</p></div>
@@ -141,7 +187,7 @@ export function AdminDashboard({initialView = "participants"}:{initialView?:Admi
         </header>
         <section className="winners-overview" aria-label="Resumo dos vencedores"><span className="material-symbols-outlined">workspace_premium</span><div><strong>{winnerRows.length}</strong><p>{winnerRows.length === 1 ? "vencedor registrado" : "vencedores registrados"}</p></div></section>
         <div className="stitch-toolbar winners-toolbar"><label><span className="material-symbols-outlined">search</span><input aria-label="Buscar vencedores" placeholder="Buscar por nome, loja ou número..." value={query} onChange={event => setQuery(event.target.value)}/></label><span className="winner-result-count">{filteredWinners.length} {filteredWinners.length === 1 ? "resultado" : "resultados"}</span></div>
-        <div className="stitch-table-wrap">{filteredWinners.length ? <table><thead><tr><th>Nº sorteado</th><th>Vencedor</th><th>Loja</th><th>Contato</th><th>Cadastro</th><th>Situação</th></tr></thead><tbody>{filteredWinners.map(item => <tr key={item.id}><td data-label="Número">{item.luckyNumber}</td><td data-label="Vencedor" className="stitch-name">{item.name}</td><td data-label="Loja">{item.store}</td><td data-label="Contato"><div className="stitch-contacts"><a className="social-icon whatsapp" href={`https://wa.me/55${item.phone}`} target="_blank" rel="noreferrer" aria-label={`Abrir WhatsApp de ${item.name}`} title="Abrir WhatsApp"><img src="https://cdn.simpleicons.org/whatsapp/128C7E" alt=""/></a><a className="social-icon instagram" href={`https://instagram.com/${item.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" aria-label={`Abrir Instagram de ${item.name}`} title={`@${item.instagram.replace(/^@/, "")}`}><img src="https://cdn.simpleicons.org/instagram/E1306C" alt=""/></a></div></td><td data-label="Cadastro">{new Date(item.createdAt).toLocaleString("pt-BR", {day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"})}</td><td data-label="Situação"><span className="stitch-badge winner"><span className="material-symbols-outlined">workspace_premium</span>Vencedor</span></td></tr>)}</tbody></table> : <div className="winners-empty"><span className="material-symbols-outlined">emoji_events</span><h2>{winnerRows.length ? "Nenhum vencedor encontrado" : "Nenhum vencedor ainda"}</h2><p>{winnerRows.length ? "Tente buscar por outro nome, loja ou número." : "Depois do primeiro sorteio, o vencedor aparecerá aqui."}</p>{!winnerRows.length && <DrawTransitionLink className="stitch-button filled">Realizar Sorteio</DrawTransitionLink>}</div>}</div>
+        <div className="stitch-table-wrap">{filteredWinners.length ? <table><thead><tr><th>Nº sorteado</th><th>Vencedor</th><th>Loja</th><th>Contato</th><th>Data do sorteio</th><th>Situação</th></tr></thead><tbody>{filteredWinners.map(item => <tr key={item.id}><td data-label="Número">{item.luckyNumber}</td><td data-label="Vencedor" className="stitch-name">{item.name}</td><td data-label="Loja">{item.store}</td><td data-label="Contato"><div className="stitch-contacts"><a className="social-icon whatsapp" href={`https://wa.me/55${item.phone}`} target="_blank" rel="noreferrer" aria-label={`Abrir WhatsApp de ${item.name}`} title="Abrir WhatsApp"><img src="https://cdn.simpleicons.org/whatsapp/128C7E" alt=""/></a><a className="social-icon instagram" href={`https://instagram.com/${item.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" aria-label={`Abrir Instagram de ${item.name}`} title={`@${item.instagram.replace(/^@/, "")}`}><img src="https://cdn.simpleicons.org/instagram/E1306C" alt=""/></a></div></td><td data-label="Data do sorteio">{new Date(item.wonAt || item.createdAt).toLocaleString("pt-BR", {day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"})}</td><td data-label="Situação"><span className="stitch-badge winner"><span className="material-symbols-outlined">workspace_premium</span>Vencedor</span></td></tr>)}</tbody></table> : <div className="winners-empty"><span className="material-symbols-outlined">emoji_events</span><h2>{winnerRows.length ? "Nenhum vencedor encontrado" : "Nenhum vencedor ainda"}</h2><p>{winnerRows.length ? "Tente buscar por outro nome, loja ou número." : "Depois do primeiro sorteio, o vencedor aparecerá aqui."}</p>{!winnerRows.length && <DrawTransitionLink className="stitch-button filled">Realizar Sorteio</DrawTransitionLink>}</div>}</div>
       </>}
       {!loading && <footer className="stitch-footer">© 2026 Fashion Date. Todos os direitos reservados.</footer>}
     </section>
@@ -159,6 +205,14 @@ export function AdminDashboard({initialView = "participants"}:{initialView?:Admi
         <footer><button type="button" className="stitch-button outline" onClick={() => setEditing(null)} disabled={saving}>Cancelar</button><button className="stitch-button filled" disabled={saving}>{saving ? "Salvando..." : "Salvar alterações"}</button></footer>
       </form>
     </div>}
+    {deleting && <div className="edit-modal-backdrop" role="presentation" onMouseDown={event => {if (event.target === event.currentTarget && !deletingBusy) setDeleting(null);}}>
+      <section className="edit-modal delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-title" aria-describedby="delete-description">
+        <header><div><span>Participante nº {deleting.luckyNumber}</span><h2 id="delete-title">Excluir cadastro?</h2></div><button type="button" onClick={() => setDeleting(null)} aria-label="Fechar confirmação" disabled={deletingBusy}><span className="material-symbols-outlined">close</span></button></header>
+        <p id="delete-description"><strong>{deleting.name}</strong> será removido da lista e não participará mais dos sorteios. Essa ação não pode ser desfeita.</p>
+        <footer><button type="button" className="stitch-button outline" onClick={() => setDeleting(null)} disabled={deletingBusy}>Cancelar</button><button type="button" className="stitch-button danger-filled" onClick={confirmRemove} disabled={deletingBusy}>{deletingBusy ? "Excluindo..." : "Excluir participante"}</button></footer>
+      </section>
+    </div>}
+    <Toast message={notice} onDismiss={dismissNotice}/>
   </main>;
 }
 

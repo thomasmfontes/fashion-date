@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {Toast, type ToastMessage} from "../../../components/ui/toast";
 
 type Winner = {id:number; luckyNumber:string; name:string; store:string; instagram:string};
 
@@ -9,6 +10,7 @@ export default function DrawPage() {
   const [number, setNumber] = useState("0000");
   const [running, setRunning] = useState(false);
   const [winner, setWinner] = useState<Winner | null>(null);
+  const [notice, setNotice] = useState<ToastMessage | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -22,16 +24,27 @@ export default function DrawPage() {
     setRunning(true);
     timer.current = setInterval(() => setNumber(String(Math.floor(Math.random() * 9999) + 1).padStart(4, "0")), 70);
     await new Promise(resolve => setTimeout(resolve, 2600));
-    const response = await fetch("/api/admin/draw", {method:"POST", headers:{"x-admin-key":key}});
-    const data = await response.json();
-    if (timer.current) clearInterval(timer.current);
-    timer.current = null;
-    setRunning(false);
-    if (response.ok) {
+    try {
+      const response = await fetch("/api/admin/draw", {method:"POST", headers:{"x-admin-key":key}});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Não foi possível realizar o sorteio.");
       setWinner(data.winner);
       setNumber(data.winner.luckyNumber);
-    } else {
-      alert(data.error || "Não foi possível realizar o sorteio.");
+    } catch (requestError) {
+      setNotice({id:Date.now(), tone:"error", text:requestError instanceof Error ? requestError.message : "Não foi possível realizar o sorteio."});
+    } finally {
+      if (timer.current) clearInterval(timer.current);
+      timer.current = null;
+      setRunning(false);
+    }
+  }
+
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+    } catch {
+      setNotice({id:Date.now(), tone:"error", text:"O navegador não permitiu abrir em tela cheia."});
     }
   }
 
@@ -44,6 +57,7 @@ export default function DrawPage() {
         <span><i/> Sorteio ao vivo</span>
         <h1>Provador Fashion</h1>
       </div>
+      <button className="draw-fullscreen" type="button" onClick={toggleFullscreen} aria-label="Alternar tela cheia" title="Tela cheia"><span className="material-symbols-outlined">fullscreen</span></button>
     </header>
 
     {winner ? <section className="winner-panel" aria-live="polite">
@@ -74,5 +88,6 @@ export default function DrawPage() {
         <a className="back-link" href="/admin"><span className="material-symbols-outlined">arrow_back</span>Voltar ao painel</a>
       </div>
     </section>}
+    <Toast message={notice} onDismiss={() => setNotice(null)}/>
   </main>;
 }
