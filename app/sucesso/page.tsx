@@ -1,6 +1,7 @@
 "use client";
 
 import {CSSProperties, useEffect, useState} from "react";
+import LiveDrawAlert from "../live-draw-alert";
 
 type Participant = {luckyNumber:string; name:string; store:string};
 
@@ -38,6 +39,7 @@ export default function SuccessPage() {
 
       <p className="result-reminder"><span className="material-symbols-outlined">photo_camera</span> Tire um print e guarde seu número.</p>
       <div className="result-actions"><button className="result-primary" onClick={() => window.print()}><span className="material-symbols-outlined">download</span>Salvar meu número</button><button className="result-secondary" onClick={share}><span className="material-symbols-outlined">ios_share</span>Compartilhar</button></div>
+      <LiveDrawAlert luckyNumber={participant?.luckyNumber}/>
       <footer className="result-note"><span>O sorteio será realizado durante o Fashion Date 2026.</span><strong>Boa sorte!</strong></footer>
     </section>
   </main>;

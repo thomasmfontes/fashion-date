@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import Link from "next/link";
+import LiveDrawAlert from "../live-draw-alert";
 
 type Participant = {luckyNumber:string; name:string; store:string};
 
@@ -25,7 +25,8 @@ export default function DuplicatePage() {
       </article>
 
       <div className="duplicate-message"><span className="material-symbols-outlined">verified</span><div><strong>Nenhum novo cadastro foi criado</strong><p>Use o número acima no dia do evento.</p></div></div>
-      <div className="result-actions single"><Link className="result-primary" href="/"><span className="material-symbols-outlined">arrow_back</span>Voltar ao início</Link></div>
+      <div className="result-actions single"><a className="result-primary" href="/"><span className="material-symbols-outlined">arrow_back</span>Voltar ao início</a></div>
+      <LiveDrawAlert luckyNumber={participant?.luckyNumber}/>
       <footer className="result-note"><span>Nos vemos no Fashion Date 2026.</span><strong>Boa sorte!</strong></footer>
     </section>
   </main>;
