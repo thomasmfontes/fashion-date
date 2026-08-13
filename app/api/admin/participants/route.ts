@@ -1,0 +1,2 @@
+import { adminAllowed,initialize,row } from "../../_lib/db";
+export async function GET(request:Request){if(!adminAllowed(request))return Response.json({error:"Não autorizado"},{status:401});const db=await initialize();const result=await db.prepare("SELECT * FROM participants ORDER BY id DESC").all<Record<string,unknown>>();const state=await db.prepare("SELECT value FROM settings WHERE key='registrations_open'").first<{value:string}>();return Response.json({participants:result.results.map(row),registrationsOpen:state?.value!=="false"})}
