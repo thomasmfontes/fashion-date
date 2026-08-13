@@ -49,28 +49,28 @@ export default function Home() {
     }
   }
 
-  return (
-    <main className="public-page">
-      <section className="hero" style={{ backgroundImage: `url(${hero})` }} aria-label="Fashion Date">
-        <div className="hero-fade" />
-      </section>
-      <section className="registration-section">
-        <div className="eyebrow">Sorteio exclusivo</div>
-        <h1>Participe do nosso<br />sorteio</h1>
-        <p className="lead">Cadastre-se e concorra a um Provador Fashion.</p>
-        <p className="muted">Após o cadastro, você receberá seu número da sorte exclusivo.</p>
-        <form className="registration-form" onSubmit={submit}>
-          <label>Nome completo<input name="name" autoComplete="name" placeholder="Seu nome completo" required minLength={3} /></label>
-          <label>Nome da loja<input name="store" placeholder="Nome da sua loja" required minLength={2} /></label>
-          <label>WhatsApp<input name="phone" inputMode="tel" autoComplete="tel" placeholder="(00) 00000-0000" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} required minLength={15} /></label>
-          <small>* Apenas um cadastro permitido por WhatsApp.</small>
-          <label>Instagram<div className="instagram-input"><span aria-hidden="true">@</span><input name="instagram" placeholder="seuperfil" autoComplete="off" required aria-label="Usuário do Instagram" /></div></label>
-          <label className="consent"><input type="checkbox" name="consent" required /><span>Autorizo o uso dos meus dados para participação no sorteio e comunicações relacionadas ao Fashion Date.</span></label>
-          {error && <p className="form-error" role="alert">{error}</p>}
-          <button className="primary-button" type="submit" disabled={loading}>{loading ? "REALIZANDO CADASTRO..." : "QUERO PARTICIPAR  →"}</button>
-        </form>
-      </section>
-      <footer className="public-footer"><img src="/fashiondate-logo.png" alt="Fashion Date Crente Chic" /><p>© 2026 Fashion Date. Todos os direitos reservados.</p></footer>
-    </main>
-  );
+  return <main className="signup-page">
+    <section className="signup-visual" style={{backgroundImage:`url(${hero})`}} aria-label="Fashion Date">
+      <div className="signup-shade"/>
+      <header className="signup-brand"><span>FD</span><i/><div>Fashion Date<br/>Crente Chic<small>by Renata Castanheira</small></div></header>
+      <div className="signup-visual-copy"><span>Fashion Date · 2026</span><h1>Moda, propósito<br/>e <em>experiência.</em></h1><p>Um encontro pensado para lojistas que movimentam a moda com identidade.</p></div>
+      <div className="signup-edition">01 <span>Primeira<br/>edição</span></div>
+    </section>
+
+    <section className="signup-panel">
+      <header className="signup-heading"><div><span className="signup-step">Sorteio exclusivo</span><span className="signup-open"><i/> Inscrições abertas</span></div><h2>Concorra a um<br/><em>Provador Fashion.</em></h2><p>Preencha seus dados. Ao finalizar, seu número da sorte será gerado automaticamente.</p></header>
+      <form className="registration-form signup-form" onSubmit={submit}>
+        <div className="signup-fields">
+          <label>Nome completo<input name="name" autoComplete="name" placeholder="Seu nome completo" required minLength={3}/></label>
+          <label>Nome da loja<input name="store" placeholder="Nome da sua loja" required minLength={2}/></label>
+          <label>WhatsApp<input name="phone" inputMode="tel" autoComplete="tel" placeholder="(00) 00000-0000" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} required minLength={15}/><small>Apenas um cadastro por WhatsApp</small></label>
+          <label>Instagram<div className="instagram-input"><span aria-hidden="true">@</span><input name="instagram" placeholder="seuperfil" autoComplete="off" required aria-label="Usuário do Instagram"/></div></label>
+        </div>
+        <label className="consent"><input type="checkbox" name="consent" required/><span>Autorizo o uso dos meus dados para participação no sorteio e comunicações relacionadas ao Fashion Date.</span></label>
+        {error && <p className="form-error" role="alert">{error}</p>}
+        <button className="signup-submit" type="submit" disabled={loading}><span>{loading ? "Realizando cadastro..." : "Quero participar"}</span><b className="material-symbols-outlined">arrow_forward</b></button>
+      </form>
+      <footer className="signup-footer"><span>Seus dados estão protegidos.</span><span>© 2026 Fashion Date</span></footer>
+    </section>
+  </main>;
 }
