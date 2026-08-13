@@ -1,7 +1,6 @@
 "use client";
 
 import {FormEvent, useCallback, useEffect, useState} from "react";
-import Link from "next/link";
 import DrawTransitionLink from "./draw-transition-link";
 
 type Participant = {id:number; luckyNumber:string; name:string; store:string; phone:string; instagram:string; createdAt:string; status:string};
@@ -85,9 +84,9 @@ export default function AdminPage() {
     <aside className="stitch-sidebar">
       <img src="/fashiondate-logo.png" alt="Fashion Date"/>
       <nav>
-        <Link className="stitch-nav active" href="/admin"><span className="material-symbols-outlined">groups</span>Participantes</Link>
+        <a className="stitch-nav active" href="/admin"><span className="material-symbols-outlined">groups</span>Participantes</a>
         <DrawTransitionLink className="stitch-nav"><span className="material-symbols-outlined">casino</span>Sorteio</DrawTransitionLink>
-        <Link className="stitch-nav" href="/admin/vencedores"><span className="material-symbols-outlined">emoji_events</span>Vencedores</Link>
+        <a className="stitch-nav" href="/admin/vencedores"><span className="material-symbols-outlined">emoji_events</span>Vencedores</a>
       </nav>
       <button className="stitch-nav stitch-logout" onClick={() => {sessionStorage.removeItem("fashion-date-admin-key"); setKey("");}}><span className="material-symbols-outlined">logout</span>Sair</button>
     </aside>

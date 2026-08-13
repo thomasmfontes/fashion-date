@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DrawTransitionLink from "../draw-transition-link";
 
@@ -57,9 +56,9 @@ export default function WinnersPage() {
     <aside className="stitch-sidebar">
       <img src="/fashiondate-logo.png" alt="Fashion Date"/>
       <nav>
-        <Link className="stitch-nav" href="/admin"><span className="material-symbols-outlined">groups</span>Participantes</Link>
+        <a className="stitch-nav" href="/admin"><span className="material-symbols-outlined">groups</span>Participantes</a>
         <DrawTransitionLink className="stitch-nav"><span className="material-symbols-outlined">casino</span>Sorteio</DrawTransitionLink>
-        <Link className="stitch-nav active" href="/admin/vencedores"><span className="material-symbols-outlined">emoji_events</span>Vencedores</Link>
+        <a className="stitch-nav active" href="/admin/vencedores"><span className="material-symbols-outlined">emoji_events</span>Vencedores</a>
       </nav>
       <button className="stitch-nav stitch-logout" onClick={() => {sessionStorage.removeItem("fashion-date-admin-key"); location.replace("/admin");}}><span className="material-symbols-outlined">logout</span>Sair</button>
     </aside>
@@ -72,7 +71,7 @@ export default function WinnersPage() {
           <p className="winners-description">Consulte as pessoas sorteadas e acesse rapidamente os contatos.</p>
         </div>
         <div className="stitch-actions">
-          <Link className="stitch-button outline" href="/admin"><span className="material-symbols-outlined">arrow_back</span>Voltar ao Painel</Link>
+          <a className="stitch-button outline" href="/admin"><span className="material-symbols-outlined">arrow_back</span>Voltar ao Painel</a>
           <DrawTransitionLink className="stitch-button filled"><span className="material-symbols-outlined">casino</span>Novo Sorteio</DrawTransitionLink>
         </div>
       </header>

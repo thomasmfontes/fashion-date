@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 type Winner = {id:number; luckyNumber:string; name:string; store:string; instagram:string};
@@ -56,11 +55,11 @@ export default function DrawPage() {
       <h2 className="winner-name">{winner.name}</h2>
       <div className="winner-meta">
         <span><b className="material-symbols-outlined">storefront</b>{winner.store}</span>
-        <a href={`https://instagram.com/${winner.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer"><b className="material-symbols-outlined">alternate_email</b>@{winner.instagram.replace(/^@/, "")}</a>
+        <a href={`https://instagram.com/${winner.instagram.replace(/^@+/, "")}`} target="_blank" rel="noreferrer"><img className="winner-instagram-icon" src="https://cdn.simpleicons.org/instagram/9B702B" alt=""/>@{winner.instagram.replace(/^@+/, "")}</a>
       </div>
       <div className="winner-actions">
         <button className="admin-button" onClick={() => {setWinner(null); setNumber("0000");}}><span className="material-symbols-outlined">refresh</span>Novo sorteio</button>
-        <Link className="admin-button primary" href="/admin/vencedores"><span className="material-symbols-outlined">emoji_events</span>Ver vencedores</Link>
+        <a className="admin-button primary" href="/admin/vencedores"><span className="material-symbols-outlined">emoji_events</span>Ver vencedores</a>
       </div>
     </section> : <section className="draw-stage">
       <div className="draw-status"><i/>{running ? "Sorteando agora" : "Tudo pronto para começar"}</div>
@@ -72,7 +71,7 @@ export default function DrawPage() {
       </div>
       <div className="draw-controls">
         <button className="primary-button" onClick={draw} disabled={running}><span className="material-symbols-outlined">casino</span>{running ? "Sorteando..." : "Sortear agora"}</button>
-        <Link className="back-link" href="/admin"><span className="material-symbols-outlined">arrow_back</span>Voltar ao painel</Link>
+        <a className="back-link" href="/admin"><span className="material-symbols-outlined">arrow_back</span>Voltar ao painel</a>
       </div>
     </section>}
   </main>;
