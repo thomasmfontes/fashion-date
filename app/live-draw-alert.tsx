@@ -97,8 +97,21 @@ export default function LiveDrawAlert({luckyNumber}: LiveDrawAlertProps) {
 
     {celebration && <div className={`live-winner-overlay ${celebration}`} role="status" aria-live="assertive">
       <div className="live-screen-flash"/>
-      <div className="live-confetti" aria-hidden="true">{Array.from({length:64}, (_, index) => <i key={index} style={{left:`${(index * 37) % 101}%`, background:colors[index % colors.length], animationDelay:`-${(index % 11) * .14}s`, animationDuration:`${2.5 + (index % 7) * .2}s`, "--drift":`${(index % 2 ? 1 : -1) * (25 + index % 60)}px`} as CSSProperties}/>)}</div>
-      <div className="live-winner-content"><img src="/fashiondate-logo.png" alt="Fashion Date"/><span>{celebration === "winner" ? "O seu número foi sorteado" : "Teste do alerta"}</span><h2>{celebration === "winner" ? "Você ganhou!" : "Tudo pronto!"}</h2><strong>{luckyNumber || "----"}</strong><p>{celebration === "winner" ? "Procure a organização do evento para receber seu prêmio." : "Quando você ganhar, seu celular fará isso automaticamente."}</p>{celebration === "test" && <button onClick={() => setCelebration(null)}>Fechar teste</button>}</div>
+      <div className="live-confetti" aria-hidden="true">{Array.from({length:48}, (_, index) => <i key={index} style={{left:`${(index * 37) % 101}%`, background:colors[index % colors.length], animationDelay:`-${(index % 11) * .14}s`, animationDuration:`${2.8 + (index % 7) * .22}s`, "--drift":`${(index % 2 ? 1 : -1) * (25 + index % 60)}px`} as CSSProperties}/>)}</div>
+      <div className="live-winner-content">
+        <header className="live-winner-brand">
+          <img src="/fashiondate-logo.png" alt="Fashion Date"/>
+          <span>Fashion Date · 2026</span>
+        </header>
+        <div className="live-winner-kicker"><i/>{celebration === "winner" ? "Resultado ao vivo" : "Teste do alerta"}<i/></div>
+        <h2>{celebration === "winner" ? "Você ganhou!" : "Tudo pronto!"}</h2>
+        <div className="live-winning-ticket">
+          <span>{celebration === "winner" ? "Número vencedor" : "Seu número da sorte"}</span>
+          <strong>{luckyNumber || "----"}</strong>
+        </div>
+        <p>{celebration === "winner" ? "Parabéns! Apresente esta tela à organização do evento para receber seu prêmio." : "Quando o seu número for sorteado, esta celebração aparecerá automaticamente no seu celular."}</p>
+        {celebration === "test" ? <button onClick={() => setCelebration(null)}>Fechar teste</button> : <span className="live-winner-note">Procure a equipe Fashion Date</span>}
+      </div>
     </div>}
   </>;
 }
