@@ -64,7 +64,7 @@ export default function Home() {
           <label>Nome da loja<input name="store" placeholder="Nome da sua loja" required minLength={2} /></label>
           <label>WhatsApp<input name="phone" inputMode="tel" autoComplete="tel" placeholder="(00) 00000-0000" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} required minLength={15} /></label>
           <small>* Apenas um cadastro permitido por WhatsApp.</small>
-          <label>Instagram<input name="instagram" placeholder="@seuperfil" required /></label>
+          <label>Instagram<div className="instagram-input"><span aria-hidden="true">@</span><input name="instagram" placeholder="seuperfil" autoComplete="off" required aria-label="Usuário do Instagram" /></div></label>
           <label className="consent"><input type="checkbox" name="consent" required /><span>Autorizo o uso dos meus dados para participação no sorteio e comunicações relacionadas ao Fashion Date.</span></label>
           {error && <p className="form-error" role="alert">{error}</p>}
           <button className="primary-button" type="submit" disabled={loading}>{loading ? "REALIZANDO CADASTRO..." : "QUERO PARTICIPAR  →"}</button>

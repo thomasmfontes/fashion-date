@@ -87,3 +87,4 @@
  .draw-transition::before{inset:12px}.draw-transition-brand img{width:290px;height:134px}.draw-transition-brand p{font-size:30px}
 }
 @media(prefers-reduced-motion:reduce){.draw-transition,.draw-page,.draw-page>.draw-header,.draw-page>.draw-stage,.draw-page>.winner-panel{animation:none}.draw-page::after{display:none}.draw-transition *{transition:none!important}}
+.registration-form .instagram-input{display:flex;align-items:center;border-bottom:1px solid #758092;background:#fff;transition:border-color .2s,box-shadow .2s}.registration-form .instagram-input:focus-within{border-color:var(--wine);box-shadow:0 2px 0 var(--wine)}.registration-form .instagram-input>span{padding-left:12px;color:var(--wine);font-size:18px;font-weight:600;line-height:1}.registration-form .instagram-input>input:not([type=checkbox]){min-width:0;flex:1;border:0;padding-left:5px;box-shadow:none}.registration-form .instagram-input>input:focus{border:0;box-shadow:none}
