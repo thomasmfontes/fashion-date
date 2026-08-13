@@ -18,6 +18,7 @@ export default function AdminPage() {
   const [editForm, setEditForm] = useState<EditForm>({name:"", store:"", phone:"", instagram:""});
   const [actionError, setActionError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => setKey(sessionStorage.getItem("fashion-date-admin-key") || ""), []);
   const load = useCallback(async () => {
@@ -59,7 +60,26 @@ export default function AdminPage() {
   const winners = rows.filter(item => item.status === "winner").length;
   const filtered = rows.filter(item => `${item.luckyNumber} ${item.name} ${item.store} ${item.phone} ${item.instagram}`.toLowerCase().includes(query.toLowerCase()));
 
-  if (!key || error) return <main className="center-page"><form className="login-card" onSubmit={login}><img src="/fashiondate-logo.png" alt="Fashion Date"/><h1>Acesso administrativo</h1><p className="muted">Entre com a senha da organização.</p><label>Senha<input type="password" value={input} onChange={event => setInput(event.target.value)} required autoFocus/></label>{error && <p className="form-error">{error}</p>}<button className="primary-button">ENTRAR NO PAINEL</button></form></main>;
+  if (!key || error) return <main className="admin-login-page">
+    <a className="admin-login-home" href="/"><span className="material-symbols-outlined">arrow_back</span>Voltar ao site</a>
+    <section className="admin-login-brand">
+      <img src="/fashiondate-logo.png" alt="Fashion Date Crente Chic"/>
+      <div className="admin-login-copy"><span>Gestão do evento · 2026</span><h1>Tudo pronto para<br/><em>fazer acontecer.</em></h1><p>Cadastros, participantes e sorteio reunidos em uma experiência simples e segura.</p></div>
+      <footer><span className="material-symbols-outlined">verified_user</span>Acesso exclusivo da organização</footer>
+    </section>
+    <section className="admin-login-panel">
+      <form className="admin-login-card" onSubmit={login}>
+        <div className="admin-login-kicker"><i/> Área administrativa</div>
+        <h2>Acesse o painel</h2>
+        <p>Digite a senha definida para a organização do Fashion Date.</p>
+        <label htmlFor="admin-password">Senha</label>
+        <div className="admin-password-field"><span className="material-symbols-outlined">lock</span><input id="admin-password" type={showPassword ? "text" : "password"} value={input} onChange={event => setInput(event.target.value)} required autoFocus autoComplete="current-password" placeholder="Digite sua senha"/><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"} title={showPassword ? "Ocultar senha" : "Mostrar senha"}><span className="material-symbols-outlined">{showPassword ? "visibility_off" : "visibility"}</span></button></div>
+        {error && <p className="form-error">{error}</p>}
+        <button className="admin-login-submit"><span>Entrar no painel</span><span className="material-symbols-outlined">arrow_forward</span></button>
+        <small><span className="material-symbols-outlined">shield_lock</span>Sessão protegida neste dispositivo</small>
+      </form>
+    </section>
+  </main>;
 
   return <main className="stitch-admin">
     <aside className="stitch-sidebar">
