@@ -74,10 +74,12 @@ export default function LiveDrawAlert({luckyNumber}: LiveDrawAlertProps) {
   }, [celebrate, luckyNumber]);
 
   async function enable() {
-    await playVictory();
-    await requestWakeLock();
-    await checkDraw(true);
     setEnabled(true);
+    await Promise.allSettled([
+      playVictory(),
+      requestWakeLock(),
+      checkDraw(true),
+    ]);
   }
 
   useEffect(() => {
