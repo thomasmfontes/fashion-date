@@ -1,93 +1,235 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {Toast, type ToastMessage} from "../../../components/ui/toast";
-
-type Winner = {id:number; luckyNumber:string; name:string; store:string; instagram:string};
+import Link from "next/link";
+import { useEffect, useState, type CSSProperties } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useWakeLock } from "@/hooks/useWakeLock";
+import { useSlotMachine } from "@/hooks/useSlotMachine";
+import { useToast } from "@/hooks/useToast";
+import { LiveSlotMachine } from "@/components/admin/LiveSlotMachine";
+import { AdminLoginForm } from "@/components/admin/AdminLoginForm";
+import { Toast } from "@/components/ui/toast";
+import {
+  formatLuckyNumber,
+  buildInstagramUrl,
+  cleanInstagramHandle,
+} from "@/utils/formatters";
 
 export default function DrawPage() {
-  const [key, setKey] = useState("");
-  const [number, setNumber] = useState("0000");
-  const [running, setRunning] = useState(false);
-  const [winner, setWinner] = useState<Winner | null>(null);
-  const [notice, setNotice] = useState<ToastMessage | null>(null);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { adminKey, isAuthenticated, isReady, login } = useAuth();
+  const [loginError, setLoginError] = useState("");
+  useWakeLock(true);
+
+  const {
+    slotStates,
+    lockedCount,
+    isRunning,
+    winner,
+    error,
+    isMuted,
+    toggleMute,
+    triggerDraw,
+    resetDraw,
+  } = useSlotMachine(adminKey);
+
+  const { toast, showToast, dismissToast } = useToast();
 
   useEffect(() => {
-    setKey(sessionStorage.getItem("fashion-date-admin-key") || "");
-    return () => { if (timer.current) clearInterval(timer.current); };
-  }, []);
-
-  async function draw() {
-    if (!key) { location.href = "/admin"; return; }
-    setWinner(null);
-    setRunning(true);
-    timer.current = setInterval(() => setNumber(String(Math.floor(Math.random() * 9999) + 1).padStart(4, "0")), 70);
-    await new Promise(resolve => setTimeout(resolve, 2600));
-    try {
-      const response = await fetch("/api/admin/draw", {method:"POST", headers:{"x-admin-key":key}});
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Não foi possível realizar o sorteio.");
-      setWinner(data.winner);
-      setNumber(data.winner.luckyNumber);
-    } catch (requestError) {
-      setNotice({id:Date.now(), tone:"error", text:requestError instanceof Error ? requestError.message : "Não foi possível realizar o sorteio."});
-    } finally {
-      if (timer.current) clearInterval(timer.current);
-      timer.current = null;
-      setRunning(false);
+    if (error) {
+      showToast(error, "error");
     }
-  }
+  }, [error, showToast]);
 
   async function toggleFullscreen() {
     try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await document.documentElement.requestFullscreen();
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
     } catch {
-      setNotice({id:Date.now(), tone:"error", text:"O navegador não permitiu abrir em tela cheia."});
+      showToast("O navegador não permitiu alternar tela cheia.", "error");
     }
   }
 
-  return <main className={`draw-page${running ? " is-running" : ""}${winner ? " has-winner" : ""}`}>
-    <div className="draw-backdrop" aria-hidden="true"><i/><i/><i/></div>
+  // If not authenticated, render login portal directly on stage without bounce redirect
+  if (isReady && !isAuthenticated) {
+    return (
+      <AdminLoginForm
+        onLogin={(key) => {
+          setLoginError("");
+          login(key);
+        }}
+        error={loginError}
+      />
+    );
+  }
 
-    <header className="draw-header">
-      <img src="/fashiondate-logo.png" alt="Fashion Date Crente Chic"/>
-      <div className="draw-event-title">
-        <span><i/> Sorteio ao vivo</span>
-        <h1>Provador Fashion</h1>
-      </div>
-      <button className="draw-fullscreen" type="button" onClick={toggleFullscreen} aria-label="Alternar tela cheia" title="Tela cheia"><span className="material-symbols-outlined">fullscreen</span></button>
-    </header>
+  return (
+    <main
+      className={`draw-page${isRunning ? " is-running" : ""}${winner ? " has-winner" : ""}`}
+    >
+      {winner && (
+        <div className="confetti" aria-hidden="true">
+          {Array.from({ length: 48 }).map((_, i) => (
+            <i
+              key={i}
+              style={
+                {
+                  left: `${(i * 2.1) % 100}%`,
+                  animationDelay: `${(i * 0.12) % 2.5}s`,
+                  animationDuration: `${3.5 + ((i * 0.2) % 2.5)}s`,
+                  "--drift": `${((i % 7) - 3) * 60}px`,
+                  background:
+                    i % 3 === 0
+                      ? "#e7c275"
+                      : i % 3 === 1
+                        ? "#530017"
+                        : "#fff4d4",
+                } as CSSProperties
+              }
+            />
+          ))}
+        </div>
+      )}
 
-    {winner ? <section className="winner-panel" aria-live="polite">
-      <div className="winner-emblem"><span className="material-symbols-outlined">workspace_premium</span></div>
-      <p className="draw-overline">O número sorteado foi</p>
-      <strong className="lucky-number">{winner.luckyNumber}</strong>
-      <div className="winner-divider"><span/></div>
-      <p className="winner-announcement">Temos um vencedor!</p>
-      <h2 className="winner-name">{winner.name}</h2>
-      <div className="winner-meta">
-        <span><b className="material-symbols-outlined">storefront</b>{winner.store}</span>
-        <a href={`https://instagram.com/${winner.instagram.replace(/^@+/, "")}`} target="_blank" rel="noreferrer"><img className="winner-instagram-icon" src="https://cdn.simpleicons.org/instagram/9B702B" alt=""/>@{winner.instagram.replace(/^@+/, "")}</a>
+      <div className="draw-backdrop" aria-hidden="true">
+        <i />
+        <i />
+        <i />
       </div>
-      <div className="winner-actions">
-        <button className="admin-button" onClick={() => {setWinner(null); setNumber("0000");}}><span className="material-symbols-outlined">refresh</span>Novo sorteio</button>
-        <a className="admin-button primary" href="/admin/vencedores"><span className="material-symbols-outlined">emoji_events</span>Ver vencedores</a>
-      </div>
-    </section> : <section className="draw-stage">
-      <div className="draw-status"><i/>{running ? "Sorteando agora" : "Tudo pronto para começar"}</div>
-      <div className="draw-card">
-        <p>{running ? "O número da sorte está chegando" : "Número da sorte"}</p>
-        <div className="draw-number" aria-live="polite">{number}</div>
-        <div className="draw-line"><span/></div>
-        <strong>{running ? "Aguarde a revelação" : "Boa sorte a todos"}</strong>
-      </div>
-      <div className="draw-controls">
-        <button className="primary-button" onClick={draw} disabled={running}><span className="material-symbols-outlined">casino</span>{running ? "Sorteando..." : "Sortear agora"}</button>
-        <a className="back-link" href="/admin"><span className="material-symbols-outlined">arrow_back</span>Voltar ao painel</a>
-      </div>
-    </section>}
-    <Toast message={notice} onDismiss={() => setNotice(null)}/>
-  </main>;
+
+      <header className="draw-header">
+        <img src="/fashiondate-logo.png" alt="Fashion Date Crente Chic" />
+        <div className="draw-event-title">
+          <span>
+            <i /> Sorteio ao vivo
+          </span>
+          <h1>Provador Fashion</h1>
+        </div>
+        <div className="draw-header-controls">
+          <button
+            className={`draw-sound-toggle${isMuted ? " is-muted" : ""}`}
+            type="button"
+            onClick={toggleMute}
+            aria-label={isMuted ? "Ativar efeitos sonoros" : "Silenciar áudio"}
+            title={isMuted ? "Ativar som" : "Silenciar som"}
+          >
+            <span className="material-symbols-outlined">
+              {isMuted ? "volume_off" : "volume_up"}
+            </span>
+            <span>{isMuted ? "Mudo" : "Som ativo"}</span>
+          </button>
+          <button
+            className="draw-fullscreen"
+            type="button"
+            onClick={toggleFullscreen}
+            aria-label="Alternar tela cheia"
+            title="Tela cheia"
+          >
+            <span className="material-symbols-outlined">fullscreen</span>
+          </button>
+        </div>
+      </header>
+
+      {winner ? (
+        <section className="winner-panel" aria-live="polite">
+          <div className="winner-emblem">
+            <span className="material-symbols-outlined">workspace_premium</span>
+          </div>
+          <p className="draw-overline">O número sorteado foi</p>
+          <strong className="lucky-number">
+            {formatLuckyNumber(winner.luckyNumber)}
+          </strong>
+          <div className="winner-divider">
+            <span />
+          </div>
+          <p className="winner-announcement">Temos um vencedor!</p>
+          <h2 className="winner-name">{winner.name}</h2>
+          <div className="winner-meta">
+            <span>
+              <b className="material-symbols-outlined">storefront</b>
+              {winner.store}
+            </span>
+            <a
+              href={buildInstagramUrl(winner.instagram)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <img
+                className="winner-instagram-icon"
+                src="https://cdn.simpleicons.org/instagram/530017"
+                alt=""
+              />
+              @{cleanInstagramHandle(winner.instagram)}
+            </a>
+          </div>
+
+          <div className="winner-actions">
+            <button
+              className="admin-button primary"
+              type="button"
+              onClick={resetDraw}
+            >
+              <span className="material-symbols-outlined">confirmation_number</span>
+              Sortear novamente
+            </button>
+            <Link className="admin-button" href="/admin">
+              <span className="material-symbols-outlined">arrow_back</span>
+              Ver vencedores
+            </Link>
+          </div>
+        </section>
+      ) : (
+        <section className="draw-stage">
+          <div className="draw-status">
+            <i />
+            {isRunning
+              ? "Tambores girando... Aguarde a revelação"
+              : "Tudo pronto para o sorteio"}
+          </div>
+
+          <div className="draw-card">
+            <p>
+              {isRunning
+                ? "Sorteando o número da sorte..."
+                : "Número da sorte"}
+            </p>
+
+            {/* 4 Tambores Slot Machine */}
+            <LiveSlotMachine digits={slotStates} />
+
+            <div className="draw-line">
+              <span />
+            </div>
+            <strong>
+              {isRunning
+                ? lockedCount > 0
+                  ? `Fixando dígitos (${lockedCount}/4)...`
+                  : "Girando tambores..."
+                : "Boa sorte a todos os lojistas"}
+            </strong>
+          </div>
+
+          <div className="draw-controls">
+            <button
+              className="primary-button"
+              type="button"
+              onClick={triggerDraw}
+              disabled={isRunning}
+            >
+              <span className="material-symbols-outlined">confirmation_number</span>
+              {isRunning ? "Sorteando..." : "Sortear agora"}
+            </button>
+            <Link className="back-link" href="/admin">
+              <span className="material-symbols-outlined">arrow_back</span>
+              Voltar ao painel
+            </Link>
+          </div>
+        </section>
+      )}
+
+      <Toast message={toast} onDismiss={dismissToast} />
+    </main>
+  );
 }

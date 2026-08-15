@@ -1,0 +1,17 @@
+{
+  "name": "Fashion Date Crente Chic",
+  "short_name": "Fashion Date",
+  "description": "Plataforma oficial do Fashion Date Crente Chic para cadastro e sorteio do Provador Fashion.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf9f4",
+  "theme_color": "#4b0014",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

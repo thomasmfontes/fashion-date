@@ -1,20 +1,32 @@
-"use client";
+import type { ToastMessage } from "@/types/admin.types";
 
-import {useEffect} from "react";
+interface ToastProps {
+  message: ToastMessage | null;
+  onDismiss: () => void;
+}
 
-export type ToastMessage = {id:number; text:string; tone:"success" | "error"};
-
-export function Toast({message, onDismiss}:{message:ToastMessage | null; onDismiss:()=>void}) {
-  useEffect(() => {
-    if (!message) return;
-    const timer = window.setTimeout(onDismiss, 4200);
-    return () => window.clearTimeout(timer);
-  }, [message, onDismiss]);
-
+export function Toast({ message, onDismiss }: ToastProps) {
   if (!message) return null;
-  return <div className={`app-toast ${message.tone}`} role={message.tone === "error" ? "alert" : "status"}>
-    <span className="material-symbols-outlined">{message.tone === "success" ? "check_circle" : "error"}</span>
-    <p>{message.text}</p>
-    <button type="button" onClick={onDismiss} aria-label="Fechar aviso"><span className="material-symbols-outlined">close</span></button>
-  </div>;
+
+  const isError = message.type === "error";
+
+  return (
+    <div
+      className={`app-toast ${isError ? "error" : "success"}`}
+      role="status"
+      aria-live="polite"
+    >
+      <span className="material-symbols-outlined">
+        {isError ? "error" : "check_circle"}
+      </span>
+      <p>{message.text}</p>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Fechar notificação"
+      >
+        <span className="material-symbols-outlined">close</span>
+      </button>
+    </div>
+  );
 }

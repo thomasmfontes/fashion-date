@@ -1,33 +1,67 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import Link from "next/link";
 import LiveDrawAlert from "../live-draw-alert";
-
-type Participant = {luckyNumber:string; name:string; store:string};
+import { useSavedParticipant } from "@/hooks/useSavedParticipant";
 
 export default function DuplicatePage() {
-  const [participant, setParticipant] = useState<Participant | null>(null);
-  useEffect(() => {
-    const saved = sessionStorage.getItem("fashion-date-participant");
-    if (saved) setParticipant(JSON.parse(saved));
-  }, []);
+  const { savedParticipant: participant } = useSavedParticipant();
 
-  return <main className="result-page result-duplicate">
-    <header className="result-brand"><img src="/fashiondate-logo.png" alt="Fashion Date Crente Chic"/><span>Fashion Date · 2026</span></header>
-    <section className="result-content">
-      <div className="result-kicker"><i/> Cadastro localizado <i/></div>
-      <h1>Você já está<br/><em>na nossa lista.</em></h1>
-      <p className="result-intro">Este WhatsApp já possui uma inscrição. Fique tranquilo: seu número continua válido para o sorteio.</p>
+  return (
+    <main className="result-page result-duplicate">
+      <header className="result-brand">
+        <img src="/fashiondate-logo.png" alt="Fashion Date Crente Chic" />
+        <span>Fashion Date · 2026</span>
+      </header>
+      <section className="result-content">
+        <div className="result-kicker">
+          <i /> Cadastro localizado <i />
+        </div>
+        <h1>
+          Você já está<br />
+          <em>na nossa lista.</em>
+        </h1>
+        <p className="result-intro">
+          Este WhatsApp já possui uma inscrição. Fique tranquilo: seu número
+          continua válido para o sorteio.
+        </p>
 
-      <article className="result-ticket duplicate-ticket">
-        <div className="ticket-number-block"><span>Seu número da sorte</span><strong>{participant?.luckyNumber ?? "----"}</strong></div>
-        <div className="ticket-person"><div><span>Participante</span><strong>{participant?.name ?? "Cadastro confirmado"}</strong></div><div><span>Loja</span><strong>{participant?.store ?? "—"}</strong></div></div>
-      </article>
+        <article className="result-ticket duplicate-ticket">
+          <div className="ticket-number-block">
+            <span>Seu número da sorte</span>
+            <strong>{participant?.luckyNumber ?? "----"}</strong>
+          </div>
+          <div className="ticket-person">
+            <div>
+              <span>Participante</span>
+              <strong>{participant?.name ?? "Cadastro confirmado"}</strong>
+            </div>
+            <div>
+              <span>Loja</span>
+              <strong>{participant?.store ?? "—"}</strong>
+            </div>
+          </div>
+        </article>
 
-      <div className="duplicate-message"><span className="material-symbols-outlined">verified</span><div><strong>Nenhum novo cadastro foi criado</strong><p>Use o número acima no dia do evento.</p></div></div>
-      <div className="result-actions single"><a className="result-primary" href="/"><span className="material-symbols-outlined">arrow_back</span>Voltar ao início</a></div>
-      <LiveDrawAlert luckyNumber={participant?.luckyNumber}/>
-      <footer className="result-note"><span>Nos vemos no Fashion Date 2026.</span><strong>Boa sorte!</strong></footer>
-    </section>
-  </main>;
+        <div className="duplicate-message">
+          <span className="material-symbols-outlined">verified</span>
+          <div>
+            <strong>Nenhum novo cadastro foi criado</strong>
+            <p>Use o número acima no dia do evento.</p>
+          </div>
+        </div>
+        <div className="result-actions single">
+          <Link className="result-primary" href="/">
+            <span className="material-symbols-outlined">arrow_back</span>
+            Voltar ao início
+          </Link>
+        </div>
+        <LiveDrawAlert luckyNumber={String(participant?.luckyNumber ?? "")} />
+        <footer className="result-note">
+          <span>Nos vemos no Fashion Date 2026.</span>
+          <strong>Boa sorte!</strong>
+        </footer>
+      </section>
+    </main>
+  );
 }
