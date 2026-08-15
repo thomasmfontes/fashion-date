@@ -100,6 +100,26 @@ export function useSlotMachine(adminKey: string) {
       await new Promise((r) => setTimeout(r, 1100));
       setWinner(response.winner);
       playVictory();
+
+      // The phones must only receive the result after the winner is visible
+      // on the telão. The polling clients react to this explicit publication.
+      await new Promise((r) => setTimeout(r, 500));
+      let announced = false;
+      for (let attempt = 0; attempt < 3 && !announced; attempt += 1) {
+        try {
+          await drawService.announceDraw(adminKey, response.drawId);
+          announced = true;
+        } catch {
+          if (attempt < 2) {
+            await new Promise((r) => setTimeout(r, 700));
+          }
+        }
+      }
+      if (!announced) {
+        setError(
+          "O vencedor foi exibido, mas o aviso aos celulares não foi enviado. Verifique a conexão antes do próximo sorteio.",
+        );
+      }
     } catch (err: unknown) {
       if (rollIntervalRef.current) clearInterval(rollIntervalRef.current);
       rollIntervalRef.current = null;

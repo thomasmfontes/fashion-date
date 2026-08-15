@@ -49,6 +49,23 @@ export const drawService = {
   },
 
   /**
+   * Publishes the selected result only after the telão finishes revealing it.
+   */
+  async announceDraw(
+    adminKey: string,
+    drawId: string,
+  ): Promise<{ ok: boolean; drawId: string; winnerNumber: string }> {
+    return request<{ ok: boolean; drawId: string; winnerNumber: string }>(
+      APP_CONFIG.api.adminDraw,
+      {
+        method: "PATCH",
+        adminKey,
+        body: JSON.stringify({ drawId }),
+      },
+    );
+  },
+
+  /**
    * Fetches past winners.
    */
   async getWinners(adminKey?: string): Promise<WinnersListResponse> {

@@ -20,23 +20,10 @@ export async function POST(request: Request) {
   }
 
   const drawId = crypto.randomUUID();
-  await db.batch([
-    db
-      .prepare(
-        "INSERT INTO draws(id,participant_id,lucky_number) VALUES(?,?,?)",
-      )
-      .bind(drawId, selected.id, String(selected.lucky_number)),
-    db
-      .prepare(
-        "INSERT INTO settings(key,value) VALUES('latest_draw_id',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-      )
-      .bind(drawId),
-    db
-      .prepare(
-        "INSERT INTO settings(key,value) VALUES('latest_winner_number',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-      )
-      .bind(String(selected.lucky_number)),
-  ]);
+  await db
+    .prepare("INSERT INTO draws(id,participant_id,lucky_number) VALUES(?,?,?)")
+    .bind(drawId, selected.id, String(selected.lucky_number))
+    .run();
 
   return Response.json({
     ok: true,
@@ -46,5 +33,46 @@ export async function POST(request: Request) {
       won_at: new Date().toISOString(),
     }),
     drawId,
+  });
+}
+
+export async function PATCH(request: Request) {
+  if (!adminAllowed(request)) {
+    return Response.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  const body = (await request.json()) as { drawId?: string };
+  const drawId = String(body.drawId || "").trim();
+  if (!drawId) {
+    return Response.json({ error: "Sorteio inválido." }, { status: 400 });
+  }
+
+  const db = await initialize();
+  const draw = await db
+    .prepare("SELECT id, lucky_number FROM draws WHERE id=?")
+    .bind(drawId)
+    .first<{ id: string; lucky_number: string }>();
+
+  if (!draw) {
+    return Response.json({ error: "Sorteio não encontrado." }, { status: 404 });
+  }
+
+  await db.batch([
+    db
+      .prepare(
+        "INSERT INTO settings(key,value) VALUES('latest_draw_id',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      )
+      .bind(draw.id),
+    db
+      .prepare(
+        "INSERT INTO settings(key,value) VALUES('latest_winner_number',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      )
+      .bind(draw.lucky_number),
+  ]);
+
+  return Response.json({
+    ok: true,
+    drawId: draw.id,
+    winnerNumber: draw.lucky_number,
   });
 }
