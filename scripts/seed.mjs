@@ -26,19 +26,23 @@ const participants = [
   { name: "Daniele Viana", store: "Glamour & Graça", phone: "63993234567", instagram: "@glamouregraça" },
 ];
 
+const baseUrl = (process.env.BASE_URL || "http://localhost:4173").replace(/\/$/, "");
+
 async function seed() {
   let created = 0;
+  let duplicates = 0;
   for (const p of participants) {
     try {
-      const res = await fetch("http://localhost:4173/api/participants", {
+      const res = await fetch(`${baseUrl}/api/participants`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...p, consent: true }),
       });
       const data = await res.json();
       if (res.ok && data.participant) {
-        created++;
-        console.log(`✔ [${data.participant.luckyNumber}] ${data.participant.name} — ${data.participant.store}`);
+        if (data.duplicate) duplicates++;
+        else created++;
+        console.log(`${data.duplicate ? "↺" : "✔"} [${data.participant.luckyNumber}] ${data.participant.name} — ${data.participant.store}`);
       } else {
         console.error("Erro ao cadastrar:", p.name, data);
       }
@@ -46,7 +50,7 @@ async function seed() {
       console.error("Falha de rede:", p.name, e.message);
     }
   }
-  console.log(`\n🎉 Total cadastrados com sucesso: ${created} participantes.`);
+  console.log(`\n🎉 Novos cadastros: ${created}. Já existentes: ${duplicates}.`);
 }
 
 seed();
