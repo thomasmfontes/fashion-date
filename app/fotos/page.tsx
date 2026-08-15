@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 const runway =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuDPDqaZN7-ypaXf5tsMwJNxqONSp1rv22BBCBwFGeyW7OVBVB6hsMgYGGeMnGhGlMgNqF1U1W29Hl1VLUA5KoDLCEe45qW3IWZQ-hOEswPxbk7shZ63aGGfNZiIlYAHMF3uzzYbLPqswd5JG4ixPDHPH439fnJivOLydNC4J1B16SKRPQe3RTTA9S8tyPbxwPYQIwX07Pe3aEirIWUf1WZ3Arnfzr6oHQeEkLe5HMj2YzvXHU0cjOjx";
 
@@ -41,13 +39,13 @@ export default function PhotosPage() {
             Estamos preparando algo ainda mais grandioso. Não fique de fora do
             próximo evento de moda do ano.
           </p>
-          <Link
+          <a
             className="secondary-button"
             style={{ display: "block", padding: 18, textDecoration: "none", marginTop: 30 }}
             href="/"
           >
             QUERO PARTICIPAR DO PRÓXIMO FASHION DATE
-          </Link>
+          </a>
         </div>
       </section>
     </main>

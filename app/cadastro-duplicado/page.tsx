@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import LiveDrawAlert from "../live-draw-alert";
 import { useSavedParticipant } from "@/hooks/useSavedParticipant";
 
@@ -51,10 +50,10 @@ export default function DuplicatePage() {
           </div>
         </div>
         <div className="result-actions single">
-          <Link className="result-primary" href="/">
+          <a className="result-primary" href="/">
             <span className="material-symbols-outlined">arrow_back</span>
             Voltar ao início
-          </Link>
+          </a>
         </div>
         <LiveDrawAlert luckyNumber={String(participant?.luckyNumber ?? "")} />
         <footer className="result-note">

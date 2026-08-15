@@ -1,8 +1,6 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useEffect, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { formatName, formatPhone, cleanPhone } from "@/utils/formatters";
 import { APP_CONFIG } from "@/constants/config";
 import { useSavedParticipant } from "@/hooks/useSavedParticipant";
@@ -12,7 +10,6 @@ const HERO_IMAGE_URL =
   "https://lh3.googleusercontent.com/aida/AP1WRLvLCvLUF_CntcplggYaQdDKvcXYz_78xKIcIrBvYjIUpaYmRt2IKM2V87xiHLupjRJiCHOrzHuc0E9_4NB-fi947VXJyzWMRWty25uw-rPDhxrn5acE7JgBKTL08hIBCGrrtVm7ZLN5LSiaolflPHlEwdRWwdeyX1RQv7aLYbi-9tlR1dbcYZXgyWZPXb4xu18tiy_5k7zoB_JrOnm8EgUz4QPzU_sXExoRXUfGUO72MINkpqh3pQn09Q";
 
 export default function Home() {
-  const router = useRouter();
   const {
     savedParticipant,
     saveParticipant,
@@ -84,7 +81,7 @@ export default function Home() {
       }
 
       saveParticipant(result.participant);
-      router.push(
+      window.location.assign(
         result.duplicate ? APP_CONFIG.routes.duplicate : APP_CONFIG.routes.success,
       );
     } catch (err) {
@@ -100,13 +97,13 @@ export default function Home() {
   async function handleFastLookup(lookupPhone: string) {
     const found = await lookupByPhone(lookupPhone);
     if (found) {
-      router.push(APP_CONFIG.routes.success);
+      window.location.assign(APP_CONFIG.routes.success);
     }
   }
 
   return (
     <main className="signup-page">
-      <Link
+      <a
         className="signup-admin-pill"
         href="/admin"
         aria-label="Acessar painel da organização"
@@ -115,7 +112,7 @@ export default function Home() {
           admin_panel_settings
         </span>
         <span>Área da Organização</span>
-      </Link>
+      </a>
 
       {/* Left Column: Luxury Brand Visual */}
       <section
@@ -231,10 +228,10 @@ export default function Home() {
               <span>#{savedParticipant.luckyNumber}</span>
             </div>
             <div className="smart-session-actions">
-              <Link href="/sucesso" className="signup-submit-btn">
+              <a href="/sucesso" className="signup-submit-btn">
                 <span>Acessar Meu Comprovante &amp; Alerta</span>
                 <span className="material-symbols-outlined">arrow_forward</span>
-              </Link>
+              </a>
               {registrationsOpen && (
                 <button
                   type="button"

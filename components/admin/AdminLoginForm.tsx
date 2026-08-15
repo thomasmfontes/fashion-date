@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
 import { APP_CONFIG } from "@/constants/config";
 
 interface AdminLoginFormProps {
@@ -23,14 +22,14 @@ export function AdminLoginForm({ onLogin, error }: AdminLoginFormProps) {
   return (
     <main className="admin-login-portal">
       {/* Return to Public Page */}
-      <Link
+      <a
         href="/"
         className="admin-portal-back"
         aria-label="Voltar para a página inicial"
       >
         <span className="material-symbols-outlined">arrow_back</span>
         <span>Voltar ao Início</span>
-      </Link>
+      </a>
 
       <div className="admin-portal-box">
         {/* Header with Luxury Brand */}

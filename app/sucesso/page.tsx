@@ -1,7 +1,6 @@
 "use client";
 
 import { type CSSProperties, useEffect, useState } from "react";
-import Link from "next/link";
 import LiveDrawAlert from "../live-draw-alert";
 import { useSavedParticipant } from "@/hooks/useSavedParticipant";
 
@@ -97,10 +96,10 @@ export default function SuccessPage() {
           </button>
         </div>
         <div className="result-actions single">
-          <Link className="result-secondary" href="/">
+          <a className="result-secondary" href="/">
             <span className="material-symbols-outlined">add</span> Cadastrar
             outro participante
-          </Link>
+          </a>
         </div>
         <LiveDrawAlert luckyNumber={String(participant?.luckyNumber ?? "")} />
         <footer className="result-note">

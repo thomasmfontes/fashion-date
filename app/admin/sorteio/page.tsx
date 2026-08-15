@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState, type CSSProperties } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWakeLock } from "@/hooks/useWakeLock";
@@ -174,10 +173,10 @@ export default function DrawPage() {
               <span className="material-symbols-outlined">confirmation_number</span>
               Sortear novamente
             </button>
-            <Link className="admin-button" href="/admin">
+            <a className="admin-button" href="/admin">
               <span className="material-symbols-outlined">arrow_back</span>
               Ver vencedores
-            </Link>
+            </a>
           </div>
         </section>
       ) : (
@@ -221,10 +220,10 @@ export default function DrawPage() {
               <span className="material-symbols-outlined">confirmation_number</span>
               {isRunning ? "Sorteando..." : "Sortear agora"}
             </button>
-            <Link className="back-link" href="/admin">
+            <a className="back-link" href="/admin">
               <span className="material-symbols-outlined">arrow_back</span>
               Voltar ao painel
-            </Link>
+            </a>
           </div>
         </section>
       )}

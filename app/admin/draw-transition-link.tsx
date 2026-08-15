@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   MouseEvent,
   ReactNode,
@@ -23,7 +21,6 @@ export function DrawTransitionLink({
   children,
   className,
 }: DrawTransitionLinkProps) {
-  const router = useRouter();
   const [phase, setPhase] = useState<"idle" | "active" | "leaving">("idle");
   const isClient = useSyncExternalStore(
     emptySubscribe,
@@ -49,23 +46,23 @@ export function DrawTransitionLink({
     event.preventDefault();
     if (phase !== "idle") return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      router.push("/admin/sorteio");
+      window.location.assign("/admin/sorteio");
       return;
     }
     setPhase("active");
     timers.current.push(window.setTimeout(() => setPhase("leaving"), 1200));
     timers.current.push(
       window.setTimeout(() => {
-        router.push("/admin/sorteio");
+        window.location.assign("/admin/sorteio");
       }, 1600),
     );
   }
 
   return (
     <>
-      <Link href="/admin/sorteio" className={className} onClick={openDraw}>
+      <a href="/admin/sorteio" className={className} onClick={openDraw}>
         {children}
-      </Link>
+      </a>
       {isClient &&
         typeof document !== "undefined" &&
         createPortal(
