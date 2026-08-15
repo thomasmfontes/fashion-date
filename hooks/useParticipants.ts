@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { participantService } from "@/services/participantService";
+import { ApiError } from "@/services/apiClient";
 import { exportParticipantsToCSV } from "@/utils/csvExport";
 import type {
   Participant,
@@ -8,20 +9,26 @@ import type {
   ParticipantStats,
 } from "@/types/participant.types";
 
-export function useParticipants(adminKey: string) {
+export function useParticipants(
+  adminKey: string,
+  onUnauthorized?: () => void,
+) {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [registrationsOpen, setRegistrationsOpen] = useState(true);
   const [loading, setLoading] = useState(() => Boolean(adminKey));
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
+  const [error, setError] = useState("");
 
   const loadData = useCallback(async () => {
     if (!adminKey) {
+      setParticipants([]);
       setLoading(false);
       return;
     }
     setLoading(true);
+    setError("");
     try {
       const data = await participantService.getAll(adminKey);
       setParticipants(data.participants || []);
@@ -29,38 +36,57 @@ export function useParticipants(adminKey: string) {
       if (typeof regState === "boolean") {
         setRegistrationsOpen(regState);
       }
-    } catch {
-      // Error handled by caller
+    } catch (requestError) {
+      if (requestError instanceof ApiError && requestError.status === 401) {
+        setError("Sua sessão expirou. Entre novamente para acessar o painel.");
+        onUnauthorized?.();
+      } else {
+        setError("Não foi possível carregar os participantes. Tente novamente.");
+      }
     } finally {
       setLoading(false);
     }
-  }, [adminKey]);
+  }, [adminKey, onUnauthorized]);
 
   useEffect(() => {
     let isMounted = true;
-    if (!adminKey) return;
 
-    participantService
-      .getAll(adminKey)
-      .then((data) => {
+    Promise.resolve().then(async () => {
+      if (!isMounted) return;
+      if (!adminKey) {
+        setParticipants([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+      try {
+        const data = await participantService.getAll(adminKey);
         if (!isMounted) return;
         setParticipants(data.participants || []);
-        const regState = data.registrationsOpen ?? data.settings?.registrationsOpen;
+        const regState =
+          data.registrationsOpen ?? data.settings?.registrationsOpen;
         if (typeof regState === "boolean") {
           setRegistrationsOpen(regState);
         }
-      })
-      .catch(() => {
-        // error handling
-      })
-      .finally(() => {
+      } catch (requestError) {
+        if (!isMounted) return;
+        if (requestError instanceof ApiError && requestError.status === 401) {
+          setError("Sua sessão expirou. Entre novamente para acessar o painel.");
+          onUnauthorized?.();
+        } else {
+          setError("Não foi possível carregar os participantes. Tente novamente.");
+        }
+      } finally {
         if (isMounted) setLoading(false);
-      });
+      }
+    });
 
     return () => {
       isMounted = false;
     };
-  }, [adminKey]);
+  }, [adminKey, onUnauthorized]);
 
   // Derived statistics
   const stats: ParticipantStats = useMemo(() => {
@@ -155,6 +181,7 @@ export function useParticipants(adminKey: string) {
     registrationsOpen,
     setRegistrationsOpen,
     loading,
+    error,
     query,
     setQuery,
     statusFilter,

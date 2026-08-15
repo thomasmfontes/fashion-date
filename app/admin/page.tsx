@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useParticipants } from "@/hooks/useParticipants";
 import { useToast } from "@/hooks/useToast";
 import { participantService } from "@/services/participantService";
+import { ApiError } from "@/services/apiClient";
 import { drawService } from "@/services/drawService";
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { AdminHeader } from "@/components/layout/AdminHeader";
@@ -36,6 +37,7 @@ export function AdminDashboard({
     registrationsOpen,
     setRegistrationsOpen,
     loading,
+    error: participantsError,
     query,
     setQuery,
     statusFilter,
@@ -45,7 +47,21 @@ export function AdminDashboard({
     exportToCSV,
     updateLocalParticipant,
     removeLocalParticipant,
-  } = useParticipants(adminKey);
+  } = useParticipants(adminKey, logout);
+
+  async function handleLogin(key: string) {
+    setLoginError("");
+    try {
+      await participantService.getAll(key);
+      login(key);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        setLoginError("Senha incorreta. Confira e tente novamente.");
+      } else {
+        setLoginError("Não foi possível acessar o painel agora. Tente novamente.");
+      }
+    }
+  }
 
   // Modals state
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
@@ -124,10 +140,7 @@ export function AdminDashboard({
   if (!isAuthenticated) {
     return (
       <AdminLoginForm
-        onLogin={(key) => {
-          setLoginError("");
-          login(key);
-        }}
+        onLogin={handleLogin}
         error={loginError}
       />
     );
@@ -154,6 +167,12 @@ export function AdminDashboard({
           <div className="stitch-content-loading" aria-live="polite">
             <span />
             <p>Carregando informações...</p>
+          </div>
+        ) : participantsError ? (
+          <div className="stitch-empty" role="alert">
+            <span className="material-symbols-outlined">cloud_off</span>
+            <h2>Não foi possível carregar os participantes</h2>
+            <p>{participantsError}</p>
           </div>
         ) : view === "participants" ? (
           <>

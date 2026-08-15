@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { APP_CONFIG } from "@/constants/config";
 
 interface AdminLoginFormProps {
-  onLogin: (key: string) => void;
+  onLogin: (key: string) => void | Promise<void>;
   error?: string;
 }
 
@@ -11,12 +11,15 @@ export function AdminLoginForm({ onLogin, error }: AdminLoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!password.trim()) return;
     setIsSubmitting(true);
-    onLogin(password.trim());
-    setTimeout(() => setIsSubmitting(false), 600);
+    try {
+      await onLogin(password.trim());
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
