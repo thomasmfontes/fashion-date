@@ -16,7 +16,7 @@
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern coverage",
-    "db:migrate": "echo Execute supabase/migrations/202608220001_initial_schema.sql no SQL Editor do Supabase"
+    "db:migrate": "echo Execute os arquivos de supabase/migrations em ordem no SQL Editor do Supabase"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

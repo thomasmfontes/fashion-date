@@ -6,8 +6,8 @@ O site atual deve continuar publicado até a URL provisória da Vercel passar po
 
 1. Entre em `https://supabase.com/dashboard` com uma conta que ficará sob seu controle.
 2. Crie uma organização e um projeto para o Fashion Date.
-3. Abra **SQL Editor**, cole o conteúdo de `supabase/migrations/202608220001_initial_schema.sql` e execute.
-4. Abra **Table Editor** para confirmar as tabelas `participants`, `settings`, `draws` e `request_rate_limits`.
+3. Abra **SQL Editor** e execute, em ordem, os arquivos da pasta `supabase/migrations`.
+4. Abra **Table Editor** para confirmar as tabelas `t_participants`, `t_settings`, `t_draws` e `t_request_rate_limits`.
 
 ## 2. Obter a conexão do banco
 

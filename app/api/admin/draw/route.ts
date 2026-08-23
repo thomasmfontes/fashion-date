@@ -1,4 +1,9 @@
-import { adminAllowed, initialize, row } from "../../_lib/db";
+import {
+  adminAllowed,
+  initialize,
+  participantFields,
+  row,
+} from "../../_lib/db";
 
 export async function POST(request: Request) {
   if (!adminAllowed(request)) {
@@ -10,14 +15,21 @@ export async function POST(request: Request) {
   const selected = await db.transaction(async (transaction) => {
     const winner = await transaction
       .prepare(
-        "UPDATE participants SET status='winner' WHERE id=(SELECT id FROM participants WHERE status='active' ORDER BY RANDOM() LIMIT 1 FOR UPDATE SKIP LOCKED) AND status='active' RETURNING *",
+        `UPDATE t_participants
+         SET st_participante='winner'
+         WHERE id_participante=(
+           SELECT id_participante FROM t_participants
+           WHERE st_participante='active'
+           ORDER BY RANDOM() LIMIT 1 FOR UPDATE SKIP LOCKED
+         ) AND st_participante='active'
+         RETURNING ${participantFields}`,
       )
       .first<Record<string, unknown>>();
 
     if (winner) {
       await transaction
         .prepare(
-          "INSERT INTO draws(id,participant_id,lucky_number) VALUES(?,?,?)",
+          "INSERT INTO t_draws(id_sorteio,id_participante,nr_sorte) VALUES(?,?,?)",
         )
         .bind(drawId, winner.id, String(winner.lucky_number))
         .run();
@@ -71,7 +83,9 @@ export async function PATCH(request: Request) {
 
   const db = await initialize();
   const draw = await db
-    .prepare("SELECT id, lucky_number FROM draws WHERE id=?")
+    .prepare(
+      "SELECT id_sorteio AS id, nr_sorte AS lucky_number FROM t_draws WHERE id_sorteio=?",
+    )
     .bind(drawId)
     .first<{ id: string; lucky_number: string }>();
 
@@ -82,12 +96,12 @@ export async function PATCH(request: Request) {
   await db.batch([
     db
       .prepare(
-        "INSERT INTO settings(key,value) VALUES('latest_draw_id',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        "INSERT INTO t_settings(cd_configuracao,vl_configuracao) VALUES('latest_draw_id',?) ON CONFLICT(cd_configuracao) DO UPDATE SET vl_configuracao=excluded.vl_configuracao",
       )
       .bind(draw.id),
     db
       .prepare(
-        "INSERT INTO settings(key,value) VALUES('latest_winner_number',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        "INSERT INTO t_settings(cd_configuracao,vl_configuracao) VALUES('latest_winner_number',?) ON CONFLICT(cd_configuracao) DO UPDATE SET vl_configuracao=excluded.vl_configuracao",
       )
       .bind(draw.lucky_number),
   ]);

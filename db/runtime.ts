@@ -131,25 +131,25 @@ export async function consumeRateLimit(
   const rows = await sql<
     { request_count: number; retry_after: number }[]
   >`
-    INSERT INTO request_rate_limits (key, window_started_at, request_count)
+    INSERT INTO t_request_rate_limits (cd_chave, dt_inicio_janela, qt_requisicoes)
     VALUES (${key}, NOW(), 1)
-    ON CONFLICT (key) DO UPDATE SET
-      window_started_at = CASE
-        WHEN request_rate_limits.window_started_at <= NOW() - (${windowSeconds} * INTERVAL '1 second')
+    ON CONFLICT (cd_chave) DO UPDATE SET
+      dt_inicio_janela = CASE
+        WHEN t_request_rate_limits.dt_inicio_janela <= NOW() - (${windowSeconds} * INTERVAL '1 second')
           THEN NOW()
-        ELSE request_rate_limits.window_started_at
+        ELSE t_request_rate_limits.dt_inicio_janela
       END,
-      request_count = CASE
-        WHEN request_rate_limits.window_started_at <= NOW() - (${windowSeconds} * INTERVAL '1 second')
+      qt_requisicoes = CASE
+        WHEN t_request_rate_limits.dt_inicio_janela <= NOW() - (${windowSeconds} * INTERVAL '1 second')
           THEN 1
-        ELSE request_rate_limits.request_count + 1
+        ELSE t_request_rate_limits.qt_requisicoes + 1
       END
     RETURNING
-      request_count,
+      qt_requisicoes AS request_count,
       GREATEST(
         1,
         CEIL(EXTRACT(EPOCH FROM (
-          window_started_at + (${windowSeconds} * INTERVAL '1 second') - NOW()
+          dt_inicio_janela + (${windowSeconds} * INTERVAL '1 second') - NOW()
         )))::integer
       ) AS retry_after
   `;

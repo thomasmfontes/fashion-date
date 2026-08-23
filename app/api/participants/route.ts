@@ -1,5 +1,5 @@
 import { consumeRateLimit } from "@/db/runtime";
-import { initialize, row } from "../_lib/db";
+import { initialize, participantFields, row } from "../_lib/db";
 
 /**
  * Irreversible stable hash for rate-limiter target keys to avoid plain PII in edge counters.
@@ -74,7 +74,7 @@ export async function GET(request: Request) {
     const db = await initialize();
     const existing = await db
       .prepare(
-        "SELECT id, lucky_number, name, store FROM participants WHERE phone=?",
+        "SELECT id_participante AS id, nr_sorte AS lucky_number, nm_participante AS name, nm_loja AS store FROM t_participants WHERE nr_whatsapp=?",
       )
       .bind(phone)
       .first<Record<string, unknown>>();
@@ -148,7 +148,9 @@ export async function POST(request: Request) {
 
     const db = await initialize();
     const state = await db
-      .prepare("SELECT value FROM settings WHERE key='registrations_open'")
+      .prepare(
+        "SELECT vl_configuracao AS value FROM t_settings WHERE cd_configuracao='registrations_open'",
+      )
       .first<{ value: string }>();
 
     if (state?.value === "false") {
@@ -159,7 +161,9 @@ export async function POST(request: Request) {
     }
 
     const existing = await db
-      .prepare("SELECT * FROM participants WHERE phone=?")
+      .prepare(
+        `SELECT ${participantFields} FROM t_participants WHERE nr_whatsapp=?`,
+      )
       .bind(phone)
       .first<Record<string, unknown>>();
 
@@ -176,7 +180,9 @@ export async function POST(request: Request) {
         (crypto.getRandomValues(new Uint32Array(1))[0] % 9999) + 1,
       ).padStart(4, "0");
       const used = await db
-        .prepare("SELECT id FROM participants WHERE lucky_number=?")
+        .prepare(
+          "SELECT id_participante AS id FROM t_participants WHERE nr_sorte=?",
+        )
         .bind(candidate)
         .first();
       if (!used) {
@@ -197,7 +203,8 @@ export async function POST(request: Request) {
 
     const inserted = await db
       .prepare(
-        "INSERT INTO participants(lucky_number,name,store,phone,instagram) VALUES(?,?,?,?,?) RETURNING *",
+        `INSERT INTO t_participants(nr_sorte,nm_participante,nm_loja,nr_whatsapp,nm_instagram)
+         VALUES(?,?,?,?,?) RETURNING ${participantFields}`,
       )
       .bind(lucky, name, store, phone, instagram)
       .first<Record<string, unknown>>();

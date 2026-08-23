@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   const db = await initialize();
   await db
     .prepare(
-      "INSERT INTO settings(key,value) VALUES('registrations_open',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      "INSERT INTO t_settings(cd_configuracao,vl_configuracao) VALUES('registrations_open',?) ON CONFLICT(cd_configuracao) DO UPDATE SET vl_configuracao=excluded.vl_configuracao",
     )
     .bind(String(registrationsOpen))
     .run();

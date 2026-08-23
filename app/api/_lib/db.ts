@@ -12,6 +12,17 @@ export type Participant = {
   wonAt: string | null;
 };
 
+export const participantFields = `
+  id_participante AS id,
+  nr_sorte AS lucky_number,
+  nm_participante AS name,
+  nm_loja AS store,
+  nr_whatsapp AS phone,
+  nm_instagram AS instagram,
+  st_participante AS status,
+  dt_cadastro AS created_at
+`;
+
 export function database() {
   return getDatabase();
 }

@@ -4,7 +4,7 @@ export async function GET(request?: Request) {
   const db = await initialize();
   const result = await db
     .prepare(
-      "SELECT key, value FROM settings WHERE key IN ('latest_draw_id','latest_winner_number','registrations_open')",
+      "SELECT cd_configuracao AS key, vl_configuracao AS value FROM t_settings WHERE cd_configuracao IN ('latest_draw_id','latest_winner_number','registrations_open')",
     )
     .all<{ key: string; value: string }>();
   const settings = Object.fromEntries(

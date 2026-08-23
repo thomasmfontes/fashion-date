@@ -103,7 +103,30 @@ export function resetInMemStore() {
 
 export function createMockD1Database(): MockD1Database {
   function executeSql(sql: string, bindings: unknown[] = []) {
-    const trimmed = sql.trim().replace(/\s+/g, " ");
+    const trimmed = sql
+      .trim()
+      .replace(/\s+/g, " ")
+      .replace(/INSERT INTO t_draws\(id_sorteio,id_participante/gi, "INSERT INTO draws(id,participant_id")
+      .replace(/FROM t_draws WHERE id_participante/gi, "FROM draws WHERE participant_id")
+      .replace(/DELETE FROM t_draws WHERE id_participante/gi, "DELETE FROM draws WHERE participant_id")
+      .replace(/\bd\.id_participante\b/gi, "d.participant_id")
+      .replace(/\bt_request_rate_limits\b/gi, "request_rate_limits")
+      .replace(/\bt_participants\b/gi, "participants")
+      .replace(/\bt_settings\b/gi, "settings")
+      .replace(/\bt_draws\b/gi, "draws")
+      .replace(/\bid_sorteio\b/gi, "id")
+      .replace(/\bid_participante\b/gi, "id")
+      .replace(/\bnr_sorte\b/gi, "lucky_number")
+      .replace(/\bnm_participante\b/gi, "name")
+      .replace(/\bnm_loja\b/gi, "store")
+      .replace(/\bnr_whatsapp\b/gi, "phone")
+      .replace(/\bnm_instagram\b/gi, "instagram")
+      .replace(/\bst_participante\b/gi, "status")
+      .replace(/\bdt_cadastro\b/gi, "created_at")
+      .replace(/\bdt_sorteio\b/gi, "drawn_at")
+      .replace(/\bcd_configuracao\b/gi, "key")
+      .replace(/\bvl_configuracao\b/gi, "value")
+      .replace(/\b([a-z_]+)\s+AS\s+\1\b/gi, "$1");
 
     // CREATE TABLE
     const createTableMatch = trimmed.match(/CREATE TABLE (?:IF NOT EXISTS )?`?([a-zA-Z0-9_]+)`?/i);
@@ -210,7 +233,11 @@ export function createMockD1Database(): MockD1Database {
     }
 
     // UPDATE participants SET status='winner' WHERE id=(SELECT id FROM participants WHERE status='active' ORDER BY RANDOM() LIMIT 1)
-    if (trimmed.includes("UPDATE participants SET status='winner' WHERE id=(SELECT id FROM participants WHERE status='active' ORDER BY RANDOM() LIMIT 1") || trimmed.includes("UPDATE participants SET status = 'winner' WHERE id = (SELECT id FROM participants WHERE status = 'active' ORDER BY RANDOM() LIMIT 1")) {
+    if (
+      trimmed.startsWith("UPDATE participants SET status='winner'") &&
+      trimmed.includes("FROM participants") &&
+      trimmed.includes("WHERE status='active'")
+    ) {
       const active = inMemStore.participants.filter((p) => p.status === "active");
       if (active.length === 0) return { results: [], success: true };
       const randomIndex = Math.floor(Math.random() * active.length);
@@ -229,7 +256,7 @@ export function createMockD1Database(): MockD1Database {
     }
 
     // SELECT p.*, ... FROM participants p ORDER BY p.id DESC
-    if (trimmed.startsWith("SELECT p.*") || trimmed.startsWith("SELECT * FROM participants ORDER BY id DESC") || trimmed.startsWith("SELECT * FROM participants ORDER BY p.id DESC")) {
+    if (trimmed.startsWith("SELECT p.*") || trimmed.startsWith("SELECT * FROM participants ORDER BY id DESC") || trimmed.startsWith("SELECT * FROM participants ORDER BY p.id DESC") || trimmed.includes("FROM participants p ORDER BY p.id DESC")) {
       const sorted = [...inMemStore.participants].sort((a, b) => b.id - a.id);
       return { results: sorted, success: true };
     }
