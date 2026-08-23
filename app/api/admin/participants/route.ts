@@ -9,40 +9,66 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (!adminAllowed(request)) return Response.json({error:"Não autorizado"}, {status:401});
-  const body = await request.json() as Record<string, unknown>;
-  const id = Number(body.id);
-  const name = String(body.name || "").trim();
-  const store = String(body.store || "").trim();
-  const phone = String(body.phone || "").replace(/\D/g, "");
-  const instagram = String(body.instagram || "").trim().replace(/^@?/, "@");
-  if (!Number.isInteger(id) || !name || !store || phone.length < 10 || instagram === "@") {
-    return Response.json({error:"Preencha todos os campos corretamente."}, {status:400});
+  if (!adminAllowed(request)) return Response.json({ error: "Não autorizado" }, { status: 401 });
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Formato de requisição inválido. JSON esperado." }, { status: 400 });
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return Response.json({ error: "Payload inválido." }, { status: 400 });
+  }
+
+  const payload = body as Record<string, unknown>;
+  const id = Number(payload.id);
+  const name = typeof payload.name === "string" ? payload.name.trim() : "";
+  const store = typeof payload.store === "string" ? payload.store.trim() : "";
+  const phone = typeof payload.phone === "string" ? payload.phone.replace(/\D/g, "") : "";
+  const instagram = typeof payload.instagram === "string" ? payload.instagram.trim().replace(/^@?/, "@") : "";
+
+  if (!Number.isInteger(id) || id <= 0 || !name || !store || phone.length < 10 || instagram.length < 2) {
+    return Response.json({ error: "Preencha todos os campos corretamente." }, { status: 400 });
   }
 
   try {
     const db = await initialize();
     const updated = await db.prepare("UPDATE participants SET name=?, store=?, phone=?, instagram=? WHERE id=? RETURNING *")
       .bind(name, store, phone, instagram, id).first<Record<string, unknown>>();
-    if (!updated) return Response.json({error:"Participante não encontrado."}, {status:404});
-    const draw = await db.prepare("SELECT MAX(drawn_at) AS won_at FROM draws WHERE participant_id=?").bind(id).first<{won_at:string | null}>();
-    return Response.json({participant:row({...updated, won_at:draw?.won_at || null})});
+    if (!updated) return Response.json({ error: "Participante não encontrado." }, { status: 404 });
+    const draw = await db.prepare("SELECT MAX(drawn_at) AS won_at FROM draws WHERE participant_id=?").bind(id).first<{ won_at: string | null }>();
+    return Response.json({ participant: row({ ...updated, won_at: draw?.won_at || null }) });
   } catch {
-    return Response.json({error:"Este WhatsApp já está vinculado a outro cadastro."}, {status:409});
+    return Response.json({ error: "Este WhatsApp já está vinculado a outro cadastro." }, { status: 409 });
   }
 }
 
 export async function DELETE(request: Request) {
-  if (!adminAllowed(request)) return Response.json({error:"Não autorizado"}, {status:401});
-  const body = await request.json() as {id?: number};
-  const id = Number(body.id);
-  if (!Number.isInteger(id)) return Response.json({error:"Cadastro inválido."}, {status:400});
+  if (!adminAllowed(request)) return Response.json({ error: "Não autorizado" }, { status: 401 });
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Formato de requisição inválido. JSON esperado." }, { status: 400 });
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return Response.json({ error: "Payload inválido." }, { status: 400 });
+  }
+
+  const payload = body as Record<string, unknown>;
+  const id = Number(payload.id);
+  if (!Number.isInteger(id) || id <= 0) return Response.json({ error: "Cadastro inválido." }, { status: 400 });
+
   const db = await initialize();
   const existing = await db.prepare("SELECT id FROM participants WHERE id=?").bind(id).first();
-  if (!existing) return Response.json({error:"Participante não encontrado."}, {status:404});
+  if (!existing) return Response.json({ error: "Participante não encontrado." }, { status: 404 });
   await db.batch([
     db.prepare("DELETE FROM draws WHERE participant_id=?").bind(id),
     db.prepare("DELETE FROM participants WHERE id=?").bind(id),
   ]);
-  return Response.json({ok:true});
+  return Response.json({ ok: true });
 }

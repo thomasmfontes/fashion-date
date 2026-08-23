@@ -83,9 +83,9 @@ const jsonLd = {
     {
       "@type": "Event",
       "@id": "https://fashiondate.com.br/#event",
-      "name": "Fashion Date Crente Chic 2026",
+      "name": "Fashion Date Crente Chic 2026 - 7ª Edição",
       "description":
-        "Encontro exclusivo para lojistas que movimentam a moda com identidade, com sorteio Provador Fashion.",
+        "Maior evento de moda evangélica da América Latina, com sorteio exclusivo Provador Fashion por Renata Castanheira.",
       "startDate": "2026-09-01T18:00:00-03:00",
       "eventStatus": "https://schema.org/EventScheduled",
       "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
@@ -122,6 +122,11 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link rel="preconnect" href="https://lh3.googleusercontent.com" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;0,900;1,500;1,600;1,700;1,800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0&display=swap"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

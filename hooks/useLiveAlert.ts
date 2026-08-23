@@ -35,20 +35,42 @@ export function useLiveAlert(userLuckyNumber?: string) {
     [],
   );
 
+  const etagRef = useRef<string | null>(null);
+  const consecutiveErrorsRef = useRef(0);
+  const pollingTimeoutRef = useRef<number | null>(null);
+
   const checkDraw = useCallback(
     async (baseline = false) => {
       if (!userLuckyNumber) return;
       try {
-        const response = await fetch(
-          `${APP_CONFIG.api.liveDraw}?t=${Date.now()}`,
-          { cache: "no-store" },
-        );
+        const headers: Record<string, string> = {};
+        if (etagRef.current && !baseline) {
+          headers["If-None-Match"] = etagRef.current;
+        }
+
+        const response = await fetch(APP_CONFIG.api.liveDraw, {
+          headers,
+          cache: "no-cache",
+        });
+
+        const newEtag = response.headers.get("ETag");
+        if (newEtag) {
+          etagRef.current = newEtag;
+        }
+
+        setIsConnected(true);
+        consecutiveErrorsRef.current = 0;
+
+        // 304 Not Modified: State unchanged
+        if (response.status === 304) {
+          return;
+        }
+
         if (!response.ok) throw new Error();
         const data = (await response.json()) as {
           drawId: string | null;
           winnerNumber: string | null;
         };
-        setIsConnected(true);
 
         if (baseline) {
           lastDrawRef.current = data.drawId;
@@ -71,6 +93,7 @@ export function useLiveAlert(userLuckyNumber?: string) {
           }
         }
       } catch {
+        consecutiveErrorsRef.current += 1;
         setIsConnected(false);
       }
     },
@@ -92,18 +115,46 @@ export function useLiveAlert(userLuckyNumber?: string) {
     setAlarmActive(false);
   }, []);
 
+  // Adaptive polling loop with visibility pause and backoff
   useEffect(() => {
     if (!isEnabled) return;
-    const interval = window.setInterval(() => checkDraw(), 1000);
-    const visibility = () => {
-      if (document.visibilityState === "visible") {
+    let isCancelled = false;
+
+    const scheduleNextPoll = () => {
+      if (isCancelled) return;
+
+      // Base interval: 2.2s + jitter (ensures fast live stage alert propagation while preserving D1 quotas)
+      const baseDelay = 2200 + Math.floor(Math.random() * 400);
+      const backoffMultiplier = Math.min(Math.pow(1.5, consecutiveErrorsRef.current), 3.5);
+      const delay = Math.round(baseDelay * backoffMultiplier);
+
+      pollingTimeoutRef.current = window.setTimeout(async () => {
+        if (!isCancelled) {
+          if (typeof document === "undefined" || document.visibilityState !== "hidden") {
+            await checkDraw();
+          }
+          scheduleNextPoll();
+        }
+      }, delay);
+    };
+
+    scheduleNextPoll();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !isCancelled) {
         checkDraw();
       }
     };
-    document.addEventListener("visibilitychange", visibility);
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
-      window.clearInterval(interval);
-      document.removeEventListener("visibilitychange", visibility);
+      isCancelled = true;
+      if (pollingTimeoutRef.current) {
+        window.clearTimeout(pollingTimeoutRef.current);
+        pollingTimeoutRef.current = null;
+      }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [checkDraw, isEnabled]);
 

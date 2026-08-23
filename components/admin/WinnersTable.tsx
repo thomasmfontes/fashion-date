@@ -10,7 +10,7 @@ import {
   cleanInstagramHandle,
 } from "@/utils/formatters";
 import { exportWinnersToCSV } from "@/utils/csvExport";
-import { DrawTransitionLink } from "@/app/admin/draw-transition-link";
+import { DrawTransitionLink } from "@/components/admin/DrawTransitionLink";
 
 interface WinnersTableProps {
   winners: Participant[];
@@ -51,7 +51,7 @@ export function WinnersTable({
         (item) =>
           item.name.toLowerCase().includes(q) ||
           item.store.toLowerCase().includes(q) ||
-          String(item.luckyNumber).includes(q) ||
+          item.luckyNumber.includes(q) ||
           item.phone.includes(q) ||
           item.instagram.toLowerCase().includes(q),
       );
@@ -69,9 +69,9 @@ export function WinnersTable({
         case "name-desc":
           return b.name.localeCompare(a.name, "pt-BR");
         case "number-asc":
-          return a.luckyNumber - b.luckyNumber;
+          return a.luckyNumber.localeCompare(b.luckyNumber);
         case "number-desc":
-          return b.luckyNumber - a.luckyNumber;
+          return b.luckyNumber.localeCompare(a.luckyNumber);
         case "recent":
         default:
           return dateB - dateA;

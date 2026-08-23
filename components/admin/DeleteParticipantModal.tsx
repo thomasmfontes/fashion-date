@@ -1,5 +1,8 @@
+"use client";
+
 import { useState } from "react";
 import type { Participant } from "@/types/participant.types";
+import { Modal } from "@/components/ui/Modal";
 
 interface DeleteParticipantModalProps {
   participant: Participant | null;
@@ -32,73 +35,52 @@ export function DeleteParticipantModal({
   }
 
   return (
-    <div
-      className="edit-modal-backdrop"
-      role="presentation"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget && !isDeleting) onClose();
-      }}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Excluir Cadastro?"
+      badge={
+        <span className="edit-ticket-badge delete">
+          Número da Sorte: <strong>#{participant.luckyNumber}</strong>
+        </span>
+      }
+      className="delete-modal"
+      isBusy={isDeleting}
     >
-      <section
-        className="edit-modal delete-modal"
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="delete-title"
-        aria-describedby="delete-description"
-      >
-        <header className="edit-modal-header">
-          <div>
-            <span className="edit-ticket-badge delete">
-              Número da Sorte: <strong>#{participant.luckyNumber}</strong>
-            </span>
-            <h2 id="delete-title">Excluir Cadastro?</h2>
-          </div>
-          <button
-            type="button"
-            className="edit-modal-close"
-            onClick={onClose}
-            aria-label="Fechar confirmação"
-            disabled={isDeleting}
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
-        </header>
+      <p id="delete-description" className="delete-modal-text">
+        Tem certeza que deseja remover <strong>{participant.name}</strong> (
+        <em>{participant.store}</em>) da lista? Esta ação não pode ser
+        desfeita.
+      </p>
 
-        <p id="delete-description" className="delete-modal-text">
-          Tem certeza que deseja remover <strong>{participant.name}</strong> (
-          <em>{participant.store}</em>) da lista? Esta ação não pode ser
-          desfeita.
-        </p>
-
-        <footer className="edit-modal-footer">
-          <button
-            type="button"
-            className="stitch-button outline"
-            onClick={onClose}
-            disabled={isDeleting}
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            className="stitch-button danger-filled"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            {isDeleting ? (
-              <>
-                <span className="button-spinner" />
-                Excluindo...
-              </>
-            ) : (
-              <>
-                <span className="material-symbols-outlined">delete</span>
-                Confirmar Exclusão
-              </>
-            )}
-          </button>
-        </footer>
-      </section>
-    </div>
+      <footer className="edit-modal-footer">
+        <button
+          type="button"
+          className="stitch-button outline"
+          onClick={onClose}
+          disabled={isDeleting}
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          className="stitch-button danger-filled"
+          onClick={handleDelete}
+          disabled={isDeleting}
+        >
+          {isDeleting ? (
+            <>
+              <span className="button-spinner" />
+              Excluindo...
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined">delete</span>
+              Confirmar Exclusão
+            </>
+          )}
+        </button>
+      </footer>
+    </Modal>
   );
 }

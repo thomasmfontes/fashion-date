@@ -6,11 +6,25 @@ export async function POST(request: Request) {
   }
 
   const db = await initialize();
-  const selected = await db
-    .prepare(
-      "UPDATE participants SET status='winner' WHERE id=(SELECT id FROM participants WHERE status='active' ORDER BY RANDOM() LIMIT 1) AND status='active' RETURNING *",
-    )
-    .first<Record<string, unknown>>();
+  const drawId = crypto.randomUUID();
+  const selected = await db.transaction(async (transaction) => {
+    const winner = await transaction
+      .prepare(
+        "UPDATE participants SET status='winner' WHERE id=(SELECT id FROM participants WHERE status='active' ORDER BY RANDOM() LIMIT 1 FOR UPDATE SKIP LOCKED) AND status='active' RETURNING *",
+      )
+      .first<Record<string, unknown>>();
+
+    if (winner) {
+      await transaction
+        .prepare(
+          "INSERT INTO draws(id,participant_id,lucky_number) VALUES(?,?,?)",
+        )
+        .bind(drawId, winner.id, String(winner.lucky_number))
+        .run();
+    }
+
+    return winner;
+  });
 
   if (!selected) {
     return Response.json(
@@ -18,12 +32,6 @@ export async function POST(request: Request) {
       { status: 409 },
     );
   }
-
-  const drawId = crypto.randomUUID();
-  await db
-    .prepare("INSERT INTO draws(id,participant_id,lucky_number) VALUES(?,?,?)")
-    .bind(drawId, selected.id, String(selected.lucky_number))
-    .run();
 
   return Response.json({
     ok: true,
@@ -41,8 +49,22 @@ export async function PATCH(request: Request) {
     return Response.json({ error: "Não autorizado" }, { status: 401 });
   }
 
-  const body = (await request.json()) as { drawId?: string };
-  const drawId = String(body.drawId || "").trim();
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json(
+      { error: "Formato de requisição inválido. JSON esperado." },
+      { status: 400 },
+    );
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return Response.json({ error: "Payload inválido." }, { status: 400 });
+  }
+
+  const payload = body as Record<string, unknown>;
+  const drawId = typeof payload.drawId === "string" ? payload.drawId.trim() : "";
   if (!drawId) {
     return Response.json({ error: "Sorteio inválido." }, { status: 400 });
   }

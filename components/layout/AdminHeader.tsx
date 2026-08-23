@@ -1,4 +1,4 @@
-import { DrawTransitionLink } from "@/app/admin/draw-transition-link";
+import { DrawTransitionLink } from "@/components/admin/DrawTransitionLink";
 
 interface AdminHeaderProps {
   registrationsOpen: boolean;

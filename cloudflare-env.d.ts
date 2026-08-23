@@ -1,7 +1,14 @@
+interface RateLimiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
 declare module "cloudflare:workers" {
   export const env: {
     DB?: D1Database;
     ADMIN_PASSWORD?: string;
+    LOOKUP_IP_LIMITER?: RateLimiter;
+    LOOKUP_TARGET_LIMITER?: RateLimiter;
+    RATE_LIMITER?: RateLimiter;
   };
 }
 

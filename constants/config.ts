@@ -2,7 +2,6 @@ export const APP_CONFIG = {
   name: "Fashion Date",
   edition: "2026",
   organizer: "Renata Castanheira - Crente Chic",
-  defaultAdminPassword: "fashiondate2026",
   prizeDescription: "Provador Fashion com Renata Castanheira",
   routes: {
     home: "/",

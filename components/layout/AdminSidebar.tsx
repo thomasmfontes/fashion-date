@@ -1,6 +1,6 @@
 import type { MouseEvent } from "react";
 import type { AdminView } from "@/types/admin.types";
-import { DrawTransitionLink } from "@/app/admin/draw-transition-link";
+import { DrawTransitionLink } from "@/components/admin/DrawTransitionLink";
 
 interface AdminSidebarProps {
   view: AdminView;
@@ -44,8 +44,17 @@ export function AdminSidebar({
         <DrawTransitionLink className="stitch-nav-item">
           <span className="material-symbols-outlined">confirmation_number</span>
           <span className="stitch-nav-label">Telão Sorteio</span>
-          <span className="stitch-nav-pill">Ao vivo</span>
+          <span className="stitch-nav-pill">Provador</span>
         </DrawTransitionLink>
+
+        <a
+          className="stitch-nav-item"
+          href="/admin/sorteio-numerico"
+        >
+          <span className="material-symbols-outlined">casino</span>
+          <span className="stitch-nav-label">Sorteio Numérico</span>
+          <span className="stitch-nav-pill gold">000-500</span>
+        </a>
 
         <a
           className={`stitch-nav-item${view === "winners" ? " active" : ""}`}

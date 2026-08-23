@@ -1,13 +1,21 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { formatName, formatPhone, cleanPhone } from "@/utils/formatters";
 import { APP_CONFIG } from "@/constants/config";
 import { useSavedParticipant } from "@/hooks/useSavedParticipant";
 import { FastLookupModal } from "@/components/public/FastLookupModal";
+import { LojistaGateModal } from "@/components/public/LojistaGateModal";
 
-const HERO_IMAGE_URL =
-  "https://lh3.googleusercontent.com/aida/AP1WRLvLCvLUF_CntcplggYaQdDKvcXYz_78xKIcIrBvYjIUpaYmRt2IKM2V87xiHLupjRJiCHOrzHuc0E9_4NB-fi947VXJyzWMRWty25uw-rPDhxrn5acE7JgBKTL08hIBCGrrtVm7ZLN5LSiaolflPHlEwdRWwdeyX1RQv7aLYbi-9tlR1dbcYZXgyWZPXb4xu18tiy_5k7zoB_JrOnm8EgUz4QPzU_sXExoRXUfGUO72MINkpqh3pQn09Q";
+const HERO_IMAGE_URL = "/renata-hero.jpg";
+
+interface FieldErrors {
+  name?: string;
+  store?: string;
+  phone?: string;
+  instagram?: string;
+  consent?: string;
+}
 
 export default function Home() {
   const {
@@ -19,10 +27,23 @@ export default function Home() {
   const [registrationsOpen, setRegistrationsOpen] = useState(true);
   const [showNewForm, setShowNewForm] = useState(false);
   const [isLookupOpen, setIsLookupOpen] = useState(false);
+
+  // Controlled form state to preserve input across validation attempts
   const [name, setName] = useState("");
+  const [store, setStore] = useState("");
   const [phone, setPhone] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [consent, setConsent] = useState(false);
+
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [globalError, setGlobalError] = useState("");
+
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const storeInputRef = useRef<HTMLInputElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+  const instagramInputRef = useRef<HTMLInputElement>(null);
+  const consentInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -41,32 +62,80 @@ export default function Home() {
     };
   }, []);
 
+  function validateForm(): { isValid: boolean; errors: FieldErrors } {
+    const errors: FieldErrors = {};
+    const trimmedName = name.trim();
+    const trimmedStore = store.trim();
+    const cleanedPhone = cleanPhone(phone);
+    const cleanedInstagram = instagram.trim().replace(/^@?/, "");
+
+    if (!trimmedName || trimmedName.length < 3) {
+      errors.name = "Informe seu nome completo (mínimo 3 caracteres).";
+    }
+
+    if (!trimmedStore || trimmedStore.length < 2) {
+      errors.store = "Informe o nome da sua loja ou marca.";
+    }
+
+    if (!cleanedPhone || cleanedPhone.length < 10) {
+      errors.phone = "Informe um WhatsApp válido com DDD (ex: 11 98765-4321).";
+    }
+
+    if (!cleanedInstagram || cleanedInstagram.length < 2) {
+      errors.instagram = "Informe o usuário do Instagram da loja.";
+    }
+
+    if (!consent) {
+      errors.consent = "É necessário aceitar os termos para participar do sorteio.";
+    }
+
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors,
+    };
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setGlobalError("");
+
     if (!registrationsOpen) {
-      setError("As inscrições para este sorteio estão temporariamente encerradas.");
+      setGlobalError("As inscrições para este sorteio estão temporariamente encerradas.");
       return;
     }
 
+    const { isValid, errors } = validateForm();
+    if (!isValid) {
+      setFieldErrors(errors);
+      // Focus first invalid field
+      if (errors.name) nameInputRef.current?.focus();
+      else if (errors.store) storeInputRef.current?.focus();
+      else if (errors.phone) phoneInputRef.current?.focus();
+      else if (errors.instagram) instagramInputRef.current?.focus();
+      else if (errors.consent) consentInputRef.current?.focus();
+      return;
+    }
+
+    setFieldErrors({});
     setLoading(true);
-    setError("");
-    const data = new FormData(event.currentTarget);
+
     try {
       const response = await fetch(APP_CONFIG.api.participants, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          name: name.trim() || data.get("name"),
-          store: data.get("store"),
+          name: name.trim(),
+          store: store.trim(),
           phone: cleanPhone(phone),
-          instagram: data.get("instagram"),
-          consent: data.get("consent") === "on",
+          instagram: `@${instagram.trim().replace(/^@?/, "")}`,
+          consent: true,
         }),
       });
+
       const result = (await response.json()) as {
         participant?: {
           id: number;
-          luckyNumber: number;
+          luckyNumber: string;
           name: string;
           store: string;
           phone: string;
@@ -76,6 +145,7 @@ export default function Home() {
         duplicate?: boolean;
         error?: string;
       };
+
       if (!response.ok || !result.participant) {
         throw new Error(result.error || "Não foi possível concluir o cadastro.");
       }
@@ -85,7 +155,7 @@ export default function Home() {
         result.duplicate ? APP_CONFIG.routes.duplicate : APP_CONFIG.routes.success,
       );
     } catch (err) {
-      setError(
+      setGlobalError(
         err instanceof Error
           ? err.message
           : "Falha de conexão. Tente novamente.",
@@ -111,7 +181,7 @@ export default function Home() {
         <span className="material-symbols-outlined" aria-hidden="true">
           admin_panel_settings
         </span>
-        <span>Área da Organização</span>
+        <span className="signup-admin-text">Área da Organização</span>
       </a>
 
       {/* Left Column: Luxury Brand Visual */}
@@ -122,7 +192,7 @@ export default function Home() {
         <img
           className="signup-visual-bg"
           src={HERO_IMAGE_URL}
-          alt="Desfile de moda e atmosfera elegante no Fashion Date Crente Chic"
+          alt="Renata Castanheira no Fashion Date Crente Chic"
           fetchPriority="high"
           decoding="async"
           width={760}
@@ -143,22 +213,18 @@ export default function Home() {
             <i /> Fashion Date · 2026
           </span>
           <h1>
-            Moda, propósito
-            <br />e <em>experiência.</em>
+            Fashion Date
+            <span className="signup-visual-author">
+              por <em>Renata Castanheira</em>
+            </span>
           </h1>
           <p>
-            Um encontro exclusivo pensado para lojistas que movimentam a moda com
-            identidade e autoridade.
+            O maior evento de moda evangélica da América Latina.
           </p>
         </div>
 
         <div className="signup-edition-badge">
-          <strong>01</strong>
-          <span>
-            Primeira
-            <br />
-            Edição Oficial
-          </span>
+          <span>7ª Edição</span>
         </div>
       </section>
 
@@ -180,13 +246,11 @@ export default function Home() {
           </div>
 
           <h2>
-            Concorra a um
-            <br />
-            <em>Provador Fashion.</em>
+            Concorra a um Provador Fashion da <em>Renata Castanheira</em> para sua loja.
           </h2>
           <p>
             {registrationsOpen
-              ? "Preencha seus dados de lojista. Ao finalizar, seu número da sorte exclusivo será gerado instantaneamente."
+              ? "Provador de 5 looks a serem enviados. Preencha seus dados de lojista abaixo para gerar seu número da sorte exclusivo."
               : "As inscrições para este sorteio foram encerradas temporariamente pela organização."}
           </p>
         </header>
@@ -246,7 +310,7 @@ export default function Home() {
           </div>
         ) : registrationsOpen ? (
           /* Active Registration Form */
-          <form className="signup-form" onSubmit={submit}>
+          <form className="signup-form" onSubmit={submit} noValidate>
             {savedParticipant && showNewForm && (
               <button
                 type="button"
@@ -263,81 +327,136 @@ export default function Home() {
               <div className="signup-field-group">
                 <label htmlFor="signup-name">Nome completo</label>
                 <input
+                  ref={nameInputRef}
                   id="signup-name"
                   name="name"
                   autoComplete="name"
                   autoCapitalize="words"
                   placeholder="Ex: Renata Castanheira"
                   value={name}
-                  onChange={(e) => setName(formatName(e.target.value))}
+                  onChange={(e) => {
+                    setName(formatName(e.target.value));
+                    if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }));
+                  }}
                   required
-                  minLength={3}
                   aria-required="true"
+                  aria-invalid={Boolean(fieldErrors.name)}
+                  aria-describedby={fieldErrors.name ? "signup-name-error" : undefined}
                   disabled={loading}
                 />
+                {fieldErrors.name && (
+                  <span id="signup-name-error" className="field-error-message" role="alert">
+                    {fieldErrors.name}
+                  </span>
+                )}
               </div>
 
               <div className="signup-field-group">
                 <label htmlFor="signup-store">Nome da loja</label>
                 <input
+                  ref={storeInputRef}
                   id="signup-store"
                   name="store"
                   autoCapitalize="words"
                   placeholder="Ex: Boutique Elegance"
+                  value={store}
+                  onChange={(e) => {
+                    setStore(e.target.value);
+                    if (fieldErrors.store) setFieldErrors((prev) => ({ ...prev, store: undefined }));
+                  }}
                   required
-                  minLength={2}
                   aria-required="true"
+                  aria-invalid={Boolean(fieldErrors.store)}
+                  aria-describedby={fieldErrors.store ? "signup-store-error" : undefined}
                   disabled={loading}
                 />
+                {fieldErrors.store && (
+                  <span id="signup-store-error" className="field-error-message" role="alert">
+                    {fieldErrors.store}
+                  </span>
+                )}
               </div>
 
               <div className="signup-field-group">
                 <label htmlFor="signup-phone">WhatsApp</label>
                 <input
+                  ref={phoneInputRef}
                   id="signup-phone"
                   name="phone"
                   inputMode="tel"
                   autoComplete="tel"
                   placeholder="(00) 00000-0000"
                   value={phone}
-                  onChange={(e) => setPhone(formatPhone(e.target.value))}
+                  onChange={(e) => {
+                    setPhone(formatPhone(e.target.value));
+                    if (fieldErrors.phone) setFieldErrors((prev) => ({ ...prev, phone: undefined }));
+                  }}
                   required
-                  minLength={14}
                   aria-required="true"
-                  aria-describedby="signup-phone-hint"
+                  aria-invalid={Boolean(fieldErrors.phone)}
+                  aria-describedby={
+                    fieldErrors.phone ? "signup-phone-error" : "signup-phone-hint"
+                  }
                   disabled={loading}
                 />
-                <small id="signup-phone-hint" className="signup-field-hint">
-                  <span className="material-symbols-outlined">info</span>
-                  Apenas 1 número por WhatsApp
-                </small>
+                {fieldErrors.phone ? (
+                  <span id="signup-phone-error" className="field-error-message" role="alert">
+                    {fieldErrors.phone}
+                  </span>
+                ) : (
+                  <small id="signup-phone-hint" className="signup-field-hint">
+                    <span className="material-symbols-outlined">info</span>
+                    Apenas 1 número por WhatsApp
+                  </small>
+                )}
               </div>
 
               <div className="signup-field-group">
                 <label htmlFor="signup-instagram">Instagram da Loja</label>
-                <div className="signup-instagram-wrap">
+                <div className={`signup-instagram-wrap${fieldErrors.instagram ? " is-invalid" : ""}`}>
                   <span aria-hidden="true">@</span>
                   <input
+                    ref={instagramInputRef}
                     id="signup-instagram"
                     name="instagram"
                     placeholder="sualoja"
                     autoComplete="off"
+                    value={instagram}
+                    onChange={(e) => {
+                      setInstagram(e.target.value.replace(/^@/, ""));
+                      if (fieldErrors.instagram) setFieldErrors((prev) => ({ ...prev, instagram: undefined }));
+                    }}
                     required
                     aria-label="Usuário do Instagram"
                     aria-required="true"
+                    aria-invalid={Boolean(fieldErrors.instagram)}
+                    aria-describedby={fieldErrors.instagram ? "signup-instagram-error" : undefined}
                     disabled={loading}
                   />
                 </div>
+                {fieldErrors.instagram && (
+                  <span id="signup-instagram-error" className="field-error-message" role="alert">
+                    {fieldErrors.instagram}
+                  </span>
+                )}
               </div>
             </div>
 
             <label className="signup-consent-card" htmlFor="signup-consent">
               <input
+                ref={consentInputRef}
                 id="signup-consent"
                 type="checkbox"
                 name="consent"
+                checked={consent}
+                onChange={(e) => {
+                  setConsent(e.target.checked);
+                  if (fieldErrors.consent) setFieldErrors((prev) => ({ ...prev, consent: undefined }));
+                }}
                 required
                 aria-required="true"
+                aria-invalid={Boolean(fieldErrors.consent)}
+                aria-describedby={fieldErrors.consent ? "signup-consent-error" : undefined}
                 disabled={loading}
               />
               <span>
@@ -345,11 +464,16 @@ export default function Home() {
                 comunicações exclusivas do <strong>Fashion Date</strong>.
               </span>
             </label>
+            {fieldErrors.consent && (
+              <span id="signup-consent-error" className="field-error-message" style={{ marginTop: "-10px", display: "block" }} role="alert">
+                {fieldErrors.consent}
+              </span>
+            )}
 
-            {error && (
+            {globalError && (
               <div className="form-error-card" role="alert" aria-live="assertive">
                 <span className="material-symbols-outlined">error</span>
-                <span>{error}</span>
+                <span>{globalError}</span>
               </div>
             )}
 
@@ -392,6 +516,8 @@ export default function Home() {
         onClose={() => setIsLookupOpen(false)}
         onLookup={handleFastLookup}
       />
+
+      <LojistaGateModal onEligible={() => {}} />
     </main>
   );
 }

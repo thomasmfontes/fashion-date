@@ -4,7 +4,7 @@ export interface Participant {
   store: string;
   phone: string;
   instagram: string;
-  luckyNumber: number;
+  luckyNumber: string;
   createdAt: string;
   wonAt?: string | null;
   drawId?: number | null;

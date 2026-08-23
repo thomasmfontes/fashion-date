@@ -2,7 +2,7 @@ export interface DrawRecord {
   id: number;
   drawnAt: string;
   winnerId: number;
-  luckyNumber: number;
+  luckyNumber: string;
   winnerName: string;
   winnerStore: string;
 }
@@ -10,7 +10,7 @@ export interface DrawRecord {
 export interface DrawSettings {
   registrationsOpen: boolean;
   liveDrawActive?: boolean;
-  liveWinnerNumber?: number | null;
+  liveWinnerNumber?: string | null;
   liveWinnerName?: string | null;
   liveWinnerStore?: string | null;
 }

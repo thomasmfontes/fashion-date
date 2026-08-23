@@ -121,7 +121,7 @@ export function useParticipants(
           p.store.toLowerCase().includes(q) ||
           p.instagram.toLowerCase().includes(q) ||
           p.phone.includes(q) ||
-          String(p.luckyNumber).includes(q),
+          p.luckyNumber.includes(q),
       );
     }
 
@@ -136,9 +136,9 @@ export function useParticipants(
         case "name-desc":
           return b.name.localeCompare(a.name, "pt-BR");
         case "number-asc":
-          return a.luckyNumber - b.luckyNumber;
+          return a.luckyNumber.localeCompare(b.luckyNumber);
         case "number-desc":
-          return b.luckyNumber - a.luckyNumber;
+          return b.luckyNumber.localeCompare(a.luckyNumber);
         case "recent":
         default:
           return (
