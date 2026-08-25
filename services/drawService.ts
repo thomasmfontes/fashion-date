@@ -25,12 +25,16 @@ export const drawService = {
   },
 
   /**
-   * Triggers a new draw to pick a winner.
+   * Triggers a new draw to pick a winner with optional user type filtering.
    */
-  async performDraw(adminKey: string): Promise<PerformDrawResponse> {
+  async performDraw(
+    adminKey: string,
+    targetUserTypes?: string[]
+  ): Promise<PerformDrawResponse> {
     return request<PerformDrawResponse>(APP_CONFIG.api.adminDraw, {
       method: "POST",
       adminKey,
+      body: targetUserTypes && targetUserTypes.length > 0 ? JSON.stringify({ targetUserTypes }) : undefined,
     });
   },
 

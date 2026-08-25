@@ -19,6 +19,7 @@
     "db:migrate": "echo Execute os arquivos de supabase/migrations em ordem no SQL Editor do Supabase"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
     "drizzle-orm": "0.45.2",
     "next": "^16.2.6",
     "postgres": "^3.4.8",

@@ -1,4 +1,6 @@
-export type AdminView = "participants" | "winners";
+export type AdminView = "participants" | "draw-config" | "winners";
+
+export type DrawMode = "provador" | "numeric";
 
 export interface AdminSession {
   key: string;

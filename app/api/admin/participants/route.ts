@@ -1,21 +1,35 @@
 import { adminAllowed, initialize, participantFields, row } from "../../_lib/db";
 
 export async function GET(request: Request) {
-  if (!adminAllowed(request)) return Response.json({error:"Não autorizado"}, {status:401});
-  const db = await initialize();
-  const result = await db
-    .prepare(
-      `SELECT ${participantFields},
-        (SELECT MAX(d.dt_sorteio) FROM t_draws d WHERE d.id_participante=p.id_participante) AS won_at
-       FROM t_participants p ORDER BY p.id_participante DESC`,
-    )
-    .all<Record<string, unknown>>();
-  const state = await db
-    .prepare(
-      "SELECT vl_configuracao AS value FROM t_settings WHERE cd_configuracao='registrations_open'",
-    )
-    .first<{ value: string }>();
-  return Response.json({participants:result.results.map(row), registrationsOpen:state?.value !== "false"});
+  if (!adminAllowed(request)) {
+    return Response.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  try {
+    const db = await initialize();
+    const result = await db
+      .prepare(
+        `SELECT ${participantFields},
+          (SELECT MAX(d.dt_sorteio) FROM t_draws d WHERE d.id_participante=p.id_participante) AS won_at
+         FROM t_participants p ORDER BY p.id_participante DESC`,
+      )
+      .all<Record<string, unknown>>();
+
+    const state = await db
+      .prepare(
+        "SELECT vl_configuracao AS value FROM t_settings WHERE cd_configuracao='registrations_open'",
+      )
+      .first<{ value: string }>();
+
+    return Response.json({
+      participants: result.results.map(row),
+      registrationsOpen: state?.value !== "false",
+    });
+  } catch (error: unknown) {
+    console.error("Erro ao buscar participantes:", error);
+    const message = error instanceof Error ? error.message : "Erro ao conectar com o banco de dados.";
+    return Response.json({ error: message, participants: [], registrationsOpen: true }, { status: 500 });
+  }
 }
 
 export async function PATCH(request: Request) {

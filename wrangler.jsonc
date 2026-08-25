@@ -1,0 +1,56 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fashion-date",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-05-22",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "fashion-date-d1",
+      "database_id": "00000000-0000-4000-8000-000000000000",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "LOOKUP_IP_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 300,
+        "period": 60
+      }
+    },
+    {
+      "name": "LOOKUP_TARGET_LIMITER",
+      "namespace_id": "1002",
+      "simple": {
+        "limit": 10,
+        "period": 60
+      }
+    }
+  ],
+  "env": {
+    "staging": {
+      "name": "fashion-date-staging",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "fashion-date-d1-staging",
+          "database_id": "00000000-0000-4000-8000-000000000001",
+          "migrations_dir": "drizzle"
+        }
+      ]
+    },
+    "production": {
+      "name": "fashion-date-production",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "fashion-date-d1-production",
+          "database_id": "00000000-0000-4000-8000-000000000002",
+          "migrations_dir": "drizzle"
+        }
+      ]
+    }
+  }
+}

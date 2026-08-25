@@ -4,27 +4,39 @@ import {
   participantFields,
   row,
 } from "../../_lib/db";
+import { broadcastWinnerAnnouncement } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   if (!adminAllowed(request)) {
     return Response.json({ error: "Não autorizado" }, { status: 401 });
   }
 
+  let targetTypes: string[] = [];
+  try {
+    const body = (await request.json()) as { targetUserTypes?: string[] };
+    if (body && Array.isArray(body.targetUserTypes) && body.targetUserTypes.length > 0) {
+      targetTypes = body.targetUserTypes.map((t) => String(t).toLowerCase());
+    }
+  } catch {
+    // Body is optional (defaults to all active participants)
+  }
+
   const db = await initialize();
   const drawId = crypto.randomUUID();
   const selected = await db.transaction(async (transaction) => {
-    const winner = await transaction
-      .prepare(
-        `UPDATE t_participants
-         SET st_participante='winner'
-         WHERE id_participante=(
-           SELECT id_participante FROM t_participants
-           WHERE st_participante='active'
-           ORDER BY RANDOM() LIMIT 1 FOR UPDATE SKIP LOCKED
-         ) AND st_participante='active'
-         RETURNING ${participantFields}`,
-      )
-      .first<Record<string, unknown>>();
+    const updateQuery = `
+      UPDATE t_participants
+      SET st_participante='winner'
+      WHERE id_participante=(
+        SELECT id_participante FROM t_participants
+        WHERE st_participante='active'
+        ORDER BY RANDOM() LIMIT 1 FOR UPDATE SKIP LOCKED
+      ) AND st_participante='active'
+      RETURNING ${participantFields}
+    `;
+
+    const stmt = transaction.prepare(updateQuery);
+    const winner = await stmt.first<Record<string, unknown>>();
 
     if (winner) {
       await transaction
@@ -105,6 +117,9 @@ export async function PATCH(request: Request) {
       )
       .bind(draw.lucky_number),
   ]);
+
+  // Broadcast instant real-time alert via Supabase Realtime (WebSockets)
+  await broadcastWinnerAnnouncement(draw.id, draw.lucky_number);
 
   return Response.json({
     ok: true,

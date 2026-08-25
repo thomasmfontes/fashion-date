@@ -1,4 +1,5 @@
 import { getAdminPassword, getDatabase } from "@/db/runtime";
+import type { UserType } from "@/types/participant.types";
 
 export type Participant = {
   id: number;
@@ -7,6 +8,7 @@ export type Participant = {
   store: string;
   phone: string;
   instagram: string;
+  userType?: UserType;
   status: string;
   createdAt: string;
   wonAt: string | null;
@@ -46,6 +48,11 @@ export function adminAllowed(request: Request): boolean {
 export function row(raw: Record<string, unknown>): Participant {
   const createdAt = raw.created_at;
   const wonAt = raw.won_at;
+  const rawType = String(raw.user_type || "lojista").toLowerCase() as UserType;
+  const userType: UserType = ["lojista", "influencer", "visitante", "vip"].includes(rawType)
+    ? rawType
+    : "lojista";
+
   return {
     id: Number(raw.id),
     luckyNumber: String(raw.lucky_number),
@@ -53,6 +60,7 @@ export function row(raw: Record<string, unknown>): Participant {
     store: String(raw.store),
     phone: String(raw.phone),
     instagram: String(raw.instagram),
+    userType,
     status: String(raw.status),
     createdAt:
       createdAt instanceof Date ? createdAt.toISOString() : String(createdAt),

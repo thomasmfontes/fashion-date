@@ -15,6 +15,7 @@ import { AdminMetrics } from "@/components/admin/AdminMetrics";
 import { AdminControls } from "@/components/admin/AdminControls";
 import { ParticipantsTable } from "@/components/admin/ParticipantsTable";
 import { WinnersTable } from "@/components/admin/WinnersTable";
+import { DrawConfigPanel } from "@/components/admin/DrawConfigPanel";
 import { EditParticipantModal } from "@/components/admin/EditParticipantModal";
 import { DeleteParticipantModal } from "@/components/admin/DeleteParticipantModal";
 import { AdminLoginForm } from "@/components/admin/AdminLoginForm";
@@ -209,6 +210,15 @@ export function AdminDashboard({
               />
             </div>
           </>
+        ) : view === "draw-config" ? (
+          <DrawConfigPanel
+            totalParticipants={participants.length}
+            activeParticipants={activeCount}
+            totalWinners={stats.winners}
+            registrationsOpen={registrationsOpen}
+            onToggleRegistrations={handleToggleRegistrations}
+            onShowToast={showToast}
+          />
         ) : (
           <WinnersTable
             winners={winnersList}

@@ -40,11 +40,11 @@ function connectionString(): string {
 function client(): Sql {
   if (!globalThis.fashionDateSql) {
     globalThis.fashionDateSql = postgres(connectionString(), {
-      // Vercel functions should use the Supabase transaction pooler with a
-      // deliberately small local pool to avoid exhausting database connections.
-      max: 1,
-      idle_timeout: 20,
-      connect_timeout: 10,
+      // Robust Supabase connection pool configuration
+      max: 5,
+      idle_timeout: 30,
+      connect_timeout: 15,
+      max_lifetime: 60 * 30,
       prepare: false,
     });
   }

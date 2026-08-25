@@ -2,12 +2,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useWakeLock } from "./useWakeLock";
 import { useSoundFx } from "./useSoundFx";
 import { APP_CONFIG } from "@/constants/config";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type CelebrationMode = "test" | "winner" | "not-winner" | null;
 
 export function useLiveAlert(userLuckyNumber?: string) {
   const [isEnabled, setIsEnabled] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [isWebSocketActive, setIsWebSocketActive] = useState(false);
   const [celebration, setCelebration] = useState<CelebrationMode>(null);
   const [alarmActive, setAlarmActive] = useState(false);
   const [drawnNumber, setDrawnNumber] = useState("");
@@ -35,6 +37,67 @@ export function useLiveAlert(userLuckyNumber?: string) {
     [],
   );
 
+  const handleWinnerAnnounced = useCallback(
+    (drawId: string, winnerNumber: string) => {
+      if (!drawId || drawId === lastDrawRef.current) return;
+      lastDrawRef.current = drawId;
+
+      const userClean = String(userLuckyNumber || "").trim();
+      const winnerClean = String(winnerNumber || "").trim();
+      const isWinner =
+        Boolean(winnerClean) &&
+        (winnerClean === userClean ||
+          Number(winnerClean) === Number(userClean));
+
+      if (isWinner) {
+        celebrate("winner", winnerNumber);
+      } else if (winnerNumber) {
+        celebrate("not-winner", winnerNumber);
+      }
+    },
+    [celebrate, userLuckyNumber],
+  );
+
+  // 1. Supabase Realtime (WebSockets) Subscription
+  useEffect(() => {
+    if (!isEnabled || !userLuckyNumber) return;
+
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+
+    const channel = supabase.channel("live-draw", {
+      config: {
+        broadcast: { ack: false },
+      },
+    });
+
+    channel
+      .on(
+        "broadcast",
+        { event: "winner-announced" },
+        (payload: { payload?: { drawId?: string; winnerNumber?: string } }) => {
+          const { drawId, winnerNumber } = payload?.payload || {};
+          if (drawId && winnerNumber) {
+            handleWinnerAnnounced(drawId, winnerNumber);
+          }
+        },
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setIsWebSocketActive(true);
+          setIsConnected(true);
+        } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+          setIsWebSocketActive(false);
+        }
+      });
+
+    return () => {
+      setIsWebSocketActive(false);
+      supabase.removeChannel(channel);
+    };
+  }, [isEnabled, userLuckyNumber, handleWinnerAnnounced]);
+
+  // 2. HTTP Polling as Fallback & Initial Baseline Sync
   const etagRef = useRef<string | null>(null);
   const consecutiveErrorsRef = useRef(0);
   const pollingTimeoutRef = useRef<number | null>(null);
@@ -77,27 +140,17 @@ export function useLiveAlert(userLuckyNumber?: string) {
           return;
         }
 
-        if (data.drawId && data.drawId !== lastDrawRef.current) {
-          lastDrawRef.current = data.drawId;
-          const userClean = String(userLuckyNumber || "").trim();
-          const winnerClean = String(data.winnerNumber || "").trim();
-          const isWinner =
-            Boolean(winnerClean) &&
-            (winnerClean === userClean ||
-              Number(winnerClean) === Number(userClean));
-
-          if (isWinner) {
-            celebrate("winner", data.winnerNumber || "");
-          } else if (data.winnerNumber) {
-            celebrate("not-winner", data.winnerNumber);
-          }
+        if (data.drawId && data.winnerNumber) {
+          handleWinnerAnnounced(data.drawId, data.winnerNumber);
         }
       } catch {
         consecutiveErrorsRef.current += 1;
-        setIsConnected(false);
+        if (!isWebSocketActive) {
+          setIsConnected(false);
+        }
       }
     },
-    [celebrate, userLuckyNumber],
+    [handleWinnerAnnounced, isWebSocketActive, userLuckyNumber],
   );
 
   const enableAlert = useCallback(async () => {
@@ -115,7 +168,7 @@ export function useLiveAlert(userLuckyNumber?: string) {
     setAlarmActive(false);
   }, []);
 
-  // Adaptive polling loop with visibility pause and backoff
+  // Adaptive polling loop with visibility pause and backoff (active as backup)
   useEffect(() => {
     if (!isEnabled) return;
     let isCancelled = false;
@@ -123,8 +176,8 @@ export function useLiveAlert(userLuckyNumber?: string) {
     const scheduleNextPoll = () => {
       if (isCancelled) return;
 
-      // Base interval: 2.2s + jitter (ensures fast live stage alert propagation while preserving D1 quotas)
-      const baseDelay = 2200 + Math.floor(Math.random() * 400);
+      // Base interval: 2.5s (or slightly relaxed if WebSocket is active)
+      const baseDelay = isWebSocketActive ? 4500 : 2200 + Math.floor(Math.random() * 400);
       const backoffMultiplier = Math.min(Math.pow(1.5, consecutiveErrorsRef.current), 3.5);
       const delay = Math.round(baseDelay * backoffMultiplier);
 
@@ -156,7 +209,7 @@ export function useLiveAlert(userLuckyNumber?: string) {
       }
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [checkDraw, isEnabled]);
+  }, [checkDraw, isEnabled, isWebSocketActive]);
 
   // Celebratory audio loop when alert is active
   useEffect(() => {
@@ -175,6 +228,7 @@ export function useLiveAlert(userLuckyNumber?: string) {
   return {
     isEnabled,
     isConnected,
+    isWebSocketActive,
     celebration,
     alarmActive,
     drawnNumber,

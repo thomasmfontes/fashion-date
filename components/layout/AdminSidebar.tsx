@@ -41,20 +41,20 @@ export function AdminSidebar({
           <small className="stitch-nav-badge">{totalParticipants}</small>
         </a>
 
-        <DrawTransitionLink className="stitch-nav-item">
-          <span className="material-symbols-outlined">confirmation_number</span>
-          <span className="stitch-nav-label">Telão Sorteio</span>
-          <span className="stitch-nav-pill">Provador</span>
-        </DrawTransitionLink>
-
         <a
-          className="stitch-nav-item"
-          href="/admin/sorteio-numerico"
+          className={`stitch-nav-item${view === "draw-config" ? " active" : ""}`}
+          href="/admin"
+          onClick={(event) => onNavigate("draw-config", event)}
         >
-          <span className="material-symbols-outlined">casino</span>
-          <span className="stitch-nav-label">Sorteio Numérico</span>
-          <span className="stitch-nav-pill gold">000-500</span>
+          <span className="material-symbols-outlined">tune</span>
+          <span className="stitch-nav-label">Configurar Sorteio</span>
         </a>
+
+        <DrawTransitionLink className="stitch-nav-item">
+          <span className="material-symbols-outlined">live_tv</span>
+          <span className="stitch-nav-label">Telão Sorteio</span>
+          <span className="stitch-nav-pill">Ao vivo</span>
+        </DrawTransitionLink>
 
         <a
           className={`stitch-nav-item${view === "winners" ? " active" : ""}`}

@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, type FormEvent } from "react";
+import "./signup-form.css";
 import { formatName, formatPhone, cleanPhone } from "@/utils/formatters";
 import { APP_CONFIG } from "@/constants/config";
 import { useSavedParticipant } from "@/hooks/useSavedParticipant";
 import { FastLookupModal } from "@/components/public/FastLookupModal";
 import { LojistaGateModal } from "@/components/public/LojistaGateModal";
+import type { UserType } from "@/types/participant.types";
+import { USER_TYPE_LABELS, USER_TYPE_ICONS } from "@/types/participant.types";
 
 const HERO_IMAGE_URL = "/renata-hero.jpg";
 
@@ -28,7 +31,8 @@ export default function Home() {
   const [showNewForm, setShowNewForm] = useState(false);
   const [isLookupOpen, setIsLookupOpen] = useState(false);
 
-  // Controlled form state to preserve input across validation attempts
+  // Controlled form state
+  const [userType, setUserType] = useState<UserType>("lojista");
   const [name, setName] = useState("");
   const [store, setStore] = useState("");
   const [phone, setPhone] = useState("");
@@ -128,6 +132,7 @@ export default function Home() {
           store: store.trim(),
           phone: cleanPhone(phone),
           instagram: `@${instagram.trim().replace(/^@?/, "")}`,
+          userType,
           consent: true,
         }),
       });
@@ -323,6 +328,27 @@ export default function Home() {
               </button>
             )}
 
+            {/* Seletor de Tipo de Participante */}
+            <div className="signup-profile-selector">
+              <label className="profile-selector-title">Selecione seu perfil no evento:</label>
+              <div className="profile-types-grid">
+                {(["lojista", "influencer", "visitante", "vip"] as UserType[]).map((type) => {
+                  const isSelected = userType === type;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      className={`profile-type-btn ${isSelected ? "selected" : ""}`}
+                      onClick={() => setUserType(type)}
+                    >
+                      <span className="material-symbols-outlined">{USER_TYPE_ICONS[type]}</span>
+                      <span>{USER_TYPE_LABELS[type]}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="signup-fields-grid">
               <div className="signup-field-group">
                 <label htmlFor="signup-name">Nome completo</label>
@@ -352,13 +378,29 @@ export default function Home() {
               </div>
 
               <div className="signup-field-group">
-                <label htmlFor="signup-store">Nome da loja</label>
+                <label htmlFor="signup-store">
+                  {userType === "lojista"
+                    ? "Nome da loja ou marca"
+                    : userType === "influencer"
+                      ? "Seu nicho / canal / agência"
+                      : userType === "vip"
+                        ? "Empresa ou convidado por"
+                        : "Cidade / Empresa"}
+                </label>
                 <input
                   ref={storeInputRef}
                   id="signup-store"
                   name="store"
                   autoCapitalize="words"
-                  placeholder="Ex: Boutique Elegance"
+                  placeholder={
+                    userType === "lojista"
+                      ? "Ex: Boutique Elegance"
+                      : userType === "influencer"
+                        ? "Ex: Moda & Estilo / Canal @estilo"
+                        : userType === "vip"
+                          ? "Ex: Convidado Especial"
+                          : "Ex: São Paulo / Compradora"
+                  }
                   value={store}
                   onChange={(e) => {
                     setStore(e.target.value);

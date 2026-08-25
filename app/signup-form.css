@@ -1,0 +1,94 @@
+/* =========================================================
+   SIGNUP PROFILE SELECTOR - DEDICATED STYLESHEET
+   ========================================================= */
+
+.signup-profile-selector {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 7px !important;
+  margin-bottom: 16px !important;
+}
+
+.profile-selector-title {
+  display: block !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: #735a5e !important;
+}
+
+.profile-types-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+.profile-type-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 6px 12px !important;
+  border-radius: 8px !important;
+  border: 1px solid #e3d9cf !important;
+  background: #ffffff !important;
+  color: #4a3639 !important;
+  font-family: inherit !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  text-align: left !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.15s ease !important;
+  user-select: none !important;
+}
+
+.profile-type-btn:hover {
+  border-color: #c4a45a !important;
+  background: #fdfaf6 !important;
+  transform: translateY(-1px) !important;
+}
+
+.profile-type-btn.selected {
+  border-color: #4a0e1c !important;
+  background: #4a0e1c !important;
+  color: #fff9ed !important;
+  box-shadow: 0 3px 8px rgba(74, 14, 28, 0.2) !important;
+}
+
+.profile-type-btn .material-symbols-outlined {
+  font-size: 18px !important;
+  color: #9a741a !important;
+  flex-shrink: 0 !important;
+}
+
+.profile-type-btn.selected .material-symbols-outlined {
+  color: #ecd394 !important;
+}
+
+.profile-type-btn span:last-child {
+  flex: 1 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+@media (max-width: 380px) {
+  .profile-types-grid {
+    gap: 6px !important;
+  }
+  .profile-type-btn {
+    padding: 6px 8px !important;
+    font-size: 11.5px !important;
+    gap: 6px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+  .profile-type-btn .material-symbols-outlined {
+    font-size: 16px !important;
+  }
+}
