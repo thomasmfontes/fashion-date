@@ -64,7 +64,10 @@ export default function UnifiedDrawPage() {
   }
 
   function handleTriggerDraw() {
-    slotMachine.triggerDraw(activeDraw?.targetUserTypes);
+    slotMachine.triggerDraw(
+      activeDraw?.targetUserTypes,
+      activeDraw?.hasNumberLimit && activeDraw?.maxNumber ? activeDraw.maxNumber : undefined
+    );
   }
 
   // If not authenticated, render login portal directly
@@ -87,6 +90,9 @@ export default function UnifiedDrawPage() {
 
   const targetTypes = activeDraw?.targetUserTypes || ["lojista", "influencer", "visitante", "vip"];
   const isAllTypes = targetTypes.length >= 4;
+  const numberLimitText = activeDraw?.hasNumberLimit && activeDraw?.maxNumber
+    ? ` · Até Nº ${String(activeDraw.maxNumber).padStart(4, "0")}`
+    : "";
 
   const winnerType: UserType = slotMachine.winner?.userType || "lojista";
 
@@ -131,7 +137,7 @@ export default function UnifiedDrawPage() {
 
         <div className="draw-event-title" suppressHydrationWarning>
           <span suppressHydrationWarning>
-            <i /> {activeDraw?.prizeTitle || "Prêmio Especial"} · {isAllTypes ? "Todos os Participantes" : targetTypes.map((t) => USER_TYPE_LABELS[t]).join(", ")}
+            <i /> {activeDraw?.prizeTitle || "Prêmio Especial"} · {isAllTypes ? "Todos os Participantes" : targetTypes.map((t) => USER_TYPE_LABELS[t]).join(", ")}{numberLimitText}
           </span>
           <h1 suppressHydrationWarning>{activeDraw?.title || "Sorteio Oficial"}</h1>
         </div>
@@ -209,6 +215,7 @@ export default function UnifiedDrawPage() {
                     <strong>{d.title}</strong>
                     <small>
                       Prêmio: {d.prizeTitle} · {dIsAll ? "Todos" : dTypes.map((t) => USER_TYPE_LABELS[t]).join(", ")}
+                      {d.hasNumberLimit && d.maxNumber ? ` · Até Nº ${d.maxNumber}` : ""}
                     </small>
                   </div>
                   {isSelected && (

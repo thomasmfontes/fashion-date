@@ -12,10 +12,17 @@ export async function POST(request: Request) {
   }
 
   let targetTypes: string[] = [];
+  let maxNumber: number | undefined;
   try {
-    const body = (await request.json()) as { targetUserTypes?: string[] };
+    const body = (await request.json()) as {
+      targetUserTypes?: string[];
+      maxNumber?: number;
+    };
     if (body && Array.isArray(body.targetUserTypes) && body.targetUserTypes.length > 0) {
       targetTypes = body.targetUserTypes.map((t) => String(t).toLowerCase());
+    }
+    if (body && typeof body.maxNumber === "number" && body.maxNumber > 0) {
+      maxNumber = Math.floor(body.maxNumber);
     }
   } catch {
     // Body is optional (defaults to all active participants)
@@ -30,6 +37,7 @@ export async function POST(request: Request) {
       WHERE id_participante=(
         SELECT id_participante FROM t_participants
         WHERE st_participante='active'
+        ${maxNumber ? `AND nr_sorte ~ '^[0-9]+$' AND CAST(nr_sorte AS INTEGER) <= ${maxNumber}` : ""}
         ORDER BY RANDOM() LIMIT 1 FOR UPDATE SKIP LOCKED
       ) AND st_participante='active'
       RETURNING ${participantFields}
@@ -51,8 +59,11 @@ export async function POST(request: Request) {
   });
 
   if (!selected) {
+    const errorMsg = maxNumber
+      ? `Não há participantes ativos disponíveis com número até ${maxNumber} para sortear.`
+      : "Não há participantes ativos disponíveis para sortear.";
     return Response.json(
-      { error: "Não há participantes ativos disponíveis para sortear." },
+      { error: errorMsg },
       { status: 409 },
     );
   }

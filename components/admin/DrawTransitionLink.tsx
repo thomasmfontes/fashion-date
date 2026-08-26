@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 type DrawTransitionLinkProps = {
   children: ReactNode;
   className?: string;
+  onClick?: () => void;
 };
 
 const emptySubscribe = () => () => {};
@@ -20,6 +21,7 @@ const emptySubscribe = () => () => {};
 export function DrawTransitionLink({
   children,
   className,
+  onClick,
 }: DrawTransitionLinkProps) {
   const [phase, setPhase] = useState<"idle" | "active" | "leaving">("idle");
   const isClient = useSyncExternalStore(
@@ -35,6 +37,7 @@ export function DrawTransitionLink({
   }, []);
 
   function openDraw(event: MouseEvent<HTMLAnchorElement>) {
+    onClick?.();
     if (
       event.button !== 0 ||
       event.metaKey ||

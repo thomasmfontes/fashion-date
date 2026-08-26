@@ -123,11 +123,6 @@ export function DrawConfigPanel({
                 <div className="draw-primary-info">
                   <div className="draw-title-line">
                     <h3>{draw.title}</h3>
-                    {isActive && (
-                      <span className="live-status-pill">
-                        <i /> No Ar no Telão
-                      </span>
-                    )}
                   </div>
 
                   <div className="draw-meta-line">
@@ -135,6 +130,13 @@ export function DrawConfigPanel({
                       <span className="material-symbols-outlined">card_giftcard</span>
                       Prêmio: <strong>{draw.prizeTitle}</strong>
                     </span>
+
+                    {draw.hasNumberLimit && draw.maxNumber && (
+                      <span className="meta-tag limit" title={`Sorteia apenas números até ${draw.maxNumber}`}>
+                        <span className="material-symbols-outlined">tag</span>
+                        Até Nº <strong>{String(draw.maxNumber).padStart(4, "0")}</strong>
+                      </span>
+                    )}
 
                     {/* Tags dos Públicos Participantes */}
                     <div className="target-types-badges-row">

@@ -103,6 +103,8 @@ export function useDrawCollection() {
           dto.targetUserTypes && dto.targetUserTypes.length > 0
             ? dto.targetUserTypes
             : ["lojista", "influencer", "visitante", "vip"],
+        hasNumberLimit: Boolean(dto.hasNumberLimit),
+        maxNumber: dto.hasNumberLimit && dto.maxNumber ? Number(dto.maxNumber) : null,
         status: "ready",
         order: draws.length + 1,
         createdAt: new Date().toISOString(),
@@ -129,6 +131,16 @@ export function useDrawCollection() {
             dto.targetUserTypes && dto.targetUserTypes.length > 0
               ? dto.targetUserTypes
               : item.targetUserTypes,
+          hasNumberLimit:
+            dto.hasNumberLimit !== undefined
+              ? Boolean(dto.hasNumberLimit)
+              : item.hasNumberLimit,
+          maxNumber:
+            dto.hasNumberLimit === false
+              ? null
+              : dto.maxNumber !== undefined
+                ? (dto.maxNumber ? Number(dto.maxNumber) : null)
+                : item.maxNumber,
         };
       });
 

@@ -51,7 +51,7 @@ export function useSlotMachine(adminKey: string) {
     };
   }, [cancelTimers]);
 
-  const triggerDraw = useCallback(async (targetUserTypes?: string[]) => {
+  const triggerDraw = useCallback(async (targetUserTypes?: string[], maxNumber?: number | null) => {
     if (!adminKey || isRunning) return;
 
     setWinner(null);
@@ -73,7 +73,7 @@ export function useSlotMachine(adminKey: string) {
     }, 65);
 
     try {
-      const response = await drawService.performDraw(adminKey, targetUserTypes);
+      const response = await drawService.performDraw(adminKey, targetUserTypes, maxNumber);
       if (!isMountedRef.current) return;
       if (!response || !response.winner) {
         throw new Error("Não foi possível realizar o sorteio.");

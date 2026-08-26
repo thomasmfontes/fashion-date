@@ -25,16 +25,27 @@ export const drawService = {
   },
 
   /**
-   * Triggers a new draw to pick a winner with optional user type filtering.
+   * Triggers a new draw to pick a winner with optional user type filtering and maximum number limit.
    */
   async performDraw(
     adminKey: string,
-    targetUserTypes?: string[]
+    targetUserTypes?: string[],
+    maxNumber?: number | null
   ): Promise<PerformDrawResponse> {
+    const hasTypes = Boolean(targetUserTypes && targetUserTypes.length > 0);
+    const hasLimit = typeof maxNumber === "number" && maxNumber > 0;
+    
+    const bodyPayload = hasTypes || hasLimit
+      ? {
+          ...(hasTypes ? { targetUserTypes } : {}),
+          ...(hasLimit ? { maxNumber } : {}),
+        }
+      : undefined;
+
     return request<PerformDrawResponse>(APP_CONFIG.api.adminDraw, {
       method: "POST",
       adminKey,
-      body: targetUserTypes && targetUserTypes.length > 0 ? JSON.stringify({ targetUserTypes }) : undefined,
+      body: bodyPayload ? JSON.stringify(bodyPayload) : undefined,
     });
   },
 

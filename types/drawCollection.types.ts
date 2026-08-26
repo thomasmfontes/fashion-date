@@ -7,6 +7,8 @@ export interface DrawItem {
   title: string;
   prizeTitle: string;
   targetUserTypes: UserType[]; // Perfis que participam deste sorteio
+  hasNumberLimit?: boolean;
+  maxNumber?: number | null; // Limite superior dos números da sorte
   status: DrawStatus;
   winnerSummary?: {
     winnerName?: string;
@@ -23,6 +25,8 @@ export interface CreateDrawDTO {
   title: string;
   prizeTitle: string;
   targetUserTypes: UserType[];
+  hasNumberLimit?: boolean;
+  maxNumber?: number | null;
 }
 
 export interface UpdateDrawDTO extends Partial<CreateDrawDTO> {
