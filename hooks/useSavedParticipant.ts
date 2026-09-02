@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useCallback } from "react";
+import { useSyncExternalStore, useCallback, useMemo, useEffect } from "react";
 import type { Participant } from "@/types/participant.types";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { participantService } from "@/services/participantService";
@@ -40,14 +40,14 @@ export function useSavedParticipant() {
     getServerSnapshot,
   );
 
-  let savedParticipant: Participant | null = null;
-  if (rawData) {
+  const savedParticipant = useMemo<Participant | null>(() => {
+    if (!rawData) return null;
     try {
-      savedParticipant = JSON.parse(rawData) as Participant;
+      return JSON.parse(rawData) as Participant;
     } catch {
-      savedParticipant = null;
+      return null;
     }
-  }
+  }, [rawData]);
 
   const saveParticipant = useCallback((participant: Participant) => {
     try {
@@ -70,9 +70,50 @@ export function useSavedParticipant() {
     }
   }, []);
 
+  // Auto-validate cached participant against database on mount
+  useEffect(() => {
+    if (!savedParticipant) return;
+    const currentPhone = savedParticipant.phone;
+    if (!currentPhone) {
+      // Legacy or corrupted cache without phone
+      clearParticipant();
+      return;
+    }
+
+    let active = true;
+
+    participantService
+      .lookupByPhone(currentPhone)
+      .then((res) => {
+        if (!active) return;
+        if (res.ok && res.participant) {
+          // Sync fresh data from DB
+          saveParticipant(res.participant);
+        } else {
+          clearParticipant();
+        }
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        const status = typeof err === "object" && err !== null && "status" in err
+          ? (err as { status: number }).status
+          : 0;
+        const msg = err instanceof Error ? err.message : String(err);
+
+        // If participant was deleted from DB (404 / not found), purge local session immediately
+        if (status === 404 || msg.includes("não encontrada") || msg.includes("Nenhuma inscrição")) {
+          clearParticipant();
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [savedParticipant?.phone, clearParticipant, saveParticipant]);
+
   const lookupByPhone = useCallback(
-    async (phone: string): Promise<Participant> => {
-      const res = await participantService.lookupByPhone(phone);
+    async (queryPhone: string): Promise<Participant> => {
+      const res = await participantService.lookupByPhone(queryPhone);
       if (!res.ok || !res.participant) {
         throw new Error("Inscrição não encontrada para este WhatsApp.");
       }

@@ -9,8 +9,34 @@ export async function GET(request: Request) {
     const db = await initialize();
     const result = await db
       .prepare(
-        `SELECT ${participantFields},
-          (SELECT MAX(d.dt_sorteio) FROM t_draws d WHERE d.id_participante=p.id_participante) AS won_at
+        `SELECT 
+          p.id_participante AS id,
+          p.nr_sorte AS lucky_number,
+          p.nm_participante AS name,
+          p.nm_loja AS store,
+          p.nr_whatsapp AS phone,
+          p.nm_instagram AS instagram,
+          p.user_type AS user_type,
+          p.st_participante AS status,
+          p.dt_cadastro AS created_at,
+          (SELECT MAX(d.dt_sorteio) FROM t_draws d WHERE d.id_participante=p.id_participante) AS won_at,
+          COALESCE(
+            (
+              SELECT json_agg(
+                json_build_object(
+                  'drawId', dt.id_sorteio,
+                  'drawTitle', COALESCE(def.nm_titulo, dt.id_sorteio),
+                  'prizeTitle', COALESCE(def.nm_premio, 'Prêmio'),
+                  'ticketNumber', dt.nr_bilhete,
+                  'enteredAt', dt.dt_inscricao
+                ) ORDER BY dt.dt_inscricao ASC
+              )
+              FROM t_draw_tickets dt
+              LEFT JOIN t_draw_definitions def ON def.id_sorteio = dt.id_sorteio
+              WHERE dt.id_participante = p.id_participante
+            ),
+            '[]'::json
+          ) AS tickets
          FROM t_participants p ORDER BY p.id_participante DESC`,
       )
       .all<Record<string, unknown>>();

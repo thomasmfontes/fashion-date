@@ -1,20 +1,44 @@
 export type { AdminView, DrawMode } from "@/types/admin.types";
 
-export type UserType = "lojista" | "influencer" | "visitante" | "vip";
+export type UserType = "lojista" | "revendedor" | "influencer" | "visitante";
 
 export const USER_TYPE_LABELS: Record<UserType, string> = {
   lojista: "Lojista",
+  revendedor: "Revendedor",
   influencer: "Influenciador",
-  visitante: "Visitante / Comprador",
-  vip: "Convidado VIP",
+  visitante: "Visitante",
 };
 
 export const USER_TYPE_ICONS: Record<UserType, string> = {
   lojista: "storefront",
+  revendedor: "local_mall",
   influencer: "person_pin",
-  visitante: "shopping_bag",
-  vip: "workspace_premium",
+  visitante: "group",
 };
+
+export interface ParticipantTicket {
+  drawId: string;
+  drawTitle: string;
+  prizeTitle: string;
+  ticketNumber: string;
+  enteredAt: string;
+}
+
+export interface DrawWinnerItem {
+  id: number;
+  winnerId: number;
+  drawId: string;
+  drawTitle: string;
+  prizeTitle: string;
+  participantId: number;
+  name: string;
+  store: string;
+  phone: string;
+  instagram: string;
+  userType?: UserType;
+  luckyNumber: string;
+  wonAt: string;
+}
 
 export interface Participant {
   id: number;
@@ -23,6 +47,7 @@ export interface Participant {
   phone: string;
   instagram: string;
   luckyNumber: string;
+  tickets?: ParticipantTicket[];
   userType?: UserType;
   createdAt: string;
   wonAt?: string | null;

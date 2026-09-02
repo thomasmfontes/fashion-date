@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { participantService } from "@/services/participantService";
+import { drawService } from "@/services/drawService";
 import { ApiError } from "@/services/apiClient";
 import { exportParticipantsToCSV } from "@/utils/csvExport";
 import type {
   Participant,
+  DrawWinnerItem,
   StatusFilter,
   SortOption,
   ParticipantStats,
@@ -14,24 +16,39 @@ export function useParticipants(
   onUnauthorized?: () => void,
 ) {
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [winners, setWinners] = useState<DrawWinnerItem[]>([]);
   const [registrationsOpen, setRegistrationsOpen] = useState(true);
   const [loading, setLoading] = useState(() => Boolean(adminKey));
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [userTypeFilter, setUserTypeFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [error, setError] = useState("");
+
+  const availableUserTypes = useMemo(() => {
+    const set = new Set<string>();
+    participants.forEach((p) => {
+      if (p.userType) set.add(p.userType);
+    });
+    return Array.from(set);
+  }, [participants]);
 
   const loadData = useCallback(async () => {
     if (!adminKey) {
       setParticipants([]);
+      setWinners([]);
       setLoading(false);
       return;
     }
     setLoading(true);
     setError("");
     try {
-      const data = await participantService.getAll(adminKey);
+      const [data, winnersData] = await Promise.all([
+        participantService.getAll(adminKey),
+        drawService.getWinners(adminKey),
+      ]);
       setParticipants(data.participants || []);
+      setWinners(winnersData || []);
       const regState = data.registrationsOpen ?? data.settings?.registrationsOpen;
       if (typeof regState === "boolean") {
         setRegistrationsOpen(regState);
@@ -55,6 +72,7 @@ export function useParticipants(
       if (!isMounted) return;
       if (!adminKey) {
         setParticipants([]);
+        setWinners([]);
         setLoading(false);
         return;
       }
@@ -62,9 +80,13 @@ export function useParticipants(
       setLoading(true);
       setError("");
       try {
-        const data = await participantService.getAll(adminKey);
+        const [data, winnersData] = await Promise.all([
+          participantService.getAll(adminKey),
+          drawService.getWinners(adminKey),
+        ]);
         if (!isMounted) return;
         setParticipants(data.participants || []);
+        setWinners(winnersData || []);
         const regState =
           data.registrationsOpen ?? data.settings?.registrationsOpen;
         if (typeof regState === "boolean") {
@@ -94,14 +116,13 @@ export function useParticipants(
     const registeredToday = participants.filter(
       (p) => new Date(p.createdAt).toDateString() === today,
     ).length;
-    const totalWinners = participants.filter((p) => Boolean(p.wonAt)).length;
 
     return {
       total: participants.length,
       today: registeredToday,
-      winners: totalWinners,
+      winners: winners.length,
     };
-  }, [participants]);
+  }, [participants, winners]);
 
   // Filtered & Sorted participants
   const filteredParticipants = useMemo(() => {
@@ -113,6 +134,14 @@ export function useParticipants(
       list = list.filter((p) => Boolean(p.wonAt));
     }
 
+    if (userTypeFilter !== "all") {
+      list = list.filter(
+        (p) =>
+          (p.userType || "lojista").toLowerCase() ===
+          userTypeFilter.toLowerCase(),
+      );
+    }
+
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       list = list.filter(
@@ -121,7 +150,8 @@ export function useParticipants(
           p.store.toLowerCase().includes(q) ||
           p.instagram.toLowerCase().includes(q) ||
           p.phone.includes(q) ||
-          p.luckyNumber.includes(q),
+          p.luckyNumber.includes(q) ||
+          Boolean(p.tickets?.some((t) => t.ticketNumber.includes(q) || t.drawTitle.toLowerCase().includes(q))),
       );
     }
 
@@ -148,7 +178,7 @@ export function useParticipants(
     });
 
     return list;
-  }, [participants, statusFilter, query, sortBy]);
+  }, [participants, statusFilter, userTypeFilter, query, sortBy]);
 
   // Export helper
   const exportToCSV = useCallback(() => {
@@ -174,9 +204,15 @@ export function useParticipants(
     setParticipants((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
+  const removeLocalWinner = useCallback((winnerId: number) => {
+    setWinners((prev) => prev.filter((w) => w.id !== winnerId && w.winnerId !== winnerId));
+  }, []);
+
   return {
     participants,
     filteredParticipants,
+    winners,
+    setWinners,
     stats,
     registrationsOpen,
     setRegistrationsOpen,
@@ -186,11 +222,15 @@ export function useParticipants(
     setQuery,
     statusFilter,
     setStatusFilter,
+    userTypeFilter,
+    setUserTypeFilter,
+    availableUserTypes,
     sortBy,
     setSortBy,
     exportToCSV,
     loadData,
     updateLocalParticipant,
     removeLocalParticipant,
+    removeLocalWinner,
   };
 }

@@ -12,6 +12,7 @@ export type Participant = {
   status: string;
   createdAt: string;
   wonAt: string | null;
+  tickets?: import("@/types/participant.types").ParticipantTicket[];
 };
 
 export const participantFields = `
@@ -48,14 +49,33 @@ export function adminAllowed(request: Request): boolean {
 export function row(raw: Record<string, unknown>): Participant {
   const createdAt = raw.created_at;
   const wonAt = raw.won_at;
-  const rawType = String(raw.user_type || "lojista").toLowerCase() as UserType;
-  const userType: UserType = ["lojista", "influencer", "visitante", "vip"].includes(rawType)
+  const rawType = String(raw.user_type || raw.tp_usuario || "lojista").toLowerCase() as UserType;
+  const userType: UserType = ["lojista", "revendedor", "influencer", "visitante"].includes(rawType)
     ? rawType
     : "lojista";
 
+  let tickets: import("@/types/participant.types").ParticipantTicket[] = [];
+  if (Array.isArray(raw.tickets)) {
+    tickets = raw.tickets as import("@/types/participant.types").ParticipantTicket[];
+  } else if (typeof raw.tickets === "string") {
+    try {
+      const parsed = JSON.parse(raw.tickets);
+      if (Array.isArray(parsed)) tickets = parsed;
+    } catch {}
+  }
+
+  let luckyNumber = raw.lucky_number && String(raw.lucky_number) !== "null"
+    ? String(raw.lucky_number)
+    : "";
+
+  if (!luckyNumber && tickets.length > 0) {
+    luckyNumber = tickets.map((t) => t.ticketNumber).join(", ");
+  }
+
   return {
     id: Number(raw.id),
-    luckyNumber: String(raw.lucky_number),
+    luckyNumber,
+    tickets,
     name: String(raw.name),
     store: String(raw.store),
     phone: String(raw.phone),

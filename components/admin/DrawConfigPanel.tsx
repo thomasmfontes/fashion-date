@@ -9,6 +9,7 @@ import { CreateEditDrawModal } from "@/components/admin/CreateEditDrawModal";
 import { DrawTransitionLink } from "@/components/admin/DrawTransitionLink";
 
 interface DrawConfigPanelProps {
+  adminKey?: string;
   totalParticipants: number;
   activeParticipants: number;
   totalWinners: number;
@@ -18,6 +19,7 @@ interface DrawConfigPanelProps {
 }
 
 export function DrawConfigPanel({
+  adminKey,
   totalParticipants,
   activeParticipants,
   totalWinners,
@@ -32,7 +34,7 @@ export function DrawConfigPanel({
     updateDraw,
     deleteDraw,
     duplicateDraw,
-  } = useDrawCollection();
+  } = useDrawCollection(adminKey);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDraw, setEditingDraw] = useState<DrawItem | null>(null);
@@ -47,12 +49,12 @@ export function DrawConfigPanel({
     setIsModalOpen(true);
   }
 
-  function handleSaveDraw(dto: CreateDrawDTO) {
+  async function handleSaveDraw(dto: CreateDrawDTO) {
     if (editingDraw) {
-      updateDraw(editingDraw.id, dto);
+      await updateDraw(editingDraw.id, dto);
       onShowToast(`Sorteio "${dto.title}" atualizado!`, "success");
     } else {
-      const created = createDraw(dto);
+      const created = await createDraw(dto);
       onShowToast(`Sorteio "${created.title}" adicionado!`, "success");
     }
   }
@@ -63,156 +65,202 @@ export function DrawConfigPanel({
     onShowToast(`Sorteio ativo no Telão: "${selected?.title || "Sorteio"}"`, "success");
   }
 
-  function handleDeleteDraw(drawId: string, title: string) {
+  async function handleDeleteDraw(drawId: string, title: string) {
     if (window.confirm(`Deseja remover o sorteio "${title}"?`)) {
-      deleteDraw(drawId);
+      await deleteDraw(drawId);
       onShowToast("Sorteio removido.", "info");
     }
   }
 
-  function handleDuplicate(drawId: string) {
-    duplicateDraw(drawId);
+  async function handleDuplicate(drawId: string) {
+    await duplicateDraw(drawId);
     onShowToast("Sorteio duplicado.", "success");
   }
 
   return (
-    <div className="draw-config-screen">
-      {/* Header Unificado e Direto */}
-      <header className="clean-config-header">
-        <div className="header-text-block">
+    <div className="stitch-draw-management">
+      {/* Header Padronizado do Painel */}
+      <header className="stitch-header">
+        <div>
           <h1>Sorteios do Evento</h1>
-          <p>
-            Configure as rodadas, defina quais públicos concorrem e escolha qual transmitir no <strong>Telão Oficial</strong>.
-          </p>
+          <span className="stitch-status open" role="status" aria-live="polite">
+            <i />
+            {draws.length} {draws.length === 1 ? "Rodada Cadastrada" : "Rodadas Cadastradas"}
+          </span>
         </div>
-
-        <div className="header-actions-bar">
-          {/* Botão Novo Sorteio */}
-          <button type="button" className="btn-clean-create" onClick={handleOpenCreate}>
-            <span className="material-symbols-outlined">add</span>
-            <span>Novo Sorteio</span>
-          </button>
-
-          {/* Botão Abrir Telão */}
-          <DrawTransitionLink className="btn-clean-launch">
+        <div className="stitch-actions">
+          <DrawTransitionLink className="stitch-button outline">
             <span className="material-symbols-outlined">live_tv</span>
-            <span>Abrir Telão</span>
+            Abrir Telão
           </DrawTransitionLink>
+          <button
+            type="button"
+            className="stitch-button filled"
+            onClick={handleOpenCreate}
+          >
+            <span className="material-symbols-outlined">add</span>
+            Novo Sorteio
+          </button>
         </div>
       </header>
 
-      {/* Lista Limpa de Sorteios */}
-      <div className="clean-draws-list">
-        {draws.map((draw) => {
-          const isActive = draw.id === activeDrawId;
-          const targetTypes = draw.targetUserTypes || ["lojista", "influencer", "visitante", "vip"];
-          const isAllTypes = targetTypes.length >= 4;
+      {/* Cards de Métricas Harmonizados */}
+      <div className="stitch-stats stitch-draw-stats">
+        <div className="stitch-stat-card">
+          <div className="stat-header">
+            <span className="stat-label">Total de Rodadas</span>
+            <div className="stat-icon-badge">
+              <span className="material-symbols-outlined">casino</span>
+            </div>
+          </div>
+          <strong className="stat-value">{draws.length}</strong>
+        </div>
 
-          return (
-            <div
-              key={draw.id}
-              className={`clean-draw-row ${isActive ? "is-active-draw" : ""}`}
-            >
-              {/* Lado Esquerdo: Ícone + Título + Perfis Participantes */}
-              <div className="draw-row-left">
-                <div className={`draw-type-avatar ${targetTypes.includes("lojista") && targetTypes.length === 1 ? "provador" : "generic"}`}>
-                  <span className="material-symbols-outlined">
-                    {targetTypes.includes("lojista") && targetTypes.length === 1 ? "storefront" : "workspace_premium"}
-                  </span>
-                </div>
-                <div className="draw-primary-info">
-                  <div className="draw-title-line">
-                    <h3>{draw.title}</h3>
+        <div className="stitch-stat-card">
+          <div className="stat-header">
+            <span className="stat-label">Público Apto</span>
+            <div className="stat-icon-badge">
+              <span className="material-symbols-outlined">how_to_reg</span>
+            </div>
+          </div>
+          <strong className="stat-value">{activeParticipants}</strong>
+        </div>
+      </div>
+
+      {/* Painel Unificado de Rodadas */}
+      <div className="stitch-panel-card">
+        <div className="stitch-controls-header">
+          <div className="stitch-header-info">
+            <div className="stitch-header-pill">
+              <span className="material-symbols-outlined">collections_bookmark</span>
+              <span>Acervo de Rodadas</span>
+              <span className="stitch-pill-count">{draws.length}</span>
+            </div>
+          </div>
+
+          <div className="stitch-controls-meta">
+            <DrawTransitionLink className="stitch-export-btn" title="Abrir Telão Oficial">
+              <span className="material-symbols-outlined export-icon">live_tv</span>
+              <span className="export-text">Telão Oficial</span>
+            </DrawTransitionLink>
+          </div>
+        </div>
+
+        {/* Lista Estruturada de Sorteios */}
+        <div className="stitch-draws-list">
+          {draws.map((draw) => {
+            const isActive = draw.id === activeDrawId;
+            const targetTypes = draw.targetUserTypes || ["lojista", "influencer", "visitante", "vip"];
+            const isAllTypes = targetTypes.length >= 4;
+
+            return (
+              <div
+                key={draw.id}
+                className={`stitch-draw-item ${isActive ? "is-active-draw" : ""}`}
+              >
+                {/* Lado Esquerdo: Ícone Joia + Título + Badges */}
+                <div className="stitch-draw-item-left">
+                  <div className="stat-icon-badge draw-badge-box">
+                    <span className="material-symbols-outlined">
+                      {targetTypes.includes("lojista") && targetTypes.length === 1 ? "storefront" : "workspace_premium"}
+                    </span>
                   </div>
 
-                  <div className="draw-meta-line">
-                    <span className="meta-tag prize">
-                      <span className="material-symbols-outlined">card_giftcard</span>
-                      Prêmio: <strong>{draw.prizeTitle}</strong>
-                    </span>
+                  <div className="stitch-draw-info">
+                    <div className="stitch-draw-title-row">
+                      <h3 className="stitch-draw-title">{draw.title}</h3>
+                    </div>
 
-                    {draw.hasNumberLimit && draw.maxNumber && (
-                      <span className="meta-tag limit" title={`Sorteia apenas números até ${draw.maxNumber}`}>
-                        <span className="material-symbols-outlined">tag</span>
-                        Até Nº <strong>{String(draw.maxNumber).padStart(4, "0")}</strong>
+                    <div className="stitch-draw-meta-row">
+                      <span className="stitch-draw-tag prize">
+                        <span className="material-symbols-outlined">card_giftcard</span>
+                        <span>Prêmio: <strong>{draw.prizeTitle}</strong></span>
                       </span>
-                    )}
 
-                    {/* Tags dos Públicos Participantes */}
-                    <div className="target-types-badges-row">
-                      <span className="meta-sublabel">Participam:</span>
-                      {isAllTypes ? (
-                        <span className="meta-user-tag all">
-                          <span className="material-symbols-outlined">groups</span>
-                          Todos os Participantes
+                      {draw.hasNumberLimit && draw.maxNumber && (
+                        <span className="stitch-draw-tag limit" title={`Sorteia apenas números até ${draw.maxNumber}`}>
+                          <span className="material-symbols-outlined">tag</span>
+                          <span>Até Nº <strong>{String(draw.maxNumber).padStart(4, "0")}</strong></span>
                         </span>
-                      ) : (
-                        targetTypes.map((type) => (
-                          <span key={type} className={`meta-user-tag ${type}`}>
-                            <span className="material-symbols-outlined">
-                              {USER_TYPE_ICONS[type]}
-                            </span>
-                            {USER_TYPE_LABELS[type]}
-                          </span>
-                        ))
                       )}
+
+                      <div className="stitch-audience-tags">
+                        {isAllTypes ? (
+                          <span className="stitch-user-pill all">
+                            <span className="material-symbols-outlined">groups</span>
+                            <span>Todos os Participantes</span>
+                          </span>
+                        ) : (
+                          targetTypes.map((type) => (
+                            <span key={type} className={`stitch-user-pill ${type}`}>
+                              <span className="material-symbols-outlined">
+                                {USER_TYPE_ICONS[type]}
+                              </span>
+                              <span>{USER_TYPE_LABELS[type]}</span>
+                            </span>
+                          ))
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Lado Direito: Botão de Seleção + Ações Rápidas */}
-              <div className="draw-row-right">
-                {isActive ? (
-                  <span className="active-selected-label">
-                    <span className="material-symbols-outlined">check_circle</span>
-                    Sorteio Ativo
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn-select-for-screen"
-                    onClick={() => handleSelectDraw(draw.id)}
-                  >
-                    <span className="material-symbols-outlined">play_arrow</span>
-                    Transmitir no Telão
-                  </button>
-                )}
-
-                <div className="row-action-buttons">
-                  <button
-                    type="button"
-                    className="btn-row-action"
-                    onClick={() => handleOpenEdit(draw)}
-                    title="Editar sorteio"
-                  >
-                    <span className="material-symbols-outlined">edit</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn-row-action"
-                    onClick={() => handleDuplicate(draw.id)}
-                    title="Duplicar sorteio"
-                  >
-                    <span className="material-symbols-outlined">content_copy</span>
-                  </button>
-
-                  {draws.length > 1 && (
+                {/* Lado Direito: Status / Transmissão + Ações Rápidas */}
+                <div className="stitch-draw-item-right">
+                  {isActive ? (
+                    <span className="stitch-live-status-pill">
+                      <span className="pulse-dot" />
+                      <span className="material-symbols-outlined">live_tv</span>
+                      <span>No Telão</span>
+                    </span>
+                  ) : (
                     <button
                       type="button"
-                      className="btn-row-action delete"
-                      onClick={() => handleDeleteDraw(draw.id, draw.title)}
-                      title="Remover sorteio"
+                      className="stitch-transmit-btn"
+                      onClick={() => handleSelectDraw(draw.id)}
+                      title="Definir esta rodada como ativa no telão"
                     >
-                      <span className="material-symbols-outlined">delete</span>
+                      <span className="material-symbols-outlined">play_circle</span>
+                      <span>Transmitir</span>
                     </button>
                   )}
+
+                  <div className="participant-actions">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(draw)}
+                      aria-label={`Editar sorteio ${draw.title}`}
+                      title="Editar rodada"
+                    >
+                      <span className="material-symbols-outlined">edit</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDuplicate(draw.id)}
+                      aria-label={`Duplicar sorteio ${draw.title}`}
+                      title="Duplicar rodada"
+                    >
+                      <span className="material-symbols-outlined">content_copy</span>
+                    </button>
+
+                    {draws.length > 1 && (
+                      <button
+                        type="button"
+                        className="danger"
+                        onClick={() => handleDeleteDraw(draw.id, draw.title)}
+                        aria-label={`Excluir sorteio ${draw.title}`}
+                        title="Excluir rodada"
+                      >
+                        <span className="material-symbols-outlined">delete</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Modal de Criação / Edição */}

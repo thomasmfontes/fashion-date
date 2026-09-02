@@ -13,7 +13,7 @@ interface CreateEditDrawModalProps {
   initialData?: DrawItem | null;
 }
 
-const ALL_USER_TYPES: UserType[] = ["lojista", "influencer", "visitante", "vip"];
+const ALL_USER_TYPES: UserType[] = ["lojista", "revendedor", "influencer", "visitante"];
 
 export function CreateEditDrawModal({
   isOpen,

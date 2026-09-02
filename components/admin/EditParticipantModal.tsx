@@ -64,7 +64,7 @@ function EditFormContent({
       title="Editar Cadastro"
       badge={
         <span className="edit-ticket-badge">
-          Número da Sorte: <strong>#{participant.luckyNumber}</strong>
+          Perfil: <strong style={{ textTransform: "capitalize" }}>{participant.userType || "Lojista"}</strong>
         </span>
       }
       isBusy={isSaving}
@@ -72,7 +72,7 @@ function EditFormContent({
       <form onSubmit={handleSubmit} className="edit-form-inner">
         <div className="edit-fields">
           <label htmlFor="edit-name">
-            <span>Nome do Lojista</span>
+            <span>Nome do Participante</span>
             <input
               id="edit-name"
               value={name}

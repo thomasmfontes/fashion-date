@@ -13,11 +13,17 @@ export async function POST(request: Request) {
 
   let targetTypes: string[] = [];
   let maxNumber: number | undefined;
+  let drawIdTarget: string | undefined;
+
   try {
     const body = (await request.json()) as {
+      drawId?: string;
       targetUserTypes?: string[];
       maxNumber?: number;
     };
+    if (body && typeof body.drawId === "string" && body.drawId.trim()) {
+      drawIdTarget = body.drawId.trim();
+    }
     if (body && Array.isArray(body.targetUserTypes) && body.targetUserTypes.length > 0) {
       targetTypes = body.targetUserTypes.map((t) => String(t).toLowerCase());
     }
@@ -25,57 +31,135 @@ export async function POST(request: Request) {
       maxNumber = Math.floor(body.maxNumber);
     }
   } catch {
-    // Body is optional (defaults to all active participants)
+    // Body is optional
   }
 
   const db = await initialize();
-  const drawId = crypto.randomUUID();
+  const sessionDrawId = crypto.randomUUID();
+
   const selected = await db.transaction(async (transaction) => {
-    const updateQuery = `
-      UPDATE t_participants
-      SET st_participante='winner'
-      WHERE id_participante=(
-        SELECT id_participante FROM t_participants
-        WHERE st_participante='active'
-        ${maxNumber ? `AND nr_sorte ~ '^[0-9]+$' AND CAST(nr_sorte AS INTEGER) <= ${maxNumber}` : ""}
-        ORDER BY RANDOM() LIMIT 1 FOR UPDATE SKIP LOCKED
-      ) AND st_participante='active'
-      RETURNING ${participantFields}
-    `;
+    let winnerRow: Record<string, unknown> | null = null;
+    let winningTicketNumber = "";
 
-    const stmt = transaction.prepare(updateQuery);
-    const winner = await stmt.first<Record<string, unknown>>();
+    // 1. Try selecting from t_draw_tickets if drawIdTarget is provided
+    if (drawIdTarget) {
+      let ticketFilter = "WHERE t.id_sorteio = ?";
+      if (maxNumber) {
+        ticketFilter += ` AND t.nr_bilhete ~ '^[0-9]+$' AND CAST(t.nr_bilhete AS INTEGER) <= ${maxNumber}`;
+      }
+      if (targetTypes.length > 0) {
+        const typesStr = targetTypes.map((t) => `'${t}'`).join(",");
+        ticketFilter += ` AND LOWER(COALESCE(p.user_type, 'lojista')) IN (${typesStr})`;
+      }
 
-    if (winner) {
+      // Exclude previous winners of this specific draw
+      ticketFilter += ` AND t.id_participante NOT IN (SELECT id_participante FROM t_draw_winners WHERE id_sorteio = '${drawIdTarget}')`;
+
+      const ticketWinner = await transaction
+        .prepare(`
+          SELECT 
+            t.id_ticket,
+            t.nr_bilhete AS lucky_number,
+            p.id_participante AS id,
+            p.nm_participante AS name,
+            p.nm_loja AS store,
+            p.nr_whatsapp AS phone,
+            p.nm_instagram AS instagram,
+            p.user_type,
+            'winner' AS status,
+            p.dt_cadastro AS created_at
+          FROM t_draw_tickets t
+          JOIN t_participants p ON t.id_participante = p.id_participante
+          ${ticketFilter}
+          ORDER BY RANDOM() LIMIT 1 FOR UPDATE SKIP LOCKED
+        `)
+        .bind(drawIdTarget)
+        .first<Record<string, unknown>>();
+
+      if (ticketWinner) {
+        winnerRow = ticketWinner;
+        winningTicketNumber = String(ticketWinner.lucky_number || "").padStart(4, "0");
+        winnerRow.lucky_number = winningTicketNumber;
+
+        // Record in t_draw_winners
+        await transaction
+          .prepare(
+            "INSERT INTO t_draw_winners (id_sorteio, id_participante, nr_bilhete) VALUES (?, ?, ?)",
+          )
+          .bind(drawIdTarget, Number(ticketWinner.id), winningTicketNumber)
+          .run();
+      }
+    }
+
+    // 2. Fallback to active participants if no ticket was found or no drawIdTarget
+    if (!winnerRow) {
+      let filterClause = "WHERE st_participante='active'";
+      if (maxNumber) {
+        filterClause += ` AND nr_sorte ~ '^[0-9]+$' AND CAST(nr_sorte AS INTEGER) <= ${maxNumber}`;
+      }
+      if (targetTypes.length > 0) {
+        const typesStr = targetTypes.map((t) => `'${t}'`).join(",");
+        filterClause += ` AND LOWER(COALESCE(user_type, 'lojista')) IN (${typesStr})`;
+      }
+
+      const updateQuery = `
+        UPDATE t_participants
+        SET st_participante='winner'
+        WHERE id_participante=(
+          SELECT id_participante FROM t_participants
+          ${filterClause}
+          ORDER BY RANDOM() LIMIT 1 FOR UPDATE SKIP LOCKED
+        ) AND st_participante='active'
+        RETURNING ${participantFields}
+      `;
+
+      winnerRow = await transaction.prepare(updateQuery).first<Record<string, unknown>>();
+      if (winnerRow) {
+        winningTicketNumber = String(winnerRow.lucky_number || "").padStart(4, "0");
+        winnerRow.lucky_number = winningTicketNumber;
+      }
+    }
+
+    if (winnerRow) {
+      winningTicketNumber = String(winnerRow.lucky_number || "").padStart(4, "0");
+      winnerRow.lucky_number = winningTicketNumber;
+
       await transaction
         .prepare(
           "INSERT INTO t_draws(id_sorteio,id_participante,nr_sorte) VALUES(?,?,?)",
         )
-        .bind(drawId, winner.id, String(winner.lucky_number))
+        .bind(sessionDrawId, Number(winnerRow.id), winningTicketNumber)
         .run();
     }
 
-    return winner;
+    return winnerRow;
   });
 
   if (!selected) {
-    const errorMsg = maxNumber
-      ? `Não há participantes ativos disponíveis com número até ${maxNumber} para sortear.`
-      : "Não há participantes ativos disponíveis para sortear.";
-    return Response.json(
-      { error: errorMsg },
-      { status: 409 },
-    );
+    const errorMsg = drawIdTarget
+      ? "Não há participantes inscritos neste sorteio disponíveis para apuração."
+      : maxNumber
+        ? `Não há participantes ativos disponíveis com número até ${maxNumber} para sortear.`
+        : "Não há participantes ativos disponíveis para sortear.";
+    return Response.json({ error: errorMsg }, { status: 409 });
+  }
+
+  const winnerNumber = String(selected.lucky_number || "").padStart(4, "0");
+  try {
+    await broadcastWinnerAnnouncement(drawIdTarget || sessionDrawId, winnerNumber);
+  } catch (err) {
+    console.error("Erro ao transmitir anúncio em tempo real:", err);
   }
 
   return Response.json({
     ok: true,
     winner: row({
       ...selected,
+      lucky_number: winnerNumber,
       status: "winner",
       won_at: new Date().toISOString(),
     }),
-    drawId,
+    drawId: sessionDrawId,
   });
 }
 
@@ -136,5 +220,109 @@ export async function PATCH(request: Request) {
     ok: true,
     drawId: draw.id,
     winnerNumber: draw.lucky_number,
+  });
+}
+
+export async function GET(request: Request) {
+  if (!adminAllowed(request)) {
+    return Response.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const drawId = searchParams.get("drawId")?.trim();
+  const rawTargetTypes = searchParams.get("targetUserTypes");
+  const rawMaxNumber = searchParams.get("maxNumber");
+
+  let targetTypes: string[] = [];
+  if (rawTargetTypes) {
+    targetTypes = rawTargetTypes
+      .split(",")
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean);
+  }
+
+  let maxNumber: number | undefined;
+  if (rawMaxNumber && !isNaN(Number(rawMaxNumber)) && Number(rawMaxNumber) > 0) {
+    maxNumber = Math.floor(Number(rawMaxNumber));
+  }
+
+  const db = await initialize();
+  let count = 0;
+
+  try {
+    if (drawId) {
+      let ticketFilter = "WHERE t.id_sorteio = ?";
+      if (maxNumber) {
+        ticketFilter += ` AND t.nr_bilhete ~ '^[0-9]+$' AND CAST(t.nr_bilhete AS INTEGER) <= ${maxNumber}`;
+      }
+      if (targetTypes.length > 0) {
+        const typesStr = targetTypes.map((t) => `'${t}'`).join(",");
+        ticketFilter += ` AND LOWER(COALESCE(p.user_type, 'lojista')) IN (${typesStr})`;
+      }
+      ticketFilter += ` AND t.id_participante NOT IN (SELECT id_participante FROM t_draw_winners WHERE id_sorteio = '${drawId}')`;
+
+      const res = await db
+        .prepare(`
+          SELECT COUNT(*)::integer AS count
+          FROM t_draw_tickets t
+          JOIN t_participants p ON t.id_participante = p.id_participante
+          ${ticketFilter}
+        `)
+        .bind(drawId)
+        .first<{ count: number }>();
+
+      count = Number(res?.count || 0);
+
+      // Se não houver bilhetes avulsos em t_draw_tickets para este sorteio, usa os participantes cadastrados
+      if (count === 0) {
+        let pFilter = "WHERE st_participante = 'active'";
+        if (maxNumber) {
+          pFilter += ` AND nr_sorte ~ '^[0-9]+$' AND CAST(nr_sorte AS INTEGER) <= ${maxNumber}`;
+        }
+        if (targetTypes.length > 0) {
+          const typesStr = targetTypes.map((t) => `'${t}'`).join(",");
+          pFilter += ` AND LOWER(COALESCE(user_type, 'lojista')) IN (${typesStr})`;
+        }
+        pFilter += ` AND id_participante NOT IN (SELECT id_participante FROM t_draw_winners WHERE id_sorteio = '${drawId}')`;
+
+        const pRes = await db
+          .prepare(`
+            SELECT COUNT(*)::integer AS count
+            FROM t_participants
+            ${pFilter}
+          `)
+          .first<{ count: number }>();
+        count = Number(pRes?.count || 0);
+      }
+    } else {
+      let filterClause = "WHERE st_participante = 'active'";
+      if (maxNumber) {
+        filterClause += ` AND nr_sorte ~ '^[0-9]+$' AND CAST(nr_sorte AS INTEGER) <= ${maxNumber}`;
+      }
+      if (targetTypes.length > 0) {
+        const typesStr = targetTypes.map((t) => `'${t}'`).join(",");
+        filterClause += ` AND LOWER(COALESCE(user_type, 'lojista')) IN (${typesStr})`;
+      }
+
+      const res = await db
+        .prepare(`
+          SELECT COUNT(*)::integer AS count
+          FROM t_participants
+          ${filterClause}
+        `)
+        .first<{ count: number }>();
+
+      count = Number(res?.count || 0);
+    }
+  } catch (err) {
+    console.error("Erro ao verificar elegibilidade de sorteio:", err);
+    // Em caso de fallback, assume que há participantes
+    count = 1;
+  }
+
+  return Response.json({
+    ok: true,
+    eligibleCount: count,
+    hasEligible: count > 0,
   });
 }

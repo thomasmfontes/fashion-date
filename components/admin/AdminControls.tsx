@@ -1,11 +1,14 @@
 import type { StatusFilter, SortOption } from "@/types/participant.types";
 
 interface AdminControlsProps {
-  statusFilter: StatusFilter;
-  onStatusChange: (status: StatusFilter) => void;
+  statusFilter?: StatusFilter;
+  onStatusChange?: (status: StatusFilter) => void;
+  userTypeFilter: string;
+  onUserTypeChange: (type: string) => void;
+  availableUserTypes: string[];
   totalCount: number;
-  activeCount: number;
-  winnerCount: number;
+  activeCount?: number;
+  winnerCount?: number;
   filteredCount: number;
   query: string;
   onQueryChange: (query: string) => void;
@@ -17,11 +20,10 @@ interface AdminControlsProps {
 }
 
 export function AdminControls({
-  statusFilter,
-  onStatusChange,
+  userTypeFilter,
+  onUserTypeChange,
+  availableUserTypes,
   totalCount,
-  activeCount,
-  winnerCount,
   filteredCount,
   query,
   onQueryChange,
@@ -34,51 +36,26 @@ export function AdminControls({
   return (
     <>
       <div className="stitch-controls-header">
-        <div className="stitch-segmented" role="tablist" aria-label="Filtro por status">
-          <button
-            type="button"
-            className={`stitch-seg-btn${statusFilter === "all" ? " active" : ""}`}
-            onClick={() => onStatusChange("all")}
-            role="tab"
-            aria-selected={statusFilter === "all"}
-          >
-            <span>Todos</span>
-            <small>{totalCount}</small>
-          </button>
-          <button
-            type="button"
-            className={`stitch-seg-btn${statusFilter === "active" ? " active" : ""}`}
-            onClick={() => onStatusChange("active")}
-            role="tab"
-            aria-selected={statusFilter === "active"}
-          >
-            <span>Ativos</span>
-            <small>{activeCount}</small>
-          </button>
-          <button
-            type="button"
-            className={`stitch-seg-btn${statusFilter === "winner" ? " active" : ""}`}
-            onClick={() => onStatusChange("winner")}
-            role="tab"
-            aria-selected={statusFilter === "winner"}
-          >
-            <span>Sorteados</span>
-            <small>{winnerCount}</small>
-          </button>
+        <div className="stitch-header-info">
+          <div className="stitch-header-pill">
+            <span className="material-symbols-outlined">group</span>
+            <span>Participantes</span>
+            <span className="stitch-pill-count">{totalCount}</span>
+          </div>
         </div>
 
         <div className="stitch-controls-meta">
-          <span className="stitch-count-label">
-            Exibindo <strong>{filteredCount}</strong> de {totalCount}
-          </span>
           <button
             type="button"
             className="stitch-export-btn"
             onClick={onExportCSV}
-            title="Exportar dados filtrados para planilha CSV"
+            disabled={filteredCount === 0}
+            title="Exportar planilha CSV"
+            aria-label="Exportar CSV"
           >
-            <span className="material-symbols-outlined">download</span>
-            <span>Exportar CSV</span>
+            <span className="material-symbols-outlined export-icon">download</span>
+            <span className="export-text">Exportar</span>
+            <small className="export-badge">CSV</small>
           </button>
         </div>
       </div>
@@ -105,6 +82,22 @@ export function AdminControls({
         </div>
 
         <div className="stitch-sort-box">
+          <span className="material-symbols-outlined">badge</span>
+          <select
+            aria-label="Filtrar por perfil"
+            value={userTypeFilter}
+            onChange={(e) => onUserTypeChange(e.target.value)}
+          >
+            <option value="all">Todos os Perfis</option>
+            {availableUserTypes.map((u) => (
+              <option key={u} value={u} style={{ textTransform: "capitalize" }}>
+                {u.charAt(0).toUpperCase() + u.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="stitch-sort-box">
           <span className="material-symbols-outlined">swap_vert</span>
           <select
             aria-label="Ordenar por"
@@ -125,10 +118,10 @@ export function AdminControls({
             type="button"
             className="stitch-reset-btn"
             onClick={onResetFilters}
-            title="Restaurar todos os filtros"
+            title="Limpar filtros"
+            aria-label="Limpar filtros"
           >
             <span className="material-symbols-outlined">filter_alt_off</span>
-            <span>Limpar Filtros</span>
           </button>
         )}
       </div>

@@ -2,80 +2,59 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { DrawItem, CreateDrawDTO, UpdateDrawDTO } from "@/types/drawCollection.types";
-import type { UserType } from "@/types/participant.types";
+import { drawService } from "@/services/drawService";
 
-const STORAGE_KEY_COLLECTION = "fashiondate_draw_collection_v2";
-const STORAGE_KEY_ACTIVE_ID = "fashiondate_active_draw_id_v2";
+const STORAGE_KEY_COLLECTION = "fashiondate_draw_collection_v3";
+const STORAGE_KEY_ACTIVE_ID = "fashiondate_active_draw_id_v3";
 
-const INITIAL_DRAWS: DrawItem[] = [
-  {
-    id: "draw-provador-1",
-    title: "1ª Rodada · Provador Fashion",
-    prizeTitle: "Vaga Especial no Provador Fashion",
-    targetUserTypes: ["lojista"],
-    status: "ready",
-    order: 1,
-    createdAt: "2026-08-24T00:00:00.000Z",
-  },
-  {
-    id: "draw-look-geral",
-    title: "Sorteio · Look Completo Crente Chic",
-    prizeTitle: "Look Completo Crente Chic",
-    targetUserTypes: ["lojista", "influencer", "visitante", "vip"],
-    status: "ready",
-    order: 2,
-    createdAt: "2026-08-24T00:00:00.000Z",
-  },
-  {
-    id: "draw-bolsa-luxo",
-    title: "Sorteio Especial · Bolsa de Luxo",
-    prizeTitle: "Bolsa de Luxo Exclusiva",
-    targetUserTypes: ["visitante", "influencer", "vip"],
-    status: "ready",
-    order: 3,
-    createdAt: "2026-08-24T00:00:00.000Z",
-  },
-  {
-    id: "draw-provador-final",
-    title: "Grande Final · Provador Fashion",
-    prizeTitle: "Grande Prêmio Provador Fashion",
-    targetUserTypes: ["lojista"],
-    status: "ready",
-    order: 4,
-    createdAt: "2026-08-24T00:00:00.000Z",
-  },
-];
-
-export function useDrawCollection() {
-  const [draws, setDraws] = useState<DrawItem[]>(INITIAL_DRAWS);
-  const [activeDrawId, setActiveDrawId] = useState<string>(INITIAL_DRAWS[0].id);
+export function useDrawCollection(adminKey?: string) {
+  const [draws, setDraws] = useState<DrawItem[]>([]);
+  const [activeDrawId, setActiveDrawId] = useState<string>("");
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Hydrate from localStorage safely on client mount
+  // Restore from localStorage immediately on client mount, then sync with DB
   useEffect(() => {
+    let active = true;
+
+    // 1. Instant local restore (0ms, client-only)
     try {
-      const savedCollection = localStorage.getItem(STORAGE_KEY_COLLECTION);
-      if (savedCollection) {
-        const parsed = JSON.parse(savedCollection);
+      const cached = localStorage.getItem(STORAGE_KEY_COLLECTION);
+      if (cached) {
+        const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setDraws(parsed);
+          const savedActiveId = localStorage.getItem(STORAGE_KEY_ACTIVE_ID);
+          const validActive = parsed.find((d: DrawItem) => d.id === savedActiveId);
+          setActiveDrawId(validActive ? validActive.id : parsed[0].id);
         }
       }
+    } catch {}
 
-      const savedId = localStorage.getItem(STORAGE_KEY_ACTIVE_ID);
-      if (savedId) {
-        setActiveDrawId(savedId);
+    // 2. Network sync from DB
+    drawService.getDraws().then((dbDraws) => {
+      if (!active) return;
+      if (Array.isArray(dbDraws)) {
+        setDraws(dbDraws);
+        try {
+          localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(dbDraws));
+        } catch {}
+
+        if (dbDraws.length > 0) {
+          const savedActiveId = localStorage.getItem(STORAGE_KEY_ACTIVE_ID);
+          const validActive = dbDraws.find((d) => d.id === savedActiveId);
+          const nextActive = validActive ? validActive.id : dbDraws[0].id;
+          setActiveDrawId(nextActive);
+          try {
+            localStorage.setItem(STORAGE_KEY_ACTIVE_ID, nextActive);
+          } catch {}
+        }
       }
-    } catch {}
-    setIsHydrated(true);
-  }, []);
+      setIsHydrated(true);
+    });
 
-  // Save collection changes to localStorage
-  const saveCollection = useCallback((items: DrawItem[]) => {
-    setDraws(items);
-    try {
-      localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(items));
-    } catch {}
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Set active draw
@@ -89,104 +68,120 @@ export function useDrawCollection() {
         localStorage.setItem(STORAGE_KEY_ACTIVE_ID, drawId);
       } catch {}
     },
-    [draws]
+    [draws],
   );
 
-  // Add new draw to collection
+  // Add new draw to collection (persisted in DB if adminKey is provided)
   const createDraw = useCallback(
-    (dto: CreateDrawDTO) => {
-      const newDraw: DrawItem = {
-        id: `draw-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        title: dto.title.trim() || "Novo Sorteio",
-        prizeTitle: dto.prizeTitle.trim() || "Prêmio Especial",
-        targetUserTypes:
-          dto.targetUserTypes && dto.targetUserTypes.length > 0
-            ? dto.targetUserTypes
-            : ["lojista", "influencer", "visitante", "vip"],
-        hasNumberLimit: Boolean(dto.hasNumberLimit),
-        maxNumber: dto.hasNumberLimit && dto.maxNumber ? Number(dto.maxNumber) : null,
-        status: "ready",
-        order: draws.length + 1,
-        createdAt: new Date().toISOString(),
-      };
-
-      const updated = [...draws, newDraw];
-      saveCollection(updated);
-      return newDraw;
-    },
-    [draws, saveCollection]
-  );
-
-  // Update existing draw
-  const updateDraw = useCallback(
-    (drawId: string, dto: UpdateDrawDTO) => {
-      const updated = draws.map((item) => {
-        if (item.id !== drawId) return item;
-        return {
-          ...item,
-          ...dto,
-          title: dto.title !== undefined ? dto.title.trim() : item.title,
-          prizeTitle: dto.prizeTitle !== undefined ? dto.prizeTitle.trim() : item.prizeTitle,
+    async (dto: CreateDrawDTO) => {
+      let created: DrawItem;
+      if (adminKey) {
+        created = await drawService.createDraw(adminKey, dto);
+      } else {
+        created = {
+          id: `draw-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          title: dto.title.trim() || "Novo Sorteio",
+          prizeTitle: dto.prizeTitle.trim() || "Prêmio Especial",
           targetUserTypes:
             dto.targetUserTypes && dto.targetUserTypes.length > 0
               ? dto.targetUserTypes
-              : item.targetUserTypes,
-          hasNumberLimit:
-            dto.hasNumberLimit !== undefined
-              ? Boolean(dto.hasNumberLimit)
-              : item.hasNumberLimit,
-          maxNumber:
-            dto.hasNumberLimit === false
-              ? null
-              : dto.maxNumber !== undefined
-                ? (dto.maxNumber ? Number(dto.maxNumber) : null)
-                : item.maxNumber,
+              : ["lojista", "revendedor", "influencer", "visitante"],
+          hasNumberLimit: Boolean(dto.hasNumberLimit),
+          maxNumber: dto.hasNumberLimit && dto.maxNumber ? Number(dto.maxNumber) : null,
+          status: "ready",
+          order: draws.length + 1,
+          createdAt: new Date().toISOString(),
         };
-      });
+      }
 
-      saveCollection(updated);
+      setDraws((prev) => [...prev, created]);
+      if (!activeDrawId) {
+        setActiveDrawId(created.id);
+      }
+      return created;
     },
-    [draws, saveCollection]
+    [adminKey, draws.length, activeDrawId],
   );
 
-  // Delete draw from collection
-  const deleteDraw = useCallback(
-    (drawId: string) => {
-      if (draws.length <= 1) {
-        alert("O acervo deve ter pelo menos um sorteio configurado.");
-        return;
+  // Update existing draw in DB
+  const updateDraw = useCallback(
+    async (drawId: string, dto: UpdateDrawDTO) => {
+      if (adminKey) {
+        try {
+          await drawService.updateDraw(adminKey, drawId, dto);
+        } catch (err) {
+          console.error("Erro ao atualizar sorteio no banco:", err);
+        }
       }
 
-      const updated = draws.filter((d) => d.id !== drawId);
-      saveCollection(updated);
-
-      if (activeDrawId === drawId) {
-        selectActiveDraw(updated[0].id);
-      }
+      setDraws((prev) =>
+        prev.map((item) => {
+          if (item.id !== drawId) return item;
+          return {
+            ...item,
+            ...dto,
+            title: dto.title !== undefined ? dto.title.trim() : item.title,
+            prizeTitle: dto.prizeTitle !== undefined ? dto.prizeTitle.trim() : item.prizeTitle,
+            targetUserTypes:
+              dto.targetUserTypes && dto.targetUserTypes.length > 0
+                ? dto.targetUserTypes
+                : item.targetUserTypes,
+            hasNumberLimit:
+              dto.hasNumberLimit !== undefined
+                ? Boolean(dto.hasNumberLimit)
+                : item.hasNumberLimit,
+            maxNumber:
+              dto.hasNumberLimit === false
+                ? null
+                : dto.maxNumber !== undefined
+                  ? (dto.maxNumber ? Number(dto.maxNumber) : null)
+                  : item.maxNumber,
+          };
+        }),
+      );
     },
-    [draws, activeDrawId, saveCollection, selectActiveDraw]
+    [adminKey],
+  );
+
+  // Delete draw from DB
+  const deleteDraw = useCallback(
+    async (drawId: string) => {
+      if (adminKey) {
+        try {
+          await drawService.deleteDraw(adminKey, drawId);
+        } catch (err) {
+          console.error("Erro ao deletar sorteio no banco:", err);
+        }
+      }
+
+      setDraws((prev) => {
+        const updated = prev.filter((d) => d.id !== drawId);
+        if (activeDrawId === drawId && updated.length > 0) {
+          setActiveDrawId(updated[0].id);
+        }
+        return updated;
+      });
+    },
+    [adminKey, activeDrawId],
   );
 
   // Duplicate a draw
   const duplicateDraw = useCallback(
-    (drawId: string) => {
+    async (drawId: string) => {
       const source = draws.find((d) => d.id === drawId);
       if (!source) return;
 
-      const duplicated: DrawItem = {
-        ...source,
-        id: `draw-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      const dto: CreateDrawDTO = {
         title: `${source.title} (Cópia)`,
-        status: "ready",
-        winnerSummary: undefined,
-        order: draws.length + 1,
-        createdAt: new Date().toISOString(),
+        prizeTitle: source.prizeTitle,
+        targetUserTypes: source.targetUserTypes,
+        hasNumberLimit: source.hasNumberLimit,
+        maxNumber: source.maxNumber,
       };
 
-      const updated = [...draws, duplicated];
-      saveCollection(updated);
+      await createDraw(dto);
     },
-    [draws, saveCollection]
+    [draws, createDraw],
   );
 
   const activeDraw = draws.find((d) => d.id === activeDrawId) || draws[0];
@@ -203,3 +198,4 @@ export function useDrawCollection() {
     duplicateDraw,
   };
 }
+

@@ -1,0 +1,221 @@
+/* =========================================================
+   FAST LOOKUP MODAL - LUXURY FASHION DATE STYLESHEET
+   ========================================================= */
+
+.fast-lookup-modal {
+  max-width: 460px !important;
+  width: 92% !important;
+  border-radius: 18px !important;
+  padding: 26px 24px !important;
+  background: #ffffff !important;
+  border: 1px solid #e3d5c6 !important;
+  box-shadow: 0 24px 64px rgba(50, 8, 18, 0.28) !important;
+  text-align: left !important;
+}
+
+.lookup-header-wrap {
+  margin-bottom: 6px;
+}
+
+.lookup-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fdf6e7;
+  border: 1px solid #ebd49e;
+  color: #8c6414;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+
+.lookup-badge-pill .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.lookup-title {
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  color: #3b0713 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  font-family: inherit !important;
+}
+
+.lookup-description-text {
+  font-size: 13.5px !important;
+  color: #6e585c !important;
+  line-height: 1.5 !important;
+  margin: 8px 0 20px !important;
+}
+
+.lookup-field-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lookup-field-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  color: #634d51 !important;
+}
+
+.lookup-input-box {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  height: 48px !important;
+  padding: 0 14px !important;
+  border-radius: 10px !important;
+  border: 1.5px solid #dfd2c4 !important;
+  background: #ffffff !important;
+  transition: all 0.18s ease !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+}
+
+.lookup-input-box:focus-within {
+  border-color: #a47619 !important;
+  box-shadow: 0 0 0 3px rgba(164, 118, 25, 0.12) !important;
+}
+
+.lookup-input-box.is-invalid {
+  border-color: #dc2626 !important;
+  background: #fffafa !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+}
+
+.lookup-input-box .icon {
+  font-size: 20px !important;
+  color: #9a741a !important;
+  flex-shrink: 0 !important;
+}
+
+.lookup-input-box.is-invalid .icon {
+  color: #dc2626 !important;
+}
+
+.lookup-input-box input {
+  flex: 1 !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #2b1b1e !important;
+  font-family: inherit !important;
+  width: 100% !important;
+}
+
+.lookup-input-box input:-webkit-autofill,
+.lookup-input-box input:-webkit-autofill:hover,
+.lookup-input-box input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #2b1b1e !important;
+}
+
+/* Minimalist Clean Error Notice */
+.lookup-error-inline {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-top: 6px !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+  background: #fdf2f2 !important;
+  border: 1px solid #fecaca !important;
+  color: #b91c1c !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  line-height: 1.3 !important;
+  animation: lookupShake 0.25s ease-in-out;
+}
+
+.lookup-error-inline .material-symbols-outlined {
+  font-size: 16px !important;
+  color: #dc2626 !important;
+  flex-shrink: 0 !important;
+}
+
+@keyframes lookupShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Modal Actions */
+.lookup-modal-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  margin-top: 24px !important;
+  padding-top: 16px !important;
+  border-top: 1px solid #f1ece4 !important;
+}
+
+.lookup-btn-cancel {
+  height: 44px !important;
+  padding: 0 16px !important;
+  border-radius: 9px !important;
+  border: 1px solid #dfd1c3 !important;
+  background: #ffffff !important;
+  color: #5c4549 !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  font-family: inherit !important;
+}
+
+.lookup-btn-cancel:hover {
+  background: #fdf9f4 !important;
+  border-color: #c99b36 !important;
+  color: #3b0713 !important;
+}
+
+.lookup-btn-submit {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  height: 44px !important;
+  padding: 0 20px !important;
+  border-radius: 9px !important;
+  border: 1px solid #4a0e1c !important;
+  background: #4a0e1c !important;
+  color: #fff6e0 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+  cursor: pointer !important;
+  box-shadow: 0 3px 10px rgba(74, 14, 28, 0.2) !important;
+  transition: all 0.15s ease !important;
+  font-family: inherit !important;
+}
+
+.lookup-btn-submit:hover {
+  background: #621125 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 5px 14px rgba(74, 14, 28, 0.28) !important;
+}
+
+.lookup-btn-submit:disabled {
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+}
+
+.lookup-btn-submit .material-symbols-outlined {
+  font-size: 17px !important;
+  color: #eed69f !important;
+}

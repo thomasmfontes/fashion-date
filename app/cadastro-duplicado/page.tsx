@@ -50,9 +50,9 @@ export default function DuplicatePage() {
           </div>
         </div>
         <div className="result-actions single">
-          <a className="result-primary" href="/">
-            <span className="material-symbols-outlined">arrow_back</span>
-            Voltar ao início
+          <a className="result-primary" href="/sucesso">
+            <span>Acessar Minha Carteira de Sorteios</span>
+            <span className="material-symbols-outlined">arrow_forward</span>
           </a>
         </div>
         <LiveDrawAlert luckyNumber={String(participant?.luckyNumber ?? "")} />

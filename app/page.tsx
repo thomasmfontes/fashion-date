@@ -6,7 +6,6 @@ import { formatName, formatPhone, cleanPhone } from "@/utils/formatters";
 import { APP_CONFIG } from "@/constants/config";
 import { useSavedParticipant } from "@/hooks/useSavedParticipant";
 import { FastLookupModal } from "@/components/public/FastLookupModal";
-import { LojistaGateModal } from "@/components/public/LojistaGateModal";
 import type { UserType } from "@/types/participant.types";
 import { USER_TYPE_LABELS, USER_TYPE_ICONS } from "@/types/participant.types";
 
@@ -24,6 +23,7 @@ export default function Home() {
   const {
     savedParticipant,
     saveParticipant,
+    clearParticipant,
     lookupByPhone,
   } = useSavedParticipant();
 
@@ -72,13 +72,16 @@ export default function Home() {
     const trimmedStore = store.trim();
     const cleanedPhone = cleanPhone(phone);
     const cleanedInstagram = instagram.trim().replace(/^@?/, "");
+    const isStoreRequired = userType === "lojista" || userType === "revendedor";
 
     if (!trimmedName || trimmedName.length < 3) {
       errors.name = "Informe seu nome completo (mínimo 3 caracteres).";
     }
 
-    if (!trimmedStore || trimmedStore.length < 2) {
-      errors.store = "Informe o nome da sua loja ou marca.";
+    if (isStoreRequired && (!trimmedStore || trimmedStore.length < 2)) {
+      errors.store = userType === "revendedor"
+        ? "Informe o nome da sua marca ou revenda."
+        : "Informe o nome da sua loja ou marca.";
     }
 
     if (!cleanedPhone || cleanedPhone.length < 10) {
@@ -86,7 +89,9 @@ export default function Home() {
     }
 
     if (!cleanedInstagram || cleanedInstagram.length < 2) {
-      errors.instagram = "Informe o usuário do Instagram da loja.";
+      errors.instagram = isStoreRequired
+        ? "Informe o Instagram da loja ou marca."
+        : "Informe o seu Instagram (@usuario).";
     }
 
     if (!consent) {
@@ -251,12 +256,12 @@ export default function Home() {
           </div>
 
           <h2>
-            Concorra a um Provador Fashion da <em>Renata Castanheira</em> para sua loja.
+            Participe dos sorteios oficiais do <em>Fashion Date</em>.
           </h2>
           <p>
             {registrationsOpen
-              ? "Provador de 5 looks a serem enviados. Preencha seus dados de lojista abaixo para gerar seu número da sorte exclusivo."
-              : "As inscrições para este sorteio foram encerradas temporariamente pela organização."}
+              ? "Preencha seus dados uma única vez para acessar sua carteira de sorteios e concorrer aos prêmios exclusivos do evento."
+              : "As inscrições para os sorteios foram encerradas temporariamente pela organização."}
           </p>
         </header>
 
@@ -290,27 +295,23 @@ export default function Home() {
             </div>
             <h3>Olá, {savedParticipant.name}!</h3>
             <p>
-              Sua loja <strong>{savedParticipant.store}</strong> já está
-              cadastrada neste aparelho com o número:
+              Você já está cadastrado no Fashion Date como{" "}
+              <strong>{USER_TYPE_LABELS[savedParticipant.userType || "lojista"]}</strong>
+              {savedParticipant.store && savedParticipant.store !== "—" ? ` (${savedParticipant.store})` : ""}.
             </p>
-            <div className="smart-session-number">
-              <span>#{savedParticipant.luckyNumber}</span>
-            </div>
             <div className="smart-session-actions">
               <a href="/sucesso" className="signup-submit-btn">
-                <span>Acessar Meu Comprovante &amp; Alerta</span>
+                <span>Acessar Minha Carteira de Sorteios</span>
                 <span className="material-symbols-outlined">arrow_forward</span>
               </a>
-              {registrationsOpen && (
-                <button
-                  type="button"
-                  className="smart-session-switch"
-                  onClick={() => setShowNewForm(true)}
-                >
-                  <span className="material-symbols-outlined">person_add</span>
-                  Cadastrar outra pessoa neste celular
-                </button>
-              )}
+              <button
+                type="button"
+                className="smart-session-switch"
+                onClick={clearParticipant}
+              >
+                <span className="material-symbols-outlined">person_add</span>
+                Não é você? Fazer novo cadastro
+              </button>
             </div>
           </div>
         ) : registrationsOpen ? (
@@ -324,7 +325,7 @@ export default function Home() {
                 onClick={() => setShowNewForm(false)}
               >
                 <span className="material-symbols-outlined">arrow_back</span>
-                Voltar para meu cadastro (#{savedParticipant.luckyNumber})
+                Voltar para meu cadastro
               </button>
             )}
 
@@ -332,7 +333,7 @@ export default function Home() {
             <div className="signup-profile-selector">
               <label className="profile-selector-title">Selecione seu perfil no evento:</label>
               <div className="profile-types-grid">
-                {(["lojista", "influencer", "visitante", "vip"] as UserType[]).map((type) => {
+                {(["lojista", "revendedor", "influencer", "visitante"] as UserType[]).map((type) => {
                   const isSelected = userType === type;
                   return (
                     <button
@@ -351,7 +352,7 @@ export default function Home() {
 
             <div className="signup-fields-grid">
               <div className="signup-field-group">
-                <label htmlFor="signup-name">Nome completo</label>
+                <label htmlFor="signup-name">Nome completo *</label>
                 <input
                   ref={nameInputRef}
                   id="signup-name"
@@ -380,12 +381,12 @@ export default function Home() {
               <div className="signup-field-group">
                 <label htmlFor="signup-store">
                   {userType === "lojista"
-                    ? "Nome da loja ou marca"
-                    : userType === "influencer"
-                      ? "Seu nicho / canal / agência"
-                      : userType === "vip"
-                        ? "Empresa ou convidado por"
-                        : "Cidade / Empresa"}
+                    ? "Nome da loja ou marca *"
+                    : userType === "revendedor"
+                      ? "Nome da marca / revenda *"
+                      : userType === "influencer"
+                        ? "Nicho / Agência / Canal (Opcional)"
+                        : "Empresa / Cidade (Opcional)"}
                 </label>
                 <input
                   ref={storeInputRef}
@@ -395,19 +396,19 @@ export default function Home() {
                   placeholder={
                     userType === "lojista"
                       ? "Ex: Boutique Elegance"
-                      : userType === "influencer"
-                        ? "Ex: Moda & Estilo / Canal @estilo"
-                        : userType === "vip"
-                          ? "Ex: Convidado Especial"
-                          : "Ex: São Paulo / Compradora"
+                      : userType === "revendedor"
+                        ? "Ex: Bella Moda Revendas"
+                        : userType === "influencer"
+                          ? "Ex: Moda Evangélica & Lifestyle"
+                          : "Ex: São Paulo - SP"
                   }
                   value={store}
                   onChange={(e) => {
                     setStore(e.target.value);
                     if (fieldErrors.store) setFieldErrors((prev) => ({ ...prev, store: undefined }));
                   }}
-                  required
-                  aria-required="true"
+                  required={userType === "lojista" || userType === "revendedor"}
+                  aria-required={userType === "lojista" || userType === "revendedor"}
                   aria-invalid={Boolean(fieldErrors.store)}
                   aria-describedby={fieldErrors.store ? "signup-store-error" : undefined}
                   disabled={loading}
@@ -420,7 +421,7 @@ export default function Home() {
               </div>
 
               <div className="signup-field-group">
-                <label htmlFor="signup-phone">WhatsApp</label>
+                <label htmlFor="signup-phone">WhatsApp *</label>
                 <input
                   ref={phoneInputRef}
                   id="signup-phone"
@@ -454,14 +455,24 @@ export default function Home() {
               </div>
 
               <div className="signup-field-group">
-                <label htmlFor="signup-instagram">Instagram da Loja</label>
+                <label htmlFor="signup-instagram">
+                  {userType === "lojista" || userType === "revendedor"
+                    ? "Instagram da Loja / Marca *"
+                    : userType === "influencer"
+                      ? "Instagram Profissional *"
+                      : "Seu Instagram Pessoal *"}
+                </label>
                 <div className={`signup-instagram-wrap${fieldErrors.instagram ? " is-invalid" : ""}`}>
                   <span aria-hidden="true">@</span>
                   <input
                     ref={instagramInputRef}
                     id="signup-instagram"
                     name="instagram"
-                    placeholder="sualoja"
+                    placeholder={
+                      userType === "lojista" || userType === "revendedor"
+                        ? "sualoja"
+                        : "seu.perfil"
+                    }
                     autoComplete="off"
                     value={instagram}
                     onChange={(e) => {
@@ -525,7 +536,7 @@ export default function Home() {
               disabled={loading}
               aria-busy={loading}
             >
-              <span>{loading ? "Gerando número da sorte..." : "Quero Participar do Sorteio"}</span>
+              <span>{loading ? "Cadastrando..." : "Concluir Cadastro & Ver Sorteios"}</span>
               <span className="material-symbols-outlined">arrow_forward</span>
             </button>
 
@@ -536,7 +547,7 @@ export default function Home() {
                 onClick={() => setIsLookupOpen(true)}
               >
                 <span className="material-symbols-outlined">search</span>
-                <span>Já é cadastrado? Consulte seu número pelo WhatsApp</span>
+                <span>Já é cadastrado? Acesse sua carteira pelo WhatsApp</span>
               </button>
             </div>
           </form>
@@ -558,8 +569,6 @@ export default function Home() {
         onClose={() => setIsLookupOpen(false)}
         onLookup={handleFastLookup}
       />
-
-      <LojistaGateModal onEligible={() => {}} />
     </main>
   );
 }

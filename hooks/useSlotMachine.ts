@@ -51,36 +51,47 @@ export function useSlotMachine(adminKey: string) {
     };
   }, [cancelTimers]);
 
-  const triggerDraw = useCallback(async (targetUserTypes?: string[], maxNumber?: number | null) => {
-    if (!adminKey || isRunning) return;
+  const triggerDraw = useCallback(
+    async (
+      targetUserTypes?: string[],
+      maxNumber?: number | null,
+      drawId?: string,
+    ) => {
+      if (!adminKey || isRunning) return;
 
-    setWinner(null);
-    setError(null);
-    setIsRunning(true);
+      setWinner(null);
+      setError(null);
+      setIsRunning(true);
 
-    lockedRef.current = [false, false, false, false];
-    setLockedDigits([false, false, false, false]);
+      lockedRef.current = [false, false, false, false];
+      setLockedDigits([false, false, false, false]);
 
-    // Start rolling animation & tick sounds
-    rollIntervalRef.current = setInterval(() => {
-      if (!isMountedRef.current) return;
-      setDigits((prev) =>
-        prev.map((d, i) =>
-          lockedRef.current[i] ? d : String(Math.floor(Math.random() * 10)),
-        ),
-      );
-      playTick();
-    }, 65);
+      // Start rolling animation & tick sounds
+      rollIntervalRef.current = setInterval(() => {
+        if (!isMountedRef.current) return;
+        setDigits((prev) =>
+          prev.map((d, i) =>
+            lockedRef.current[i] ? d : String(Math.floor(Math.random() * 10)),
+          ),
+        );
+        playTick();
+      }, 65);
 
-    try {
-      const response = await drawService.performDraw(adminKey, targetUserTypes, maxNumber);
-      if (!isMountedRef.current) return;
-      if (!response || !response.winner) {
-        throw new Error("Não foi possível realizar o sorteio.");
-      }
+      try {
+        const response = await drawService.performDraw(
+          adminKey,
+          targetUserTypes,
+          maxNumber,
+          drawId,
+        );
+        if (!isMountedRef.current) return;
+        if (!response || !response.winner) {
+          throw new Error("Não foi possível realizar o sorteio.");
+        }
 
-      const targetNumber = String(response.winner.luckyNumber).padStart(4, "0");
-      const targetDigits = targetNumber.split("");
+        const rawLucky = response.winner.luckyNumber || (response.winner.tickets && response.winner.tickets[0]?.ticketNumber) || "";
+        const targetNumber = String(rawLucky).padStart(4, "0");
+        const targetDigits = targetNumber.split("");
 
       // 1. Initial Suspense Roll (Todos os 4 tambores girando juntos)
       await delay(2400);

@@ -34,6 +34,7 @@ export function AdminDashboard({
   const {
     participants,
     filteredParticipants,
+    winners,
     stats,
     registrationsOpen,
     setRegistrationsOpen,
@@ -43,6 +44,9 @@ export function AdminDashboard({
     setQuery,
     statusFilter,
     setStatusFilter,
+    userTypeFilter,
+    setUserTypeFilter,
+    availableUserTypes,
     sortBy,
     setSortBy,
     exportToCSV,
@@ -124,6 +128,7 @@ export function AdminDashboard({
   function handleResetFilters() {
     setQuery("");
     setStatusFilter("all");
+    setUserTypeFilter("all");
     setSortBy("recent");
   }
 
@@ -131,8 +136,21 @@ export function AdminDashboard({
   if (!isReady) {
     return (
       <main className="admin-boot" aria-live="polite">
-        <img src="/fashiondate-logo.png" alt="Fashion Date" />
-        <span />
+        <div className="admin-boot-card">
+          <div className="admin-boot-logo-wrap">
+            <img src="/fashiondate-logo.png" alt="Fashion Date Crente Chic" />
+          </div>
+          <div className="luxury-loader">
+            <div className="luxury-loader-track">
+              <span className="luxury-loader-beam" />
+            </div>
+            <div className="luxury-loader-subtext">
+              <span className="luxury-sparkle">✦</span>
+              <span>Carregando Sistema</span>
+              <span className="luxury-sparkle">✦</span>
+            </div>
+          </div>
+        </div>
       </main>
     );
   }
@@ -147,9 +165,13 @@ export function AdminDashboard({
     );
   }
 
-  const winnersList = participants.filter((p) => Boolean(p.wonAt));
   const activeCount = participants.filter((p) => !p.wonAt).length;
-  const hasActiveFilters = Boolean(query || statusFilter !== "all" || sortBy !== "recent");
+  const hasActiveFilters = Boolean(
+    query ||
+      statusFilter !== "all" ||
+      userTypeFilter !== "all" ||
+      sortBy !== "recent",
+  );
 
   return (
     <main className="stitch-admin">
@@ -161,12 +183,12 @@ export function AdminDashboard({
         onLogout={logout}
       />
 
-      <section
-        className={`stitch-content${view === "winners" ? " winners-content" : ""}`}
-      >
+      <section className="stitch-content">
         {loading ? (
           <div className="stitch-content-loading" aria-live="polite">
-            <span />
+            <div className="luxury-loader-track">
+              <span className="luxury-loader-beam" />
+            </div>
             <p>Carregando informações...</p>
           </div>
         ) : participantsError ? (
@@ -188,6 +210,9 @@ export function AdminDashboard({
               <AdminControls
                 statusFilter={statusFilter}
                 onStatusChange={setStatusFilter}
+                userTypeFilter={userTypeFilter}
+                onUserTypeChange={setUserTypeFilter}
+                availableUserTypes={availableUserTypes}
                 totalCount={participants.length}
                 activeCount={activeCount}
                 winnerCount={stats.winners}
@@ -212,6 +237,7 @@ export function AdminDashboard({
           </>
         ) : view === "draw-config" ? (
           <DrawConfigPanel
+            adminKey={adminKey}
             totalParticipants={participants.length}
             activeParticipants={activeCount}
             totalWinners={stats.winners}
@@ -221,7 +247,7 @@ export function AdminDashboard({
           />
         ) : (
           <WinnersTable
-            winners={winnersList}
+            winners={winners}
             onNavigateToParticipants={() => handleNavigate("participants")}
           />
         )}

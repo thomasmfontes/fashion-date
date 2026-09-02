@@ -7,8 +7,12 @@ import { useSlotMachine } from "@/hooks/useSlotMachine";
 import { useDrawCollection } from "@/hooks/useDrawCollection";
 import { useToast } from "@/hooks/useToast";
 import { LiveSlotMachine } from "@/components/admin/LiveSlotMachine";
+import { SlotMachineLever } from "@/components/admin/SlotMachineLever";
+import { MobileDrawSlider } from "@/components/admin/MobileDrawSlider";
 import { AdminLoginForm } from "@/components/admin/AdminLoginForm";
 import { Toast } from "@/components/ui/toast";
+import { Modal } from "@/components/ui/Modal";
+import { drawService } from "@/services/drawService";
 import {
   USER_TYPE_LABELS,
   USER_TYPE_ICONS,
@@ -24,13 +28,20 @@ export default function UnifiedDrawPage() {
   const { adminKey, isAuthenticated, isReady, login } = useAuth();
   const [loginError, setLoginError] = useState("");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [eligibility, setEligibility] = useState<{
+    eligibleCount: number;
+    hasEligible: boolean;
+  }>({ eligibleCount: 1, hasEligible: true });
+  const [initialEligibilityDone, setInitialEligibilityDone] = useState(false);
+  const [isCurtainLeaving, setIsCurtainLeaving] = useState(false);
+  const [isCurtainDismissed, setIsCurtainDismissed] = useState(false);
 
   const {
     draws,
     activeDraw,
     activeDrawId,
     selectActiveDraw,
-  } = useDrawCollection();
+  } = useDrawCollection(adminKey);
 
   useWakeLock(true);
 
@@ -43,6 +54,59 @@ export default function UnifiedDrawPage() {
       showToast(slotMachine.error, "error");
     }
   }, [slotMachine.error, showToast]);
+
+  // Safety timer para garantir abertura da cortina mesmo em oscilações de rede
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setInitialEligibilityDone(true);
+    }, 2200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Checagem automática e contínua de participantes elegíveis
+  useEffect(() => {
+    let isMounted = true;
+    if (!adminKey || !isAuthenticated) return;
+
+    async function verifyEligibility() {
+      const res = await drawService.checkEligibility(
+        adminKey,
+        activeDraw?.targetUserTypes,
+        activeDraw?.hasNumberLimit && activeDraw?.maxNumber ? activeDraw.maxNumber : undefined,
+        activeDraw?.id,
+      );
+      if (isMounted) {
+        setEligibility({
+          eligibleCount: res.eligibleCount,
+          hasEligible: res.hasEligible,
+        });
+        setInitialEligibilityDone(true);
+      }
+    }
+
+    verifyEligibility();
+    const interval = setInterval(verifyEligibility, 5000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [adminKey, isAuthenticated, activeDrawId, activeDraw, slotMachine.winner, slotMachine.isRunning]);
+
+  // Recolhe a cortina teatral suavemente apenas quando tudo estiver 100% carregado e pronto
+  useEffect(() => {
+    if (isReady && isAuthenticated && activeDraw && initialEligibilityDone && !isCurtainDismissed) {
+      const t1 = setTimeout(() => {
+        setIsCurtainLeaving(true);
+      }, 350);
+      const t2 = setTimeout(() => {
+        setIsCurtainDismissed(true);
+      }, 1250);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [isReady, isAuthenticated, activeDraw, initialEligibilityDone, isCurtainDismissed]);
 
   async function toggleFullscreen() {
     try {
@@ -64,9 +128,14 @@ export default function UnifiedDrawPage() {
   }
 
   function handleTriggerDraw() {
+    if (!eligibility.hasEligible) {
+      showToast("Não há participantes disponíveis para esta rodada.", "error");
+      return;
+    }
     slotMachine.triggerDraw(
       activeDraw?.targetUserTypes,
-      activeDraw?.hasNumberLimit && activeDraw?.maxNumber ? activeDraw.maxNumber : undefined
+      activeDraw?.hasNumberLimit && activeDraw?.maxNumber ? activeDraw.maxNumber : undefined,
+      activeDraw?.id,
     );
   }
 
@@ -88,7 +157,7 @@ export default function UnifiedDrawPage() {
   const toggleMute = slotMachine.toggleMute;
   const hasWinner = Boolean(slotMachine.winner);
 
-  const targetTypes = activeDraw?.targetUserTypes || ["lojista", "influencer", "visitante", "vip"];
+  const targetTypes = activeDraw?.targetUserTypes || ["lojista", "revendedor", "influencer", "visitante"];
   const isAllTypes = targetTypes.length >= 4;
   const numberLimitText = activeDraw?.hasNumberLimit && activeDraw?.maxNumber
     ? ` · Até Nº ${String(activeDraw.maxNumber).padStart(4, "0")}`
@@ -100,6 +169,23 @@ export default function UnifiedDrawPage() {
     <main
       className={`draw-page${isRunning ? " is-running" : ""}${hasWinner ? " has-winner" : ""}`}
     >
+      {/* Cortina Teatral de Preparação: Permanece até os dados estarem 100% carregados e validados */}
+      {!isCurtainDismissed && (
+        <div
+          className={`draw-transition is-active${isCurtainLeaving ? " is-leaving" : ""}`}
+          aria-hidden="true"
+        >
+          <span className="draw-transition-panel left" />
+          <span className="draw-transition-panel right" />
+          <div className="draw-transition-brand">
+            <img src="/fashiondate-logo.png" alt="" />
+            <i />
+            <p>Preparando o sorteio</p>
+            <span>Boa sorte a todos</span>
+          </div>
+        </div>
+      )}
+
       {/* Confetti Animation */}
       {hasWinner && (
         <div className="confetti" aria-hidden="true">
@@ -137,7 +223,7 @@ export default function UnifiedDrawPage() {
 
         <div className="draw-event-title" suppressHydrationWarning>
           <span suppressHydrationWarning>
-            <i /> {activeDraw?.prizeTitle || "Prêmio Especial"} · {isAllTypes ? "Todos os Participantes" : targetTypes.map((t) => USER_TYPE_LABELS[t]).join(", ")}{numberLimitText}
+            <i /> {isAllTypes ? "Todos os Participantes" : targetTypes.map((t) => USER_TYPE_LABELS[t]).join(", ")}{numberLimitText}
           </span>
           <h1 suppressHydrationWarning>{activeDraw?.title || "Sorteio Oficial"}</h1>
         </div>
@@ -152,7 +238,7 @@ export default function UnifiedDrawPage() {
             title="Escolher rodada do acervo"
           >
             <span className="material-symbols-outlined">collections_bookmark</span>
-            <span>Acervo ({draws.length})</span>
+            <span suppressHydrationWarning>Acervo ({draws.length})</span>
           </button>
 
           <button
@@ -180,28 +266,32 @@ export default function UnifiedDrawPage() {
         </div>
       </header>
 
-      {/* Drawer de Seleção Rápida de Rodadas do Acervo */}
-      {isDrawerOpen && (
-        <div className="screen-acervo-drawer">
-          <div className="drawer-header">
-            <strong>
-              <span className="material-symbols-outlined">collections_bookmark</span>
-              Selecionar Rodada do Acervo
-            </strong>
-            <button
-              type="button"
-              className="drawer-close"
-              onClick={() => setIsDrawerOpen(false)}
-            >
-              <span className="material-symbols-outlined">close</span>
-            </button>
-          </div>
-
-          <div className="drawer-list">
-            {draws.map((d, index) => {
+      {/* Modal de Seleção Rápida de Rodadas do Acervo (Mesma estrutura de Participantes e Vencedores) */}
+      <Modal
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        title="Rodadas do Sorteio"
+        badge={
+          <span className="edit-ticket-badge">
+            Acervo: <strong>{draws.length} {draws.length === 1 ? "Rodada" : "Rodadas"}</strong>
+          </span>
+        }
+        className="acervo-modal"
+      >
+        <div className="drawer-list">
+          {draws.length === 0 ? (
+            <div className="drawer-empty-state">
+              <span className="material-symbols-outlined">sentiment_dissatisfied</span>
+              <p>Nenhuma rodada cadastrada no acervo.</p>
+            </div>
+          ) : (
+            draws.map((d, index) => {
               const isSelected = d.id === activeDrawId;
               const dTypes = d.targetUserTypes || ["lojista", "influencer", "visitante", "vip"];
               const dIsAll = dTypes.length >= 4;
+              const profileLabel = dIsAll
+                ? "Todos os Perfis"
+                : dTypes.map((t) => USER_TYPE_LABELS[t]).join(", ");
 
               return (
                 <button
@@ -210,78 +300,157 @@ export default function UnifiedDrawPage() {
                   className={`drawer-item-btn ${isSelected ? "selected" : ""}`}
                   onClick={() => handleSelectFromScreen(d.id)}
                 >
-                  <span className="drawer-order">#{index + 1}</span>
-                  <div className="drawer-text">
-                    <strong>{d.title}</strong>
-                    <small>
-                      Prêmio: {d.prizeTitle} · {dIsAll ? "Todos" : dTypes.map((t) => USER_TYPE_LABELS[t]).join(", ")}
-                      {d.hasNumberLimit && d.maxNumber ? ` · Até Nº ${d.maxNumber}` : ""}
-                    </small>
+                  <div className="drawer-item-top">
+                    <div className="drawer-item-title-wrap">
+                      <span className="drawer-order">#{String(index + 1).padStart(2, "0")}</span>
+                      <strong className="drawer-item-title">{d.title}</strong>
+                    </div>
+
+                    {isSelected ? (
+                      <span className="drawer-active-badge">
+                        <span className="pulse-dot" />
+                        No Ar
+                      </span>
+                    ) : (
+                      <span className="drawer-select-hint">
+                        <span className="material-symbols-outlined">play_circle</span>
+                        Ativar
+                      </span>
+                    )}
                   </div>
-                  {isSelected && (
-                    <span className="drawer-active-badge">No Ar</span>
-                  )}
+
+                  <div className="drawer-item-details">
+                    {d.prizeTitle && (
+                      <div className="drawer-detail-row prize">
+                        <span className="material-symbols-outlined">workspace_premium</span>
+                        <span>Prêmio: <strong>{d.prizeTitle}</strong></span>
+                      </div>
+                    )}
+
+                    <div className="drawer-tags-row">
+                      <span className="drawer-tag profile">
+                        <span className="material-symbols-outlined">group</span>
+                        {profileLabel}
+                      </span>
+
+                      {d.hasNumberLimit && d.maxNumber && (
+                        <span className="drawer-tag limit">
+                          <span className="material-symbols-outlined">pin</span>
+                          Até Nº {d.maxNumber}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </button>
               );
-            })}
-          </div>
+            })
+          )}
         </div>
-      )}
+
+        <footer className="edit-modal-footer">
+          <button
+            type="button"
+            className="stitch-button outline"
+            onClick={() => setIsDrawerOpen(false)}
+          >
+            Fechar
+          </button>
+        </footer>
+      </Modal>
 
       {/* Palco do Sorteio / Anúncio do Vencedor */}
       {slotMachine.winner ? (
         <section className="winner-panel" aria-live="polite">
-          <div className="winner-emblem">
+          <div className="winner-trophy-badge">
             <span className="material-symbols-outlined">workspace_premium</span>
-          </div>
-          <p className="draw-overline">O número sorteado foi</p>
-          <strong className="lucky-number">
-            {formatLuckyNumber(slotMachine.winner.luckyNumber)}
-          </strong>
-          <div className="winner-divider">
-            <span />
-          </div>
-          <p className="winner-announcement">Temos um vencedor para {activeDraw?.prizeTitle || "o prêmio"}!</p>
-          <h2 className="winner-name">{slotMachine.winner.name}</h2>
-          
-          <div className="winner-meta">
-            <span className="winner-user-type-badge">
-              <span className="material-symbols-outlined">{USER_TYPE_ICONS[winnerType]}</span>
-              {USER_TYPE_LABELS[winnerType]}
-            </span>
-
-            <span>
-              <b className="material-symbols-outlined">storefront</b>
-              {slotMachine.winner.store}
-            </span>
-
-            <a
-              href={buildInstagramUrl(slotMachine.winner.instagram)}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <img
-                className="winner-instagram-icon"
-                src="https://cdn.simpleicons.org/instagram/530017"
-                alt=""
-              />
-              @{cleanInstagramHandle(slotMachine.winner.instagram)}
-            </a>
+            <span>Número Contemplado</span>
           </div>
 
-          <div className="winner-actions">
-            <button
-              className="admin-button primary"
-              type="button"
-              onClick={slotMachine.resetDraw}
-            >
-              <span className="material-symbols-outlined">confirmation_number</span>
-              Sortear novamente
-            </button>
-            <a className="admin-button" href="/admin">
-              <span className="material-symbols-outlined">arrow_back</span>
-              Ver vencedores
-            </a>
+          <div className="draw-slots-wrap winner-slots-wrap">
+            {formatLuckyNumber(slotMachine.winner.luckyNumber)
+              .split("")
+              .map((digit, idx) => (
+                <div key={idx} className="draw-slot-digit is-locked">
+                  <span className="slot-sheen" />
+                  <span className="slot-num">{digit}</span>
+                </div>
+              ))}
+          </div>
+
+          <div className="winner-card-body">
+            <div className="winner-prize-banner">
+              <span className="winner-prize-kicker">Ganhador(a) do Sorteio</span>
+              <h3 className="winner-prize-title">
+                {activeDraw?.prizeTitle ? activeDraw.prizeTitle : "Prêmio Especial"}
+              </h3>
+            </div>
+
+            <h2 className="winner-name">{slotMachine.winner.name}</h2>
+
+            <div className="winner-meta">
+              <span className="winner-pill winner-pill-type">
+                <span className="material-symbols-outlined">{USER_TYPE_ICONS[winnerType]}</span>
+                <span>{USER_TYPE_LABELS[winnerType]}</span>
+              </span>
+
+              <span className="winner-pill winner-pill-store">
+                <span className="material-symbols-outlined">storefront</span>
+                <span>{slotMachine.winner.store}</span>
+              </span>
+
+              {slotMachine.winner.instagram && (
+                <a
+                  className="winner-pill winner-pill-instagram"
+                  href={buildInstagramUrl(slotMachine.winner.instagram)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <img
+                    className="winner-social-icon"
+                    src="https://cdn.simpleicons.org/instagram/e1306c"
+                    alt="Instagram"
+                    width={16}
+                    height={16}
+                    style={{ width: 16, height: 16, minWidth: 16, minHeight: 16, maxWidth: 16, maxHeight: 16, display: "inline-block", verticalAlign: "middle" }}
+                  />
+                  <span>@{cleanInstagramHandle(slotMachine.winner.instagram)}</span>
+                </a>
+              )}
+
+              {slotMachine.winner.phone && (
+                <a
+                  className="winner-pill winner-pill-whatsapp"
+                  href={`https://wa.me/55${slotMachine.winner.phone.replace(/\D/g, "")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <img
+                    className="winner-social-icon"
+                    src="https://cdn.simpleicons.org/whatsapp/25d366"
+                    alt="WhatsApp"
+                    width={16}
+                    height={16}
+                    style={{ width: 16, height: 16, minWidth: 16, minHeight: 16, maxWidth: 16, maxHeight: 16, display: "inline-block", verticalAlign: "middle" }}
+                  />
+                  <span>WhatsApp</span>
+                </a>
+              )}
+            </div>
+
+            <div className="winner-actions">
+              <button
+                className="winner-btn-primary"
+                type="button"
+                onClick={slotMachine.resetDraw}
+              >
+                <span className="material-symbols-outlined">casino</span>
+                <span>Sortear Novamente</span>
+              </button>
+              <a className="winner-btn-secondary" href="/admin/vencedores">
+                <span className="material-symbols-outlined">workspace_premium</span>
+                <span>Painel de Vencedores</span>
+              </a>
+            </div>
           </div>
         </section>
       ) : (
@@ -310,21 +479,35 @@ export default function UnifiedDrawPage() {
               {slotMachine.isRunning
                 ? slotMachine.lockedCount > 0
                   ? `Fixando dígitos (${slotMachine.lockedCount}/4)...`
-                  : "Girando tambores..."
-                : `Boa sorte aos participantes (${isAllTypes ? "Todos os Perfis" : targetTypes.map((t) => USER_TYPE_LABELS[t]).join(", ")})`}
+                  : "Rufem os tambores..."
+                : !eligibility.hasEligible
+                  ? "Nenhum participante disponível para esta rodada"
+                  : `Boa sorte aos participantes (${isAllTypes ? "Todos os Perfis" : targetTypes.map((t) => USER_TYPE_LABELS[t]).join(", ")})`}
             </strong>
+
+            {/* Alavanca Mecânica de Luxo Embutida na Moldura (Desktop) */}
+            <SlotMachineLever
+              onPull={handleTriggerDraw}
+              disabled={!eligibility.hasEligible || slotMachine.isRunning}
+              isSpinning={slotMachine.isRunning}
+            />
+          </div>
+
+          {/* Console Tátil Exclusivo para Dispositivos Móveis (Slider Interativo) */}
+          <div className="mobile-draw-console">
+            <MobileDrawSlider
+              onTrigger={handleTriggerDraw}
+              disabled={!eligibility.hasEligible || slotMachine.isRunning}
+              isSpinning={slotMachine.isRunning}
+              disabledReason={
+                !eligibility.hasEligible
+                  ? "Sem Participantes"
+                  : undefined
+              }
+            />
           </div>
 
           <div className="draw-controls">
-            <button
-              className="primary-button"
-              type="button"
-              onClick={handleTriggerDraw}
-              disabled={slotMachine.isRunning}
-            >
-              <span className="material-symbols-outlined">confirmation_number</span>
-              {slotMachine.isRunning ? "Sorteando..." : "Sortear agora"}
-            </button>
             <a className="back-link" href="/admin">
               <span className="material-symbols-outlined">arrow_back</span>
               Voltar ao painel

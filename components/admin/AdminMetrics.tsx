@@ -8,27 +8,33 @@ export function AdminMetrics({ stats }: AdminMetricsProps) {
   return (
     <div className="stitch-stats">
       <div className="stitch-stat-card">
-        <div>
-          <span>Total de Participantes</span>
-          <b className="material-symbols-outlined">group</b>
+        <div className="stat-header">
+          <span className="stat-label">Total de Participantes</span>
+          <div className="stat-icon-badge">
+            <span className="material-symbols-outlined">group</span>
+          </div>
         </div>
-        <strong>{stats.total}</strong>
+        <strong className="stat-value">{stats.total}</strong>
       </div>
 
       <div className="stitch-stat-card">
-        <div>
-          <span>Cadastros Hoje</span>
-          <b className="material-symbols-outlined">person_add</b>
+        <div className="stat-header">
+          <span className="stat-label">Cadastros Hoje</span>
+          <div className="stat-icon-badge">
+            <span className="material-symbols-outlined">person_add</span>
+          </div>
         </div>
-        <strong>{stats.today}</strong>
+        <strong className="stat-value">{stats.today}</strong>
       </div>
 
       <div className="stitch-stat-card">
-        <div>
-          <span>Sorteados</span>
-          <b className="material-symbols-outlined">workspace_premium</b>
+        <div className="stat-header">
+          <span className="stat-label">Sorteados</span>
+          <div className="stat-icon-badge">
+            <span className="material-symbols-outlined">workspace_premium</span>
+          </div>
         </div>
-        <strong>{stats.winners}</strong>
+        <strong className="stat-value">{stats.winners}</strong>
       </div>
     </div>
   );

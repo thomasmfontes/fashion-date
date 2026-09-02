@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import type { Participant } from "@/types/participant.types";
-import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
+import { ParticipantTicketsModal } from "@/components/admin/ParticipantTicketsModal";
 import {
   formatDate,
   formatPhone,
@@ -27,6 +27,7 @@ export function ParticipantsTable({
 }: ParticipantsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [viewingTicketsParticipant, setViewingTicketsParticipant] = useState<Participant | null>(null);
 
   // Paginated items
   const paginatedParticipants = useMemo(() => {
@@ -85,7 +86,7 @@ export function ParticipantsTable({
 
   return (
     <>
-      <div className="stitch-table-wrap">
+      <div className="stitch-table-desktop">
         <table>
           <thead>
             <tr>
@@ -94,21 +95,73 @@ export function ParticipantsTable({
               <th>Loja</th>
               <th>Contato</th>
               <th>Data de inscrição</th>
-              <th>Situação</th>
               <th className="stitch-actions-col">Ações</th>
             </tr>
           </thead>
           <tbody>
             {paginatedParticipants.map((item) => (
               <tr key={item.id}>
-                <td data-label="Nº da sorte">
-                  <strong>{item.luckyNumber}</strong>
+                <td className="stitch-lucky-number-col">
+                  {item.tickets && item.tickets.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setViewingTicketsParticipant(item)}
+                      title={`Ver ${item.tickets.length} bilhete(s)`}
+                      aria-label={`Ver bilhetes de ${item.name}`}
+                      style={{
+                        display: "inline-grid",
+                        placeItems: "center",
+                        width: "32px",
+                        height: "32px",
+                        border: "1px solid #e0d6cb",
+                        borderRadius: "6px",
+                        background: "#fff",
+                        color: "#8c6414",
+                        cursor: "pointer",
+                        transition: "all 0.16s ease",
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+                        confirmation_number
+                      </span>
+                    </button>
+                  ) : item.luckyNumber ? (
+                    <button
+                      type="button"
+                      onClick={() => setViewingTicketsParticipant(item)}
+                      title={`Ver bilhete #${item.luckyNumber}`}
+                      aria-label={`Ver bilhete de ${item.name}`}
+                      style={{
+                        display: "inline-grid",
+                        placeItems: "center",
+                        width: "32px",
+                        height: "32px",
+                        border: "1px solid #e0d6cb",
+                        borderRadius: "6px",
+                        background: "#fff",
+                        color: "#8c6414",
+                        cursor: "pointer",
+                        transition: "all 0.16s ease",
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+                        confirmation_number
+                      </span>
+                    </button>
+                  ) : (
+                    <span style={{ color: "#9ca3af", fontSize: "13px" }}>—</span>
+                  )}
                 </td>
-                <td data-label="Participante" className="stitch-name">
-                  {item.name}
+                <td className="stitch-name">
+                  <div>{item.name}</div>
+                  {item.userType && (
+                    <span style={{ fontSize: "11px", color: "#8c6414", fontWeight: 600, textTransform: "capitalize" }}>
+                      {item.userType}
+                    </span>
+                  )}
                 </td>
-                <td data-label="Loja">{item.store}</td>
-                <td data-label="Contato">
+                <td>{item.store}</td>
+                <td>
                   <div className="stitch-contacts">
                     <a
                       className="social-icon whatsapp"
@@ -138,17 +191,10 @@ export function ParticipantsTable({
                     </a>
                   </div>
                 </td>
-                <td data-label="Data de inscrição">
+                <td>
                   {formatDate(item.createdAt)}
                 </td>
-                <td data-label="Situação">
-                  {item.wonAt ? (
-                    <Badge variant="winner">Vencedor</Badge>
-                  ) : (
-                    <Badge variant="active">Inscrito</Badge>
-                  )}
-                </td>
-                <td data-label="Ações" className="stitch-actions-col">
+                <td className="stitch-actions-col">
                   <div className="participant-actions">
                     <button
                       type="button"
@@ -175,6 +221,107 @@ export function ParticipantsTable({
         </table>
       </div>
 
+      {/* Modern Dedicated Mobile Cards */}
+      <div className="stitch-cards-mobile">
+        {paginatedParticipants.map((item) => (
+          <article key={item.id} className="participant-card-m">
+            <div className="pcm-header">
+              <div className="pcm-user">
+                <h3 className="pcm-name">{item.name}</h3>
+                {item.userType && (
+                  <span className="pcm-tag">{item.userType}</span>
+                )}
+              </div>
+
+              {item.tickets && item.tickets.length > 0 ? (
+                <button
+                  type="button"
+                  className="pcm-ticket-btn"
+                  onClick={() => setViewingTicketsParticipant(item)}
+                  title={`Ver ${item.tickets.length} bilhete(s)`}
+                  aria-label={`Ver bilhetes de ${item.name}`}
+                >
+                  <span className="material-symbols-outlined">confirmation_number</span>
+                  <span className="pcm-ticket-badge">{item.tickets.length}</span>
+                </button>
+              ) : item.luckyNumber ? (
+                <button
+                  type="button"
+                  className="pcm-ticket-btn"
+                  onClick={() => setViewingTicketsParticipant(item)}
+                  title={`Ver bilhete #${item.luckyNumber}`}
+                  aria-label={`Ver bilhete de ${item.name}`}
+                >
+                  <span className="material-symbols-outlined">confirmation_number</span>
+                </button>
+              ) : null}
+            </div>
+
+            <div className="pcm-meta">
+              <div className="pcm-store">
+                <span className="material-symbols-outlined">storefront</span>
+                <span>{item.store || "—"}</span>
+              </div>
+
+              <div className="pcm-date">
+                <span className="material-symbols-outlined">schedule</span>
+                <span>{formatDate(item.createdAt)}</span>
+              </div>
+            </div>
+
+            <div className="pcm-footer">
+              <div className="pcm-contacts stitch-contacts">
+                {item.phone && (
+                  <a
+                    className="social-icon whatsapp"
+                    href={buildWhatsAppUrl(item.phone, item.name, item.store)}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`WhatsApp de ${item.name}`}
+                    title={`WhatsApp: ${formatPhone(item.phone)}`}
+                  >
+                    <img src="https://cdn.simpleicons.org/whatsapp/128C7E" alt="" />
+                  </a>
+                )}
+                {item.instagram && (
+                  <a
+                    className="social-icon instagram"
+                    href={buildInstagramUrl(item.instagram)}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Instagram de ${item.name}`}
+                    title={`@${cleanInstagramHandle(item.instagram)}`}
+                  >
+                    <img src="https://cdn.simpleicons.org/instagram/E1306C" alt="" />
+                  </a>
+                )}
+              </div>
+
+              <div className="pcm-actions">
+                <button
+                  type="button"
+                  className="action-icon edit"
+                  onClick={() => onEdit(item)}
+                  aria-label={`Editar ${item.name}`}
+                  title="Editar participante"
+                >
+                  <span className="material-symbols-outlined">edit</span>
+                </button>
+                <button
+                  type="button"
+                  className="action-icon delete danger"
+                  onClick={() => onDelete(item)}
+                  aria-label={`Excluir ${item.name}`}
+                  title="Excluir participante"
+                >
+                  <span className="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+
       <Pagination
         currentPage={validCurrentPage}
         totalItems={participants.length}
@@ -183,6 +330,12 @@ export function ParticipantsTable({
         onPageSizeChange={setPageSize}
         pageSizeOptions={[10, 25, 50]}
         itemLabel="participantes"
+      />
+
+      <ParticipantTicketsModal
+        participant={viewingTicketsParticipant}
+        isOpen={Boolean(viewingTicketsParticipant)}
+        onClose={() => setViewingTicketsParticipant(null)}
       />
     </>
   );

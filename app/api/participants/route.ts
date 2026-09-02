@@ -19,27 +19,31 @@ export async function checkLookupRateLimit(
   request: Request,
   phone: string,
 ): Promise<{ allowed: boolean; retryAfter: number }> {
-  const ip =
-    request.headers.get("cf-connecting-ip") ||
-    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    "127.0.0.1";
+  try {
+    const ip =
+      request.headers.get("cf-connecting-ip") ||
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+      "127.0.0.1";
 
-  const hashedIp = await hashTarget(ip);
-  const ipResult = await consumeRateLimit(`lookup:ip:${hashedIp}`, 50, 60);
-  if (!ipResult.allowed) {
-    return ipResult;
-  }
-
-  if (phone) {
-    const hashedTarget = await hashTarget(`${ip}:${phone}`);
-    const targetResult = await consumeRateLimit(
-      `lookup:target:${hashedTarget}`,
-      10,
-      60,
-    );
-    if (!targetResult.allowed) {
-      return targetResult;
+    const hashedIp = await hashTarget(ip);
+    const ipResult = await consumeRateLimit(`lookup:ip:${hashedIp}`, 50, 60);
+    if (!ipResult.allowed) {
+      return ipResult;
     }
+
+    if (phone) {
+      const hashedTarget = await hashTarget(`${ip}:${phone}`);
+      const targetResult = await consumeRateLimit(
+        `lookup:target:${hashedTarget}`,
+        10,
+        60,
+      );
+      if (!targetResult.allowed) {
+        return targetResult;
+      }
+    }
+  } catch (err) {
+    console.warn("Rate limit check failed open due to DB connection:", err);
   }
 
   return { allowed: true, retryAfter: 0 };
@@ -74,7 +78,7 @@ export async function GET(request: Request) {
     const db = await initialize();
     const existing = await db
       .prepare(
-        "SELECT id_participante AS id, nr_sorte AS lucky_number, nm_participante AS name, nm_loja AS store FROM t_participants WHERE nr_whatsapp=?",
+        `SELECT ${participantFields} FROM t_participants WHERE nr_whatsapp=?`,
       )
       .bind(phone)
       .first<Record<string, unknown>>();
@@ -86,15 +90,9 @@ export async function GET(request: Request) {
       );
     }
 
-    // Privacy-preserving response: returns only public ticket verification fields
     return Response.json({
       ok: true,
-      participant: {
-        id: Number(existing.id),
-        luckyNumber: String(existing.lucky_number),
-        name: String(existing.name),
-        store: String(existing.store),
-      },
+      participant: row(existing),
     });
   } catch {
     return Response.json(
@@ -124,25 +122,55 @@ export async function POST(request: Request) {
 
   const payload = body as Record<string, unknown>;
   const name = typeof payload.name === "string" ? payload.name.trim() : "";
-  const store = typeof payload.store === "string" ? payload.store.trim() : "";
+  const rawStore = typeof payload.store === "string" ? payload.store.trim() : "";
   const phone = typeof payload.phone === "string" ? payload.phone.replace(/\D/g, "") : "";
   const instagram = typeof payload.instagram === "string"
     ? payload.instagram.trim().replace(/^@?/, "@")
     : "";
+  const rawType = String(payload.userType || "lojista").toLowerCase();
+  const userType = ["lojista", "revendedor", "influencer", "visitante"].includes(rawType)
+    ? rawType
+    : "lojista";
   const consent = payload.consent === true;
 
-  if (
-    !name ||
-    !store ||
-    phone.length < 10 ||
-    instagram.length < 2 ||
-    !consent
-  ) {
+  const isStoreRequired = userType === "lojista" || userType === "revendedor";
+
+  if (!name || name.length < 3) {
     return Response.json(
-      { error: "Preencha todos os campos e aceite o consentimento." },
+      { error: "Informe seu nome completo (mínimo 3 caracteres)." },
       { status: 400 },
     );
   }
+
+  if (isStoreRequired && (!rawStore || rawStore.length < 2)) {
+    return Response.json(
+      { error: "Informe o nome da sua loja ou marca." },
+      { status: 400 },
+    );
+  }
+
+  if (phone.length < 10) {
+    return Response.json(
+      { error: "Informe um número de WhatsApp válido com DDD." },
+      { status: 400 },
+    );
+  }
+
+  if (instagram.length < 2) {
+    return Response.json(
+      { error: "Informe um perfil do Instagram válido." },
+      { status: 400 },
+    );
+  }
+
+  if (!consent) {
+    return Response.json(
+      { error: "É necessário aceitar os termos do sorteio." },
+      { status: 400 },
+    );
+  }
+
+  const store = rawStore || "—";
 
   try {
 
@@ -174,39 +202,12 @@ export async function POST(request: Request) {
       });
     }
 
-    let lucky = "";
-    for (let i = 0; i < 20; i++) {
-      const candidate = String(
-        (crypto.getRandomValues(new Uint32Array(1))[0] % 9999) + 1,
-      ).padStart(4, "0");
-      const used = await db
-        .prepare(
-          "SELECT id_participante AS id FROM t_participants WHERE nr_sorte=?",
-        )
-        .bind(candidate)
-        .first();
-      if (!used) {
-        lucky = candidate;
-        break;
-      }
-    }
-
-    if (!lucky) {
-      return Response.json(
-        {
-          error:
-            "Alta demanda de cadastros. Não foi possível gerar um número único agora. Tente novamente em alguns instantes.",
-        },
-        { status: 503 },
-      );
-    }
-
     const inserted = await db
       .prepare(
-        `INSERT INTO t_participants(nr_sorte,nm_participante,nm_loja,nr_whatsapp,nm_instagram)
-         VALUES(?,?,?,?,?) RETURNING ${participantFields}`,
+        `INSERT INTO t_participants(nr_sorte,nm_participante,nm_loja,nr_whatsapp,nm_instagram,user_type)
+         VALUES(NULL,?,?,?,?,?) RETURNING ${participantFields}`,
       )
-      .bind(lucky, name, store, phone, instagram)
+      .bind(name, store, phone, instagram, userType)
       .first<Record<string, unknown>>();
 
     if (!inserted) {

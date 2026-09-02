@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { formatPhone, cleanPhone } from "@/utils/formatters";
 import { isValidPhone } from "@/utils/validators";
 import { Modal } from "@/components/ui/Modal";
+import "./fast-lookup.css";
 
 interface FastLookupModalProps {
   isOpen: boolean;
@@ -48,40 +49,57 @@ export function FastLookupModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Consultar Meu Número"
-      badge={<span className="edit-ticket-badge">Acesso Rápido</span>}
       className="fast-lookup-modal"
       isBusy={loading}
     >
-      <p className="lookup-description">
-        Já realizou seu cadastro anteriormente? Digite seu WhatsApp para
-        acessar seu número da sorte imediatamente neste aparelho.
+      <div className="lookup-header-wrap">
+        <div className="lookup-badge-pill">
+          <span className="material-symbols-outlined">wallet</span>
+          <span>Acesso Rápido</span>
+        </div>
+        <h2 className="lookup-title">Acessar Minha Carteira</h2>
+      </div>
+
+      <p className="lookup-description-text">
+        Já se cadastrou no <strong>Fashion Date</strong>? Digite seu WhatsApp para recuperar seus dados e visualizar todos os seus bilhetes de sorteio neste aparelho.
       </p>
 
-      <form onSubmit={handleSubmit} className="lookup-form">
-        <label htmlFor="lookup-phone">
-          <span>WhatsApp Cadastrado</span>
-          <div className="stitch-input-wrap">
-            <span className="material-symbols-outlined">call</span>
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="lookup-field-container">
+          <label htmlFor="lookup-phone" className="lookup-field-label">
+            WhatsApp Cadastrado
+          </label>
+          <div className={`lookup-input-box${error ? " is-invalid" : ""}`}>
+            <span className="material-symbols-outlined icon">call</span>
             <input
               id="lookup-phone"
               type="tel"
               inputMode="tel"
+              autoComplete="tel"
               placeholder="(11) 98765-4321"
               value={phone}
-              onChange={(e) => setPhone(formatPhone(e.target.value))}
+              onChange={(e) => {
+                setPhone(formatPhone(e.target.value));
+                if (error) setError("");
+              }}
               required
               disabled={loading}
+              aria-invalid={Boolean(error)}
             />
           </div>
-        </label>
 
-        {error && <p className="form-error">{error}</p>}
+          {error && (
+            <div className="lookup-error-inline" role="alert">
+              <span className="material-symbols-outlined">info</span>
+              <span>{error}</span>
+            </div>
+          )}
+        </div>
 
-        <footer className="edit-modal-footer">
+        <footer className="lookup-modal-footer">
           <button
             type="button"
-            className="stitch-button outline"
+            className="lookup-btn-cancel"
             onClick={onClose}
             disabled={loading}
           >
@@ -89,7 +107,7 @@ export function FastLookupModal({
           </button>
           <button
             type="submit"
-            className="stitch-button filled"
+            className="lookup-btn-submit"
             disabled={loading}
           >
             {loading ? (
@@ -100,7 +118,7 @@ export function FastLookupModal({
             ) : (
               <>
                 <span className="material-symbols-outlined">search</span>
-                <span>Acessar Cadastro</span>
+                <span>Acessar Carteira</span>
               </>
             )}
           </button>
@@ -109,3 +127,5 @@ export function FastLookupModal({
     </Modal>
   );
 }
+
+

@@ -14,6 +14,7 @@ type DrawTransitionLinkProps = {
   children: ReactNode;
   className?: string;
   onClick?: () => void;
+  title?: string;
 };
 
 const emptySubscribe = () => () => {};
@@ -22,6 +23,7 @@ export function DrawTransitionLink({
   children,
   className,
   onClick,
+  title,
 }: DrawTransitionLinkProps) {
   const [phase, setPhase] = useState<"idle" | "active" | "leaving">("idle");
   const isClient = useSyncExternalStore(
@@ -53,17 +55,16 @@ export function DrawTransitionLink({
       return;
     }
     setPhase("active");
-    timers.current.push(window.setTimeout(() => setPhase("leaving"), 1200));
     timers.current.push(
       window.setTimeout(() => {
         window.location.assign("/admin/sorteio");
-      }, 1600),
+      }, 1400),
     );
   }
 
   return (
     <>
-      <a href="/admin/sorteio" className={className} onClick={openDraw}>
+      <a href="/admin/sorteio" className={className} onClick={openDraw} title={title}>
         {children}
       </a>
       {isClient &&
