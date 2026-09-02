@@ -104,29 +104,6 @@ export function DrawConfigPanel({
         </div>
       </header>
 
-      {/* Cards de Métricas Harmonizados */}
-      <div className="stitch-stats stitch-draw-stats">
-        <div className="stitch-stat-card">
-          <div className="stat-header">
-            <span className="stat-label">Total de Rodadas</span>
-            <div className="stat-icon-badge">
-              <span className="material-symbols-outlined">casino</span>
-            </div>
-          </div>
-          <strong className="stat-value">{draws.length}</strong>
-        </div>
-
-        <div className="stitch-stat-card">
-          <div className="stat-header">
-            <span className="stat-label">Público Apto</span>
-            <div className="stat-icon-badge">
-              <span className="material-symbols-outlined">how_to_reg</span>
-            </div>
-          </div>
-          <strong className="stat-value">{activeParticipants}</strong>
-        </div>
-      </div>
-
       {/* Painel Unificado de Rodadas */}
       <div className="stitch-panel-card">
         <div className="stitch-controls-header">

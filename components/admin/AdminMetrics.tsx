@@ -6,7 +6,7 @@ interface AdminMetricsProps {
 
 export function AdminMetrics({ stats }: AdminMetricsProps) {
   return (
-    <div className="stitch-stats">
+    <div className="stitch-stats stitch-draw-stats">
       <div className="stitch-stat-card">
         <div className="stat-header">
           <span className="stat-label">Total de Participantes</span>
@@ -25,16 +25,6 @@ export function AdminMetrics({ stats }: AdminMetricsProps) {
           </div>
         </div>
         <strong className="stat-value">{stats.today}</strong>
-      </div>
-
-      <div className="stitch-stat-card">
-        <div className="stat-header">
-          <span className="stat-label">Sorteados</span>
-          <div className="stat-icon-badge">
-            <span className="material-symbols-outlined">workspace_premium</span>
-          </div>
-        </div>
-        <strong className="stat-value">{stats.winners}</strong>
       </div>
     </div>
   );
