@@ -171,9 +171,9 @@ export function WinnersTable({
             <span className="material-symbols-outlined">group</span>
             Ver Participantes
           </button>
-          <DrawTransitionLink className="stitch-button filled">
-            <span className="material-symbols-outlined">confirmation_number</span>
-            Novo Sorteio
+          <DrawTransitionLink className="stitch-button filled" title="Abrir Telão Oficial do Sorteio">
+            <span className="material-symbols-outlined">live_tv</span>
+            Abrir Telão
           </DrawTransitionLink>
         </div>
       </header>
@@ -542,9 +542,9 @@ export function WinnersTable({
                   : "Assim que um sorteio for realizado no telão, o resultado aparecerá registrado aqui."}
               </p>
               {!winners.length && (
-                <DrawTransitionLink className="stitch-button filled">
-                  <span className="material-symbols-outlined">confirmation_number</span>
-                  Realizar Primeiro Sorteio
+                <DrawTransitionLink className="stitch-button filled" title="Abrir Telão Oficial do Sorteio">
+                  <span className="material-symbols-outlined">live_tv</span>
+                  Abrir Telão
                 </DrawTransitionLink>
               )}
             </div>

@@ -89,18 +89,18 @@ export function DrawConfigPanel({
           </span>
         </div>
         <div className="stitch-actions">
-          <DrawTransitionLink className="stitch-button outline">
-            <span className="material-symbols-outlined">live_tv</span>
-            Abrir Telão
-          </DrawTransitionLink>
           <button
             type="button"
-            className="stitch-button filled"
+            className="stitch-button outline"
             onClick={handleOpenCreate}
           >
             <span className="material-symbols-outlined">add</span>
             Novo Sorteio
           </button>
+          <DrawTransitionLink className="stitch-button filled" title="Abrir Telão Oficial do Sorteio">
+            <span className="material-symbols-outlined">live_tv</span>
+            Abrir Telão
+          </DrawTransitionLink>
         </div>
       </header>
 
@@ -113,13 +113,6 @@ export function DrawConfigPanel({
               <span>Acervo de Rodadas</span>
               <span className="stitch-pill-count">{draws.length}</span>
             </div>
-          </div>
-
-          <div className="stitch-controls-meta">
-            <DrawTransitionLink className="stitch-export-btn" title="Abrir Telão Oficial">
-              <span className="material-symbols-outlined export-icon">live_tv</span>
-              <span className="export-text">Telão Oficial</span>
-            </DrawTransitionLink>
           </div>
         </div>
 

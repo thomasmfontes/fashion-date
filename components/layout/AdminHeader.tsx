@@ -33,9 +33,9 @@ export function AdminHeader({
           </span>
           {registrationsOpen ? "Encerrar Inscrições" : "Reabrir Inscrições"}
         </button>
-        <DrawTransitionLink className="stitch-button filled">
-          <span className="material-symbols-outlined">play_arrow</span>
-          Iniciar Sorteio
+        <DrawTransitionLink className="stitch-button filled" title="Abrir Telão Oficial do Sorteio">
+          <span className="material-symbols-outlined">live_tv</span>
+          Abrir Telão
         </DrawTransitionLink>
       </div>
     </header>
