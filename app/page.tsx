@@ -39,9 +39,71 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Legal Modals State
+  // Legal Modals State with URL synchronization
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
+
+  function openPrivacyModal() {
+    setIsPrivacyOpen(true);
+    setIsTermsOpen(false);
+    if (typeof window !== "undefined") {
+      window.history.pushState(null, "", "#privacidade");
+    }
+  }
+
+  function openTermsModal() {
+    setIsTermsOpen(true);
+    setIsPrivacyOpen(false);
+    if (typeof window !== "undefined") {
+      window.history.pushState(null, "", "#termos");
+    }
+  }
+
+  function closeLegalModals() {
+    setIsPrivacyOpen(false);
+    setIsTermsOpen(false);
+    if (typeof window !== "undefined") {
+      if (window.location.hash || window.location.search.includes("modal=")) {
+        window.history.pushState(null, "", window.location.pathname);
+      }
+    }
+  }
+
+  useEffect(() => {
+    function syncModalsFromUrl() {
+      if (typeof window === "undefined") return;
+      const hash = window.location.hash.toLowerCase();
+      const params = new URLSearchParams(window.location.search);
+      const modalParam = params.get("modal")?.toLowerCase();
+
+      if (
+        hash === "#privacidade" ||
+        hash === "#politica-de-privacidade" ||
+        modalParam === "privacidade"
+      ) {
+        setIsPrivacyOpen(true);
+        setIsTermsOpen(false);
+      } else if (
+        hash === "#termos" ||
+        hash === "#termos-de-uso" ||
+        modalParam === "termos"
+      ) {
+        setIsTermsOpen(true);
+        setIsPrivacyOpen(false);
+      } else {
+        setIsPrivacyOpen(false);
+        setIsTermsOpen(false);
+      }
+    }
+
+    syncModalsFromUrl();
+    window.addEventListener("hashchange", syncModalsFromUrl);
+    window.addEventListener("popstate", syncModalsFromUrl);
+    return () => {
+      window.removeEventListener("hashchange", syncModalsFromUrl);
+      window.removeEventListener("popstate", syncModalsFromUrl);
+    };
+  }, []);
 
   // Controlled form state
   const [userType, setUserType] = useState<UserType>("lojista");
@@ -374,8 +436,8 @@ export default function Home() {
           /* Social Auth Gate: Google or Microsoft required before form */
           <SocialAuthGate
             initialError={authError}
-            onOpenPrivacy={() => setIsPrivacyOpen(true)}
-            onOpenTerms={() => setIsTermsOpen(true)}
+            onOpenPrivacy={openPrivacyModal}
+            onOpenTerms={openTermsModal}
           />
         ) : (
           /* Authenticated User Experience */
@@ -673,11 +735,11 @@ export default function Home() {
       {/* Modais Legais (Privacidade e Termos) */}
       <PrivacyPolicyModal
         isOpen={isPrivacyOpen}
-        onClose={() => setIsPrivacyOpen(false)}
+        onClose={closeLegalModals}
       />
       <TermsOfUseModal
         isOpen={isTermsOpen}
-        onClose={() => setIsTermsOpen(false)}
+        onClose={closeLegalModals}
       />
     </main>
   );
