@@ -52,6 +52,8 @@ export interface Participant {
   createdAt: string;
   wonAt?: string | null;
   drawId?: number | null;
+  email?: string;
+  authUserId?: string;
 }
 
 export interface ParticipantFormData {
@@ -59,8 +61,10 @@ export interface ParticipantFormData {
   store: string;
   phone: string;
   instagram: string;
+  consent: boolean;
   userType?: UserType;
-  consent?: boolean;
+  email?: string;
+  authUserId?: string;
 }
 
 export type StatusFilter = "all" | "active" | "winner";

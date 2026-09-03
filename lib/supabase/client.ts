@@ -16,6 +16,11 @@ export const getSupabaseBrowserClient = (): SupabaseClient | null => {
 
   if (!supabaseClient) {
     supabaseClient = createClient(url, anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
       realtime: {
         params: {
           eventsPerSecond: 10,
@@ -26,3 +31,71 @@ export const getSupabaseBrowserClient = (): SupabaseClient | null => {
 
   return supabaseClient;
 };
+
+/**
+ * Initiates OAuth sign-in with Google via Supabase.
+ */
+export async function signInWithGoogle(redirectTo?: string) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) {
+    throw new Error(
+      "Configuração do Supabase ausente. Verifique NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY."
+    );
+  }
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const callbackUrl = redirectTo || `${origin}/auth/callback`;
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: callbackUrl,
+      queryParams: {
+        access_type: "offline",
+        prompt: "select_account",
+      },
+    },
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Initiates OAuth sign-in with Microsoft (Azure) via Supabase.
+ * Allows all Microsoft personal (@outlook, @hotmail) and corporate accounts.
+ */
+export async function signInWithMicrosoft(redirectTo?: string) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) {
+    throw new Error(
+      "Configuração do Supabase ausente. Verifique NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY."
+    );
+  }
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const callbackUrl = redirectTo || `${origin}/auth/callback`;
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "azure",
+    options: {
+      redirectTo: callbackUrl,
+      scopes: "openid profile email",
+      queryParams: {
+        prompt: "select_account",
+      },
+    },
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Signs out the current Supabase user and clears local session.
+ */
+export async function signOut() {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return;
+  await supabase.auth.signOut();
+}

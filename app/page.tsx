@@ -5,9 +5,14 @@ import "./signup-form.css";
 import { formatName, formatPhone, cleanPhone } from "@/utils/formatters";
 import { APP_CONFIG } from "@/constants/config";
 import { useSavedParticipant } from "@/hooks/useSavedParticipant";
-import { FastLookupModal } from "@/components/public/FastLookupModal";
 import type { UserType } from "@/types/participant.types";
 import { USER_TYPE_LABELS, USER_TYPE_ICONS } from "@/types/participant.types";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
+import { SocialAuthGate } from "@/components/public/SocialAuthGate";
+import { AuthUserBadge } from "@/components/public/AuthUserBadge";
+import { PrivacyPolicyModal } from "@/components/public/PrivacyPolicyModal";
+import { TermsOfUseModal } from "@/components/public/TermsOfUseModal";
 
 const HERO_IMAGE_URL = "/renata-hero.jpg";
 
@@ -24,12 +29,19 @@ export default function Home() {
     savedParticipant,
     saveParticipant,
     clearParticipant,
-    lookupByPhone,
   } = useSavedParticipant();
 
   const [registrationsOpen, setRegistrationsOpen] = useState(true);
   const [showNewForm, setShowNewForm] = useState(false);
-  const [isLookupOpen, setIsLookupOpen] = useState(false);
+
+  // Supabase Auth State
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Legal Modals State
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
 
   // Controlled form state
   const [userType, setUserType] = useState<UserType>("lojista");
@@ -49,6 +61,68 @@ export default function Home() {
   const instagramInputRef = useRef<HTMLInputElement>(null);
   const consentInputRef = useRef<HTMLInputElement>(null);
 
+  // Listen for Supabase Authentication session on mount
+  useEffect(() => {
+    let active = true;
+
+    // Check for auth errors passed via URL
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const urlError = searchParams.get("auth_error");
+      if (urlError) {
+        setAuthError(decodeURIComponent(urlError));
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, "", cleanUrl);
+      }
+    }
+
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+      setAuthLoading(false);
+      return;
+    }
+
+    // Check existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return;
+      if (session?.user) {
+        setAuthUser(session.user);
+        const fullName =
+          session.user.user_metadata?.full_name ||
+          session.user.user_metadata?.name ||
+          "";
+        if (fullName) {
+          setName((prev) => prev || formatName(fullName));
+        }
+      }
+      setAuthLoading(false);
+    });
+
+    // Reactive listener for login / logout events
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      if (session?.user) {
+        setAuthUser(session.user);
+        const fullName =
+          session.user.user_metadata?.full_name ||
+          session.user.user_metadata?.name ||
+          "";
+        if (fullName) {
+          setName((prev) => prev || formatName(fullName));
+        }
+      } else {
+        setAuthUser(null);
+      }
+      setAuthLoading(false);
+    });
+
+    return () => {
+      active = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Fetch live draw registration status
   useEffect(() => {
     let active = true;
     fetch(APP_CONFIG.api.liveDraw)
@@ -65,6 +139,17 @@ export default function Home() {
       active = false;
     };
   }, []);
+
+  function handleUserLogout() {
+    clearParticipant();
+    setAuthUser(null);
+    setName("");
+    setStore("");
+    setPhone("");
+    setInstagram("");
+    setConsent(false);
+    setShowNewForm(false);
+  }
 
   function validateForm(): { isValid: boolean; errors: FieldErrors } {
     const errors: FieldErrors = {};
@@ -139,6 +224,8 @@ export default function Home() {
           instagram: `@${instagram.trim().replace(/^@?/, "")}`,
           userType,
           consent: true,
+          email: authUser?.email || undefined,
+          authUserId: authUser?.id || undefined,
         }),
       });
 
@@ -174,12 +261,13 @@ export default function Home() {
     }
   }
 
-  async function handleFastLookup(lookupPhone: string) {
-    const found = await lookupByPhone(lookupPhone);
-    if (found) {
-      window.location.assign(APP_CONFIG.routes.success);
-    }
-  }
+  const authenticatedName =
+    authUser?.user_metadata?.full_name ||
+    authUser?.user_metadata?.name ||
+    name ||
+    "Participante";
+  const authenticatedEmail = authUser?.email || "";
+  const authenticatedAvatar = authUser?.user_metadata?.avatar_url || null;
 
   return (
     <main className="signup-page">
@@ -260,298 +348,316 @@ export default function Home() {
           </h2>
           <p>
             {registrationsOpen
-              ? "Preencha seus dados uma única vez para acessar sua carteira de sorteios e concorrer aos prêmios exclusivos do evento."
+              ? "Conecte-se para preencher sua inscrição e concorrer aos prêmios do evento."
               : "As inscrições para os sorteios foram encerradas temporariamente pela organização."}
           </p>
         </header>
 
-        {/* Closed Announcement */}
-        {!registrationsOpen && !savedParticipant && (
-          <div className="signup-closed-banner" role="alert">
-            <span className="material-symbols-outlined">lock_clock</span>
-            <h3>Inscrições Temporariamente Encerradas</h3>
-            <p>
-              A organização encerrou as inscrições para a apuração do sorteio.
-              Acompanhe o anúncio no telão do evento!
-            </p>
-            <button
-              type="button"
-              className="signup-lookup-pill"
-              style={{ marginTop: "18px" }}
-              onClick={() => setIsLookupOpen(true)}
-            >
-              <span className="material-symbols-outlined">search</span>
-              Já é cadastrado? Consultar meu comprovante
-            </button>
+        {/* Auth Loading Skeleton */}
+        {authLoading ? (
+          <div
+            style={{
+              padding: "48px 24px",
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <div className="social-btn-spinner" style={{ width: "32px", height: "32px" }} />
+            <span style={{ fontSize: "13px", color: "#786568", fontWeight: 600 }}>
+              Verificando autenticação segura...
+            </span>
           </div>
-        )}
+        ) : !authUser ? (
+          /* Social Auth Gate: Google or Microsoft required before form */
+          <SocialAuthGate
+            initialError={authError}
+            onOpenPrivacy={() => setIsPrivacyOpen(true)}
+            onOpenTerms={() => setIsTermsOpen(true)}
+          />
+        ) : (
+          /* Authenticated User Experience */
+          <>
+            {/* Authenticated User Badge with Logout Option */}
+            <AuthUserBadge
+              name={authenticatedName}
+              email={authenticatedEmail}
+              avatarUrl={authenticatedAvatar}
+              onLoggedOut={handleUserLogout}
+            />
 
-        {/* Identified Returning User Card */}
-        {savedParticipant && !showNewForm ? (
-          <div className="smart-session-card">
-            <div className="smart-session-badge">
-              <span className="material-symbols-outlined">verified_user</span>
-              <span>Inscrição Identificada</span>
-            </div>
-            <h3>Olá, {savedParticipant.name}!</h3>
-            <p>
-              Você já está cadastrado no Fashion Date como{" "}
-              <strong>{USER_TYPE_LABELS[savedParticipant.userType || "lojista"]}</strong>
-              {savedParticipant.store && savedParticipant.store !== "—" ? ` (${savedParticipant.store})` : ""}.
-            </p>
-            <div className="smart-session-actions">
-              <a href="/sucesso" className="signup-submit-btn">
-                <span>Acessar Minha Carteira de Sorteios</span>
-                <span className="material-symbols-outlined">arrow_forward</span>
-              </a>
-              <button
-                type="button"
-                className="smart-session-switch"
-                onClick={clearParticipant}
-              >
-                <span className="material-symbols-outlined">person_add</span>
-                Não é você? Fazer novo cadastro
-              </button>
-            </div>
-          </div>
-        ) : registrationsOpen ? (
-          /* Active Registration Form */
-          <form className="signup-form" onSubmit={submit} noValidate>
-            {savedParticipant && showNewForm && (
-              <button
-                type="button"
-                className="smart-session-switch"
-                style={{ marginBottom: "10px" }}
-                onClick={() => setShowNewForm(false)}
-              >
-                <span className="material-symbols-outlined">arrow_back</span>
-                Voltar para meu cadastro
-              </button>
+            {/* Closed Announcement */}
+            {!registrationsOpen && !savedParticipant && (
+              <div className="signup-closed-banner" role="alert">
+                <span className="material-symbols-outlined">lock_clock</span>
+                <h3>Inscrições Temporariamente Encerradas</h3>
+                <p>
+                  A organização encerrou as inscrições para a apuração do sorteio.
+                  Acompanhe o anúncio no telão do evento!
+                </p>
+              </div>
             )}
 
-            {/* Seletor de Tipo de Participante */}
-            <div className="signup-profile-selector">
-              <label className="profile-selector-title">Selecione seu perfil no evento:</label>
-              <div className="profile-types-grid">
-                {(["lojista", "revendedor", "influencer", "visitante"] as UserType[]).map((type) => {
-                  const isSelected = userType === type;
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      className={`profile-type-btn ${isSelected ? "selected" : ""}`}
-                      onClick={() => setUserType(type)}
-                    >
-                      <span className="material-symbols-outlined">{USER_TYPE_ICONS[type]}</span>
-                      <span>{USER_TYPE_LABELS[type]}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="signup-fields-grid">
-              <div className="signup-field-group">
-                <label htmlFor="signup-name">Nome completo *</label>
-                <input
-                  ref={nameInputRef}
-                  id="signup-name"
-                  name="name"
-                  autoComplete="name"
-                  autoCapitalize="words"
-                  placeholder="Ex: Renata Castanheira"
-                  value={name}
-                  onChange={(e) => {
-                    setName(formatName(e.target.value));
-                    if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }));
-                  }}
-                  required
-                  aria-required="true"
-                  aria-invalid={Boolean(fieldErrors.name)}
-                  aria-describedby={fieldErrors.name ? "signup-name-error" : undefined}
-                  disabled={loading}
-                />
-                {fieldErrors.name && (
-                  <span id="signup-name-error" className="field-error-message" role="alert">
-                    {fieldErrors.name}
-                  </span>
-                )}
-              </div>
-
-              <div className="signup-field-group">
-                <label htmlFor="signup-store">
-                  {userType === "lojista"
-                    ? "Nome da loja ou marca *"
-                    : userType === "revendedor"
-                      ? "Nome da marca / revenda *"
-                      : userType === "influencer"
-                        ? "Nicho / Agência / Canal (Opcional)"
-                        : "Empresa / Cidade (Opcional)"}
-                </label>
-                <input
-                  ref={storeInputRef}
-                  id="signup-store"
-                  name="store"
-                  autoCapitalize="words"
-                  placeholder={
-                    userType === "lojista"
-                      ? "Ex: Boutique Elegance"
-                      : userType === "revendedor"
-                        ? "Ex: Bella Moda Revendas"
-                        : userType === "influencer"
-                          ? "Ex: Moda Evangélica & Lifestyle"
-                          : "Ex: São Paulo - SP"
-                  }
-                  value={store}
-                  onChange={(e) => {
-                    setStore(e.target.value);
-                    if (fieldErrors.store) setFieldErrors((prev) => ({ ...prev, store: undefined }));
-                  }}
-                  required={userType === "lojista" || userType === "revendedor"}
-                  aria-required={userType === "lojista" || userType === "revendedor"}
-                  aria-invalid={Boolean(fieldErrors.store)}
-                  aria-describedby={fieldErrors.store ? "signup-store-error" : undefined}
-                  disabled={loading}
-                />
-                {fieldErrors.store && (
-                  <span id="signup-store-error" className="field-error-message" role="alert">
-                    {fieldErrors.store}
-                  </span>
-                )}
-              </div>
-
-              <div className="signup-field-group">
-                <label htmlFor="signup-phone">WhatsApp *</label>
-                <input
-                  ref={phoneInputRef}
-                  id="signup-phone"
-                  name="phone"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  placeholder="(00) 00000-0000"
-                  value={phone}
-                  onChange={(e) => {
-                    setPhone(formatPhone(e.target.value));
-                    if (fieldErrors.phone) setFieldErrors((prev) => ({ ...prev, phone: undefined }));
-                  }}
-                  required
-                  aria-required="true"
-                  aria-invalid={Boolean(fieldErrors.phone)}
-                  aria-describedby={
-                    fieldErrors.phone ? "signup-phone-error" : "signup-phone-hint"
-                  }
-                  disabled={loading}
-                />
-                {fieldErrors.phone ? (
-                  <span id="signup-phone-error" className="field-error-message" role="alert">
-                    {fieldErrors.phone}
-                  </span>
-                ) : (
-                  <small id="signup-phone-hint" className="signup-field-hint">
-                    <span className="material-symbols-outlined">info</span>
-                    Apenas 1 número por WhatsApp
-                  </small>
-                )}
-              </div>
-
-              <div className="signup-field-group">
-                <label htmlFor="signup-instagram">
-                  {userType === "lojista" || userType === "revendedor"
-                    ? "Instagram da Loja / Marca *"
-                    : userType === "influencer"
-                      ? "Instagram Profissional *"
-                      : "Seu Instagram Pessoal *"}
-                </label>
-                <div className={`signup-instagram-wrap${fieldErrors.instagram ? " is-invalid" : ""}`}>
-                  <span aria-hidden="true">@</span>
-                  <input
-                    ref={instagramInputRef}
-                    id="signup-instagram"
-                    name="instagram"
-                    placeholder={
-                      userType === "lojista" || userType === "revendedor"
-                        ? "sualoja"
-                        : "seu.perfil"
-                    }
-                    autoComplete="off"
-                    value={instagram}
-                    onChange={(e) => {
-                      setInstagram(e.target.value.replace(/^@/, ""));
-                      if (fieldErrors.instagram) setFieldErrors((prev) => ({ ...prev, instagram: undefined }));
-                    }}
-                    required
-                    aria-label="Usuário do Instagram"
-                    aria-required="true"
-                    aria-invalid={Boolean(fieldErrors.instagram)}
-                    aria-describedby={fieldErrors.instagram ? "signup-instagram-error" : undefined}
-                    disabled={loading}
-                  />
+            {/* Identified Returning User Card */}
+            {savedParticipant && !showNewForm ? (
+              <div className="smart-session-card">
+                <div className="smart-session-badge">
+                  <span className="material-symbols-outlined">verified_user</span>
+                  <span>Inscrição Identificada</span>
                 </div>
-                {fieldErrors.instagram && (
-                  <span id="signup-instagram-error" className="field-error-message" role="alert">
-                    {fieldErrors.instagram}
+                <h3>Olá, {savedParticipant.name}!</h3>
+                <p>
+                  Você já está cadastrado no Fashion Date como{" "}
+                  <strong>{USER_TYPE_LABELS[savedParticipant.userType || "lojista"]}</strong>
+                  {savedParticipant.store && savedParticipant.store !== "—" ? ` (${savedParticipant.store})` : ""}.
+                </p>
+                <div className="smart-session-actions">
+                  <a href="/sucesso" className="signup-submit-btn">
+                    <span>Acessar Minha Carteira de Sorteios</span>
+                    <span className="material-symbols-outlined">arrow_forward</span>
+                  </a>
+                  <button
+                    type="button"
+                    className="smart-session-switch"
+                    onClick={clearParticipant}
+                  >
+                    <span className="material-symbols-outlined">person_add</span>
+                    Não é você? Fazer novo cadastro
+                  </button>
+                </div>
+              </div>
+            ) : registrationsOpen ? (
+              /* Active Registration Form */
+              <form className="signup-form" onSubmit={submit} noValidate>
+                {savedParticipant && showNewForm && (
+                  <button
+                    type="button"
+                    className="smart-session-switch"
+                    style={{ marginBottom: "10px" }}
+                    onClick={() => setShowNewForm(false)}
+                  >
+                    <span className="material-symbols-outlined">arrow_back</span>
+                    Voltar para meu cadastro
+                  </button>
+                )}
+
+                {/* Seletor de Tipo de Participante */}
+                <div className="signup-profile-selector">
+                  <label className="profile-selector-title">Selecione seu perfil no evento:</label>
+                  <div className="profile-types-grid">
+                    {(["lojista", "revendedor", "influencer", "visitante"] as UserType[]).map((type) => {
+                      const isSelected = userType === type;
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          className={`profile-type-btn ${isSelected ? "selected" : ""}`}
+                          onClick={() => setUserType(type)}
+                        >
+                          <span className="material-symbols-outlined">{USER_TYPE_ICONS[type]}</span>
+                          <span>{USER_TYPE_LABELS[type]}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="signup-fields-grid">
+                  <div className="signup-field-group">
+                    <label htmlFor="signup-name">Nome completo *</label>
+                    <input
+                      ref={nameInputRef}
+                      id="signup-name"
+                      name="name"
+                      autoComplete="name"
+                      autoCapitalize="words"
+                      placeholder="Ex: Renata Castanheira"
+                      value={name}
+                      onChange={(e) => {
+                        setName(formatName(e.target.value));
+                        if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }));
+                      }}
+                      required
+                      aria-required="true"
+                      aria-invalid={Boolean(fieldErrors.name)}
+                      aria-describedby={fieldErrors.name ? "signup-name-error" : undefined}
+                      disabled={loading}
+                    />
+                    {fieldErrors.name && (
+                      <span id="signup-name-error" className="field-error-message" role="alert">
+                        {fieldErrors.name}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="signup-field-group">
+                    <label htmlFor="signup-store">
+                      {userType === "lojista"
+                        ? "Nome da loja ou marca *"
+                        : userType === "revendedor"
+                          ? "Nome da marca / revenda *"
+                          : userType === "influencer"
+                            ? "Nicho / Agência / Canal (Opcional)"
+                            : "Empresa / Cidade (Opcional)"}
+                    </label>
+                    <input
+                      ref={storeInputRef}
+                      id="signup-store"
+                      name="store"
+                      autoCapitalize="words"
+                      placeholder={
+                        userType === "lojista"
+                          ? "Ex: Boutique Elegance"
+                          : userType === "revendedor"
+                            ? "Ex: Bella Moda Revendas"
+                            : userType === "influencer"
+                              ? "Ex: Moda Evangélica & Lifestyle"
+                              : "Ex: São Paulo - SP"
+                      }
+                      value={store}
+                      onChange={(e) => {
+                        setStore(e.target.value);
+                        if (fieldErrors.store) setFieldErrors((prev) => ({ ...prev, store: undefined }));
+                      }}
+                      required={userType === "lojista" || userType === "revendedor"}
+                      aria-required={userType === "lojista" || userType === "revendedor"}
+                      aria-invalid={Boolean(fieldErrors.store)}
+                      aria-describedby={fieldErrors.store ? "signup-store-error" : undefined}
+                      disabled={loading}
+                    />
+                    {fieldErrors.store && (
+                      <span id="signup-store-error" className="field-error-message" role="alert">
+                        {fieldErrors.store}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="signup-field-group">
+                    <label htmlFor="signup-phone">WhatsApp *</label>
+                    <input
+                      ref={phoneInputRef}
+                      id="signup-phone"
+                      name="phone"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder="(00) 00000-0000"
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(formatPhone(e.target.value));
+                        if (fieldErrors.phone) setFieldErrors((prev) => ({ ...prev, phone: undefined }));
+                      }}
+                      required
+                      aria-required="true"
+                      aria-invalid={Boolean(fieldErrors.phone)}
+                      aria-describedby={
+                        fieldErrors.phone ? "signup-phone-error" : "signup-phone-hint"
+                      }
+                      disabled={loading}
+                    />
+                    {fieldErrors.phone ? (
+                      <span id="signup-phone-error" className="field-error-message" role="alert">
+                        {fieldErrors.phone}
+                      </span>
+                    ) : (
+                      <small id="signup-phone-hint" className="signup-field-hint">
+                        Usado para envio do comprovante e validação do sorteio.
+                      </small>
+                    )}
+                  </div>
+
+                  <div className="signup-field-group">
+                    <label htmlFor="signup-instagram">Instagram *</label>
+                    <input
+                      ref={instagramInputRef}
+                      id="signup-instagram"
+                      name="instagram"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      placeholder="@seu.perfil"
+                      value={instagram}
+                      onChange={(e) => {
+                        setInstagram(e.target.value);
+                        if (fieldErrors.instagram) {
+                          setFieldErrors((prev) => ({ ...prev, instagram: undefined }));
+                        }
+                      }}
+                      required
+                      aria-required="true"
+                      aria-invalid={Boolean(fieldErrors.instagram)}
+                      aria-describedby={
+                        fieldErrors.instagram ? "signup-instagram-error" : "signup-instagram-hint"
+                      }
+                      disabled={loading}
+                    />
+                    {fieldErrors.instagram ? (
+                      <span id="signup-instagram-error" className="field-error-message" role="alert">
+                        {fieldErrors.instagram}
+                      </span>
+                    ) : (
+                      <small id="signup-instagram-hint" className="signup-field-hint">
+                        {userType === "lojista" || userType === "revendedor"
+                          ? "Perfil comercial da loja no Instagram."
+                          : "Seu perfil pessoal no Instagram."}
+                      </small>
+                    )}
+                  </div>
+                </div>
+
+                <div className="signup-terms-box">
+                  <label className="signup-terms-label">
+                    <input
+                      ref={consentInputRef}
+                      id="signup-consent"
+                      type="checkbox"
+                      name="consent"
+                      checked={consent}
+                      onChange={(e) => {
+                        setConsent(e.target.checked);
+                        if (fieldErrors.consent) {
+                          setFieldErrors((prev) => ({ ...prev, consent: undefined }));
+                        }
+                      }}
+                      required
+                      aria-required="true"
+                      aria-invalid={Boolean(fieldErrors.consent)}
+                      aria-describedby={fieldErrors.consent ? "signup-consent-error" : undefined}
+                      disabled={loading}
+                    />
+                    <span className="signup-terms-text">
+                      Concordo em participar dos sorteios do <strong>Fashion Date</strong> e autorizo
+                      o uso do meu nome e perfil para divulgação dos resultados oficiais do evento. *
+                    </span>
+                  </label>
+                </div>
+
+                {fieldErrors.consent && (
+                  <span id="signup-consent-error" className="field-error-message" style={{ marginTop: "-10px", display: "block" }} role="alert">
+                    {fieldErrors.consent}
                   </span>
                 )}
-              </div>
-            </div>
 
-            <label className="signup-consent-card" htmlFor="signup-consent">
-              <input
-                ref={consentInputRef}
-                id="signup-consent"
-                type="checkbox"
-                name="consent"
-                checked={consent}
-                onChange={(e) => {
-                  setConsent(e.target.checked);
-                  if (fieldErrors.consent) setFieldErrors((prev) => ({ ...prev, consent: undefined }));
-                }}
-                required
-                aria-required="true"
-                aria-invalid={Boolean(fieldErrors.consent)}
-                aria-describedby={fieldErrors.consent ? "signup-consent-error" : undefined}
-                disabled={loading}
-              />
-              <span>
-                Autorizo o uso dos meus dados para participação no sorteio e
-                comunicações exclusivas do <strong>Fashion Date</strong>.
-              </span>
-            </label>
-            {fieldErrors.consent && (
-              <span id="signup-consent-error" className="field-error-message" style={{ marginTop: "-10px", display: "block" }} role="alert">
-                {fieldErrors.consent}
-              </span>
-            )}
+                {globalError && (
+                  <div className="form-error-card" role="alert" aria-live="assertive">
+                    <span className="material-symbols-outlined">error</span>
+                    <span>{globalError}</span>
+                  </div>
+                )}
 
-            {globalError && (
-              <div className="form-error-card" role="alert" aria-live="assertive">
-                <span className="material-symbols-outlined">error</span>
-                <span>{globalError}</span>
-              </div>
-            )}
-
-            <button
-              className="signup-submit-btn"
-              type="submit"
-              disabled={loading}
-              aria-busy={loading}
-            >
-              <span>{loading ? "Cadastrando..." : "Concluir Cadastro & Ver Sorteios"}</span>
-              <span className="material-symbols-outlined">arrow_forward</span>
-            </button>
-
-            <div className="signup-lookup-section">
-              <button
-                type="button"
-                className="signup-lookup-pill"
-                onClick={() => setIsLookupOpen(true)}
-              >
-                <span className="material-symbols-outlined">search</span>
-                <span>Já é cadastrado? Acesse sua carteira pelo WhatsApp</span>
-              </button>
-            </div>
-          </form>
-        ) : null}
+                <button
+                  className="signup-submit-btn"
+                  type="submit"
+                  disabled={loading}
+                  aria-busy={loading}
+                >
+                  <span>{loading ? "Cadastrando..." : "Concluir Cadastro & Ver Sorteios"}</span>
+                  <span className="material-symbols-outlined">arrow_forward</span>
+                </button>
+              </form>
+            ) : null}
+          </>
+        )}
 
         <footer className="signup-footer">
           <span>
@@ -564,10 +670,14 @@ export default function Home() {
         </footer>
       </section>
 
-      <FastLookupModal
-        isOpen={isLookupOpen}
-        onClose={() => setIsLookupOpen(false)}
-        onLookup={handleFastLookup}
+      {/* Modais Legais (Privacidade e Termos) */}
+      <PrivacyPolicyModal
+        isOpen={isPrivacyOpen}
+        onClose={() => setIsPrivacyOpen(false)}
+      />
+      <TermsOfUseModal
+        isOpen={isTermsOpen}
+        onClose={() => setIsTermsOpen(false)}
       />
     </main>
   );
