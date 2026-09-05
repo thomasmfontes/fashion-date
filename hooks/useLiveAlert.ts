@@ -62,7 +62,7 @@ export function useLiveAlert(
   const lastDrawRef = useRef<string | null>(null);
   const testTimerRef = useRef<number | null>(null);
 
-  const { playTick, playVictory, playAlarmSiren } = useSoundFx();
+  const { playTick, playVictory, playAlarmSiren, stopVictory } = useSoundFx();
   useWakeLock(isEnabled);
 
   const celebrate = useCallback(
@@ -89,7 +89,7 @@ export function useLiveAlert(
         testTimerRef.current = window.setTimeout(() => {
           setAlarmActive(false);
           setCelebration(null);
-        }, 4200);
+        }, 14000);
       }
     },
     [],
@@ -284,17 +284,20 @@ export function useLiveAlert(
 
   const silenceAlarm = useCallback(() => {
     setAlarmActive(false);
-  }, []);
+    stopVictory();
+  }, [stopVictory]);
 
   const dismissCelebration = useCallback(() => {
     setCelebration(null);
     setAlarmActive(false);
     setWinningTicket(null);
-  }, []);
+    stopVictory();
+  }, [stopVictory]);
 
   // Adaptive polling loop with visibility pause and backoff (active as backup)
   useEffect(() => {
-    if (!hasUserNumbers) return;
+    if (!isEnabled || isWebSocketActive) return;
+
     let isCancelled = false;
 
     const scheduleNextPoll = () => {
@@ -343,19 +346,18 @@ export function useLiveAlert(
     };
   }, [checkDraw, isEnabled, isWebSocketActive]);
 
-  // Celebratory audio loop when alert is active
+  // Celebratory audio when alert is active (plays once, strictly on victory or test screen)
   useEffect(() => {
-    if (!celebration || !alarmActive) return;
+    if (!alarmActive || (celebration !== "winner" && celebration !== "test")) {
+      return;
+    }
 
     playAlarmSiren();
-    const fanfareInterval = window.setInterval(() => {
-      playAlarmSiren();
-    }, 2400);
 
     return () => {
-      window.clearInterval(fanfareInterval);
+      stopVictory();
     };
-  }, [alarmActive, celebration, playAlarmSiren]);
+  }, [alarmActive, celebration, playAlarmSiren, stopVictory]);
 
   return {
     isEnabled,
@@ -371,10 +373,17 @@ export function useLiveAlert(
     silenceAlarm,
     dismissCelebration,
     triggerTest: () => {
-      setWinningTicket(primaryTicket);
+      setWinningTicket(
+        primaryTicket || {
+          drawId: "test-draw",
+          drawTitle: "Sorteio Oficial",
+          prizeTitle: "Prêmio Especial",
+          ticketNumber: "#7777",
+        }
+      );
       setActiveDrawTitle(primaryTicket?.drawTitle || "Sorteio Oficial");
       setActivePrizeTitle(primaryTicket?.prizeTitle || "Prêmio Especial");
-      celebrate("test", primaryNumber || "0000");
+      celebrate("test", primaryNumber || "7777");
     },
   };
 }

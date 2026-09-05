@@ -41,6 +41,7 @@ export function useSoundFx() {
   const playTick = useCallback(() => getSound()?.playTick(), [getSound]);
   const playLock = useCallback(() => getSound()?.playLock(), [getSound]);
   const playVictory = useCallback(() => getSound()?.playVictory(), [getSound]);
+  const stopVictory = useCallback(() => getSound()?.stopVictory(), [getSound]);
   const playAlarmSiren = useCallback(
     () => getSound()?.playAlarmSiren(),
     [getSound],
@@ -52,6 +53,7 @@ export function useSoundFx() {
     playTick,
     playLock,
     playVictory,
+    stopVictory,
     playAlarmSiren,
   };
 }

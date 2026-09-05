@@ -73,24 +73,22 @@ export default function LiveDrawAlert({ luckyNumber }: LiveDrawAlertProps) {
           </div>
 
           {/* Action button */}
-          <div className="stitch-live-alert-actions">
-            {isEnabled ? (
-              <button
-                type="button"
-                className="stitch-button outline"
-                onClick={triggerTest}
-                title="Testar som e celebração no celular"
-              >
-                <span className="material-symbols-outlined">volume_up</span>
-                <span>Testar Alerta</span>
-              </button>
-            ) : (
+          <div className="stitch-live-alert-actions" style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="stitch-button outline"
+              onClick={triggerTest}
+              title="Testar som e celebração no celular"
+            >
+              <span className="material-symbols-outlined">volume_up</span>
+              <span>Testar Alerta</span>
+            </button>
+            {!isEnabled && (
               <button
                 type="button"
                 className="stitch-button filled"
                 onClick={enableAlert}
-                disabled={!hasNumbers}
-                title={hasNumbers ? "Ativar som e alerta ao vivo" : "Nenhum número da sorte vinculado"}
+                title="Ativar som e alerta ao vivo"
               >
                 <span className="material-symbols-outlined">power_settings_new</span>
                 <span>Ativar Alerta</span>
@@ -106,32 +104,6 @@ export default function LiveDrawAlert({ luckyNumber }: LiveDrawAlertProps) {
           role="status"
           aria-live="assertive"
         >
-          {/* Botão Fechar no Canto Superior */}
-          <button
-            type="button"
-            onClick={dismissCelebration}
-            aria-label="Fechar"
-            style={{
-              position: "absolute",
-              top: "20px",
-              right: "20px",
-              background: "rgba(255, 255, 255, 0.15)",
-              border: "1px solid rgba(255, 255, 255, 0.3)",
-              borderRadius: "50%",
-              width: "42px",
-              height: "42px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff7e8",
-              cursor: "pointer",
-              zIndex: 30,
-              transition: "background 0.2s ease",
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: "22px" }}>close</span>
-          </button>
-
           <div className="live-screen-flash" />
           {celebration !== "not-winner" && (
             <div className="live-confetti" aria-hidden="true">

@@ -3946,8 +3946,9 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
 
 .stitch-wallet-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
   gap: 18px;
+  align-items: stretch;
 }
 
 @media (max-width: 640px) {
@@ -4072,6 +4073,7 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-height: 250px;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
 }

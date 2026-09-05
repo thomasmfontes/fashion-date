@@ -25,7 +25,7 @@ export function TicketsTab({
   enterDraw,
   onNavigate,
 }: TicketsTabProps) {
-  const { playTick, playLock, playVictory } = useSoundFx();
+  const { playTick, playLock } = useSoundFx();
 
   const [animatingDrawId, setAnimatingDrawId] = useState<string | null>(null);
   const [cardDigits, setCardDigits] = useState<string[]>(["0", "0", "0", "0"]);
@@ -137,12 +137,6 @@ export function TicketsTab({
       if (rollIntervalRef.current) clearInterval(rollIntervalRef.current);
       setCardState("done");
 
-      try {
-        playVictory();
-      } catch {
-        /* ignore audio */
-      }
-
       // Aguarda 650ms para o participante contemplar o número reluzente gerado no card
       await new Promise((r) => setTimeout(r, 650));
       if (!isMountedRef.current) return;
@@ -150,7 +144,7 @@ export function TicketsTab({
       // Abre o modal limpo com a informação real
       setConfirmedModalData({ draw, ticket });
     },
-    [animatingDrawId, enterDraw, tickets, playTick, playLock, playVictory]
+    [animatingDrawId, enterDraw, tickets, playTick, playLock]
   );
 
   function handleCloseConfirmedModal() {
@@ -260,13 +254,13 @@ export function TicketsTab({
                 boxSizing: "border-box",
                 background: "radial-gradient(ellipse at 50% 20%, #720023 0%, #460015 55%, #2d000d 100%)",
                 border: "2px solid #e7c275",
-                borderRadius: "18px",
-                padding: "clamp(14px, 3.5vw, 20px) clamp(8px, 2.5vw, 16px) clamp(16px, 3.5vw, 22px)",
+                borderRadius: "14px",
+                padding: "12px 10px 14px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: "12px",
-                boxShadow: "0 12px 35px rgba(45, 0, 13, 0.4), 0 0 25px rgba(231, 194, 117, 0.25)",
+                gap: "8px",
+                boxShadow: "0 10px 28px rgba(45, 0, 13, 0.35), 0 0 20px rgba(231, 194, 117, 0.2)",
                 animation: "bootCardIn 0.3s ease both",
                 position: "relative",
                 overflow: "hidden",
@@ -290,21 +284,21 @@ export function TicketsTab({
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "6px",
-                  padding: "4px 12px",
+                  gap: "5px",
+                  padding: "3px 10px",
                   borderRadius: "999px",
                   background: cardState === "done"
                     ? "linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)"
                     : "linear-gradient(135deg, #fff3d6 0%, #fde68a 100%)",
                   border: cardState === "done" ? "1px solid #22c55e" : "1px solid #f59e0b",
                   color: cardState === "done" ? "#14532d" : "#78350f",
-                  fontSize: "11px",
+                  fontSize: "10.5px",
                   fontWeight: 800,
                   textTransform: "uppercase",
-                  letterSpacing: "0.08em",
+                  letterSpacing: "0.06em",
                   boxShadow: cardState === "done"
-                    ? "0 2px 10px rgba(34, 197, 94, 0.35)"
-                    : "0 2px 10px rgba(245, 158, 11, 0.35)",
+                    ? "0 2px 8px rgba(34, 197, 94, 0.3)"
+                    : "0 2px 8px rgba(245, 158, 11, 0.3)",
                   transition: "all 0.3s ease",
                   maxWidth: "100%",
                   whiteSpace: "nowrap",
@@ -313,7 +307,7 @@ export function TicketsTab({
                 <span
                   className="material-symbols-outlined"
                   style={{
-                    fontSize: "16px",
+                    fontSize: "15px",
                     animation: cardState !== "done" ? "spin 1s linear infinite" : "none",
                   }}
                 >
@@ -334,8 +328,8 @@ export function TicketsTab({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: "clamp(4px, 1.5vw, 8px)",
-                  padding: "4px 0",
+                  gap: "6px",
+                  padding: "2px 0",
                   width: "100%",
                   maxWidth: "100%",
                   boxSizing: "border-box",
@@ -344,12 +338,13 @@ export function TicketsTab({
                 <span
                   style={{
                     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                    fontSize: "clamp(24px, 6.5vw, 36px)",
+                    fontSize: "24px",
                     color: "#ffe599",
                     fontWeight: 900,
                     lineHeight: 1,
-                    marginRight: "clamp(2px, 1vw, 4px)",
-                    textShadow: "0 0 14px rgba(255, 229, 153, 0.8), 0 2px 5px rgba(0,0,0,0.6)",
+                    marginRight: "2px",
+                    flexShrink: 0,
+                    textShadow: "0 0 10px rgba(255, 229, 153, 0.8), 0 2px 4px rgba(0,0,0,0.6)",
                   }}
                 >
                   #
@@ -361,8 +356,10 @@ export function TicketsTab({
                     <div
                       key={i}
                       style={{
-                        width: "clamp(38px, 11vw, 52px)",
-                        height: "clamp(52px, 15vw, 68px)",
+                        flex: "1 1 0",
+                        maxWidth: "46px",
+                        minWidth: "28px",
+                        height: "52px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -370,16 +367,15 @@ export function TicketsTab({
                           ? "linear-gradient(180deg, #ffffff 0%, #fff6e0 100%)"
                           : "linear-gradient(180deg, #ffffff 0%, #fdf8ef 100%)",
                         border: isLocked
-                          ? "2.5px solid #d4af37"
-                          : "2px solid rgba(212, 175, 55, 0.7)",
-                        borderRadius: "clamp(8px, 2.5vw, 12px)",
+                          ? "2px solid #d4af37"
+                          : "1.5px solid rgba(212, 175, 55, 0.7)",
+                        borderRadius: "10px",
                         boxShadow: isLocked
-                          ? "0 0 22px rgba(255, 215, 0, 0.75), 0 8px 18px rgba(0,0,0,0.4)"
-                          : "0 6px 14px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.9)",
+                          ? "0 0 16px rgba(255, 215, 0, 0.7), 0 6px 14px rgba(0,0,0,0.35)"
+                          : "0 4px 10px rgba(0,0,0,0.25), inset 0 2px 4px rgba(255,255,255,0.9)",
                         transform: isLocked ? "scale(1.03)" : "scale(1)",
                         transition: "all 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                         boxSizing: "border-box",
-                        flexShrink: 0,
                       }}
                     >
                       <span
@@ -387,7 +383,7 @@ export function TicketsTab({
                           fontFamily: '"Bodoni Moda", "Cinzel", Georgia, serif',
                           fontVariantNumeric: "lining-nums tabular-nums",
                           fontFeatureSettings: '"lnum" 1, "tnum" 1',
-                          fontSize: "clamp(26px, 7.5vw, 36px)",
+                          fontSize: "26px",
                           fontWeight: 800,
                           color: "#530017",
                           lineHeight: 1,
