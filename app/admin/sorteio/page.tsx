@@ -136,6 +136,8 @@ export default function UnifiedDrawPage() {
       activeDraw?.targetUserTypes,
       activeDraw?.hasNumberLimit && activeDraw?.maxNumber ? activeDraw.maxNumber : undefined,
       activeDraw?.id,
+      activeDraw?.title,
+      activeDraw?.prizeTitle,
     );
   }
 

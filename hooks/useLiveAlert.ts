@@ -16,7 +16,12 @@ export interface LiveAlertTicket {
 export function useLiveAlert(
   userTicketsOrNumbers?: (LiveAlertTicket | string)[] | string,
 ) {
-  const [isEnabled, setIsEnabled] = useState(false);
+  const [isEnabled, setIsEnabled] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("fashiondate_live_alert_enabled") === "true";
+    }
+    return false;
+  });
   const [isConnected, setIsConnected] = useState(false);
   const [isWebSocketActive, setIsWebSocketActive] = useState(false);
   const [celebration, setCelebration] = useState<CelebrationMode>(null);
@@ -65,6 +70,19 @@ export function useLiveAlert(
       setDrawnNumber(winnerNumber);
       setCelebration(mode);
       setAlarmActive(mode !== "not-winner");
+
+      // Vibração tátil instantânea no aparelho
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        try {
+          if (mode === "winner") {
+            navigator.vibrate([350, 100, 350, 100, 600]);
+          } else if (mode === "test") {
+            navigator.vibrate([150, 75, 150]);
+          }
+        } catch {
+          // Ignora caso restrito pelas políticas do navegador
+        }
+      }
 
       if (testTimerRef.current) window.clearTimeout(testTimerRef.current);
       if (mode === "test") {
@@ -141,8 +159,9 @@ export function useLiveAlert(
   );
 
   // 1. Supabase Realtime (WebSockets) Subscription
+  // Conecta imediatamente no canal assim que a tela abre, garantindo zero latência de conexão
   useEffect(() => {
-    if (!isEnabled || !hasUserNumbers) return;
+    if (!hasUserNumbers) return;
 
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
@@ -185,7 +204,7 @@ export function useLiveAlert(
       setIsWebSocketActive(false);
       supabase.removeChannel(channel);
     };
-  }, [isEnabled, hasUserNumbers, handleWinnerAnnounced]);
+  }, [hasUserNumbers, handleWinnerAnnounced]);
 
   // 2. HTTP Polling as Fallback & Initial Baseline Sync
   const etagRef = useRef<string | null>(null);
@@ -252,6 +271,13 @@ export function useLiveAlert(
 
   const enableAlert = useCallback(async () => {
     setIsEnabled(true);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("fashiondate_live_alert_enabled", "true");
+      } catch {
+        // Ignora restrições de storage
+      }
+    }
     playTick();
     await checkDraw(true);
   }, [playTick, checkDraw]);
@@ -268,7 +294,7 @@ export function useLiveAlert(
 
   // Adaptive polling loop with visibility pause and backoff (active as backup)
   useEffect(() => {
-    if (!isEnabled) return;
+    if (!hasUserNumbers) return;
     let isCancelled = false;
 
     const scheduleNextPoll = () => {
