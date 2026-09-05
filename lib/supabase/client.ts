@@ -32,6 +32,19 @@ export const getSupabaseBrowserClient = (): SupabaseClient | null => {
   return supabaseClient;
 };
 
+function getAppOrigin(): string {
+  if (typeof window !== "undefined" && window.location.origin) {
+    return window.location.origin;
+  }
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  }
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
+  }
+  return "https://fashiondate.com.br";
+}
+
 /**
  * Initiates OAuth sign-in with Google via Supabase.
  */
@@ -43,7 +56,7 @@ export async function signInWithGoogle(redirectTo?: string) {
     );
   }
 
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const origin = getAppOrigin();
   const callbackUrl = redirectTo || `${origin}/auth/callback`;
 
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -73,7 +86,7 @@ export async function signInWithMicrosoft(redirectTo?: string) {
     );
   }
 
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const origin = getAppOrigin();
   const callbackUrl = redirectTo || `${origin}/auth/callback`;
 
   const { data, error } = await supabase.auth.signInWithOAuth({
