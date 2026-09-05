@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useWakeLock } from "./useWakeLock";
 import { useSoundFx } from "./useSoundFx";
 import { APP_CONFIG } from "@/constants/config";
@@ -6,26 +6,58 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type CelebrationMode = "test" | "winner" | "not-winner" | null;
 
-export function useLiveAlert(userLuckyNumber?: string | string[]) {
+export interface LiveAlertTicket {
+  drawId?: string;
+  drawTitle?: string;
+  prizeTitle?: string;
+  ticketNumber: string;
+}
+
+export function useLiveAlert(
+  userTicketsOrNumbers?: (LiveAlertTicket | string)[] | string,
+) {
   const [isEnabled, setIsEnabled] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isWebSocketActive, setIsWebSocketActive] = useState(false);
   const [celebration, setCelebration] = useState<CelebrationMode>(null);
   const [alarmActive, setAlarmActive] = useState(false);
   const [drawnNumber, setDrawnNumber] = useState("");
+  const [winningTicket, setWinningTicket] = useState<LiveAlertTicket | null>(null);
+  const [activeDrawTitle, setActiveDrawTitle] = useState<string>("");
+  const [activePrizeTitle, setActivePrizeTitle] = useState<string>("");
 
-  const numbersList = Array.isArray(userLuckyNumber)
-    ? userLuckyNumber.map((n) => String(n).trim()).filter(Boolean)
-    : userLuckyNumber
-      ? [String(userLuckyNumber).trim()]
-      : [];
-  const primaryNumber = numbersList[0] || "";
-  const hasUserNumbers = numbersList.length > 0;
+  const ticketsList = useMemo<LiveAlertTicket[]>(() => {
+    if (!userTicketsOrNumbers) return [];
+    const list = Array.isArray(userTicketsOrNumbers)
+      ? userTicketsOrNumbers
+      : [userTicketsOrNumbers];
+    return list
+      .map((item) => {
+        if (typeof item === "string") {
+          return {
+            drawId: "",
+            drawTitle: "",
+            ticketNumber: item.trim(),
+          };
+        }
+        return {
+          drawId: item.drawId || "",
+          drawTitle: item.drawTitle || "",
+          prizeTitle: item.prizeTitle || "",
+          ticketNumber: String(item.ticketNumber || "").trim(),
+        };
+      })
+      .filter((t) => Boolean(t.ticketNumber));
+  }, [userTicketsOrNumbers]);
+
+  const primaryTicket = ticketsList[0] || null;
+  const primaryNumber = primaryTicket?.ticketNumber || "";
+  const hasUserNumbers = ticketsList.length > 0;
 
   const lastDrawRef = useRef<string | null>(null);
   const testTimerRef = useRef<number | null>(null);
 
-  const { playVictory, playAlarmSiren } = useSoundFx();
+  const { playTick, playVictory, playAlarmSiren } = useSoundFx();
   useWakeLock(isEnabled);
 
   const celebrate = useCallback(
@@ -46,26 +78,66 @@ export function useLiveAlert(userLuckyNumber?: string | string[]) {
   );
 
   const handleWinnerAnnounced = useCallback(
-    (drawId: string, winnerNumber: string) => {
-      if (!drawId || drawId === lastDrawRef.current) return;
-      lastDrawRef.current = drawId;
+    (
+      announcedDrawId: string,
+      winnerNumber: string,
+      announcedDrawTitle?: string,
+      announcedPrizeTitle?: string,
+    ) => {
+      if (!announcedDrawId || announcedDrawId === lastDrawRef.current) return;
+      lastDrawRef.current = announcedDrawId;
 
-      const winnerClean = String(winnerNumber || "").trim();
-      const isWinner =
-        Boolean(winnerClean) &&
-        numbersList.some(
-          (userClean) =>
-            winnerClean === userClean ||
-            Number(winnerClean) === Number(userClean),
-        );
+      const cleanWinner = String(winnerNumber || "").trim().replace(/^#/, "");
+      const cleanWinnerInt = Number(cleanWinner);
 
-      if (isWinner) {
+      // 1. Procura se o participante possui bilhete vinculado a este sorteio específico
+      const ticketForThisDraw = ticketsList.find(
+        (t) =>
+          t.drawId &&
+          (t.drawId === announcedDrawId ||
+            announcedDrawId.includes(t.drawId) ||
+            t.drawId.includes(announcedDrawId)),
+      );
+
+      let matchedWin: LiveAlertTicket | null = null;
+
+      if (ticketForThisDraw) {
+        // Validação escopada: somente o bilhete DESTE sorteio pode ganhar!
+        const userNum = ticketForThisDraw.ticketNumber.replace(/^#/, "").trim();
+        if (userNum === cleanWinner || Number(userNum) === cleanWinnerInt) {
+          matchedWin = ticketForThisDraw;
+        }
+      } else {
+        // Se nenhum bilhete do participante tem drawId (modo legado de número único),
+        // ou se o sorteio anunciado não tem drawId específico
+        const hasAnyDrawIds = ticketsList.some((t) => Boolean(t.drawId));
+        if (!hasAnyDrawIds) {
+          matchedWin =
+            ticketsList.find((t) => {
+              const userNum = t.ticketNumber.replace(/^#/, "").trim();
+              return (
+                userNum === cleanWinner || Number(userNum) === cleanWinnerInt
+              );
+            }) || null;
+        }
+      }
+
+      if (matchedWin) {
+        setWinningTicket(matchedWin);
+        setActiveDrawTitle(matchedWin.drawTitle || announcedDrawTitle || "");
+        setActivePrizeTitle(matchedWin.prizeTitle || announcedPrizeTitle || "");
         celebrate("winner", winnerNumber);
-      } else if (winnerNumber) {
+      } else if (ticketForThisDraw) {
+        setWinningTicket(ticketForThisDraw);
+        setActiveDrawTitle(ticketForThisDraw.drawTitle || announcedDrawTitle || "");
+        setActivePrizeTitle(ticketForThisDraw.prizeTitle || announcedPrizeTitle || "");
         celebrate("not-winner", winnerNumber);
+      } else {
+        // O sorteio anunciado era de outra rodada na qual o participante não possui bilhete.
+        // Não disparamos falso alarme nem confetes indevidos.
       }
     },
-    [celebrate, numbersList],
+    [celebrate, ticketsList],
   );
 
   // 1. Supabase Realtime (WebSockets) Subscription
@@ -85,10 +157,18 @@ export function useLiveAlert(userLuckyNumber?: string | string[]) {
       .on(
         "broadcast",
         { event: "winner-announced" },
-        (payload: { payload?: { drawId?: string; winnerNumber?: string } }) => {
-          const { drawId, winnerNumber } = payload?.payload || {};
+        (payload: {
+          payload?: {
+            drawId?: string;
+            winnerNumber?: string;
+            drawTitle?: string;
+            prizeTitle?: string;
+          };
+        }) => {
+          const { drawId, winnerNumber, drawTitle, prizeTitle } =
+            payload?.payload || {};
           if (drawId && winnerNumber) {
-            handleWinnerAnnounced(drawId, winnerNumber);
+            handleWinnerAnnounced(drawId, winnerNumber, drawTitle, prizeTitle);
           }
         },
       )
@@ -143,6 +223,8 @@ export function useLiveAlert(userLuckyNumber?: string | string[]) {
         const data = (await response.json()) as {
           drawId: string | null;
           winnerNumber: string | null;
+          drawTitle?: string | null;
+          prizeTitle?: string | null;
         };
 
         if (baseline) {
@@ -151,7 +233,12 @@ export function useLiveAlert(userLuckyNumber?: string | string[]) {
         }
 
         if (data.drawId && data.winnerNumber) {
-          handleWinnerAnnounced(data.drawId, data.winnerNumber);
+          handleWinnerAnnounced(
+            data.drawId,
+            data.winnerNumber,
+            data.drawTitle || undefined,
+            data.prizeTitle || undefined,
+          );
         }
       } catch {
         consecutiveErrorsRef.current += 1;
@@ -165,9 +252,9 @@ export function useLiveAlert(userLuckyNumber?: string | string[]) {
 
   const enableAlert = useCallback(async () => {
     setIsEnabled(true);
-    playVictory();
+    playTick();
     await checkDraw(true);
-  }, [playVictory, checkDraw]);
+  }, [playTick, checkDraw]);
 
   const silenceAlarm = useCallback(() => {
     setAlarmActive(false);
@@ -176,6 +263,7 @@ export function useLiveAlert(userLuckyNumber?: string | string[]) {
   const dismissCelebration = useCallback(() => {
     setCelebration(null);
     setAlarmActive(false);
+    setWinningTicket(null);
   }, []);
 
   // Adaptive polling loop with visibility pause and backoff (active as backup)
@@ -187,13 +275,21 @@ export function useLiveAlert(userLuckyNumber?: string | string[]) {
       if (isCancelled) return;
 
       // Base interval: 2.5s (or slightly relaxed if WebSocket is active)
-      const baseDelay = isWebSocketActive ? 4500 : 2200 + Math.floor(Math.random() * 400);
-      const backoffMultiplier = Math.min(Math.pow(1.5, consecutiveErrorsRef.current), 3.5);
+      const baseDelay = isWebSocketActive
+        ? 4500
+        : 2200 + Math.floor(Math.random() * 400);
+      const backoffMultiplier = Math.min(
+        Math.pow(1.5, consecutiveErrorsRef.current),
+        3.5,
+      );
       const delay = Math.round(baseDelay * backoffMultiplier);
 
       pollingTimeoutRef.current = window.setTimeout(async () => {
         if (!isCancelled) {
-          if (typeof document === "undefined" || document.visibilityState !== "hidden") {
+          if (
+            typeof document === "undefined" ||
+            document.visibilityState !== "hidden"
+          ) {
             await checkDraw();
           }
           scheduleNextPoll();
@@ -242,9 +338,17 @@ export function useLiveAlert(userLuckyNumber?: string | string[]) {
     celebration,
     alarmActive,
     drawnNumber,
+    winningTicket,
+    activeDrawTitle,
+    activePrizeTitle,
     enableAlert,
     silenceAlarm,
     dismissCelebration,
-    triggerTest: () => celebrate("test", primaryNumber || "0000"),
+    triggerTest: () => {
+      setWinningTicket(primaryTicket);
+      setActiveDrawTitle(primaryTicket?.drawTitle || "Sorteio Oficial");
+      setActivePrizeTitle(primaryTicket?.prizeTitle || "Prêmio Especial");
+      celebrate("test", primaryNumber || "0000");
+    },
   };
 }

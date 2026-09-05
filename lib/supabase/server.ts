@@ -2,14 +2,28 @@ import { createClient } from "@supabase/supabase-js";
 
 export interface WinnerBroadcastPayload {
   drawId: string;
+  drawTitle?: string;
+  prizeTitle?: string;
   winnerNumber: string;
-  timestamp: string;
+  timestamp?: string;
 }
 
 export async function broadcastWinnerAnnouncement(
-  drawId: string,
-  winnerNumber: string,
+  drawIdOrPayload: string | WinnerBroadcastPayload,
+  maybeWinnerNumber?: string,
 ): Promise<void> {
+  const payload: WinnerBroadcastPayload =
+    typeof drawIdOrPayload === "string"
+      ? {
+          drawId: drawIdOrPayload,
+          winnerNumber: maybeWinnerNumber || "",
+          timestamp: new Date().toISOString(),
+        }
+      : {
+          ...drawIdOrPayload,
+          timestamp: drawIdOrPayload.timestamp || new Date().toISOString(),
+        };
+
   const url =
     process.env.NEXT_PUBLIC_SUPABASE_URL ||
     process.env.SUPABASE_URL ||
@@ -46,11 +60,7 @@ export async function broadcastWinnerAnnouncement(
             await channel.send({
               type: "broadcast",
               event: "winner-announced",
-              payload: {
-                drawId,
-                winnerNumber,
-                timestamp: new Date().toISOString(),
-              } satisfies WinnerBroadcastPayload,
+              payload,
             });
             clearTimeout(timeout);
             resolve();

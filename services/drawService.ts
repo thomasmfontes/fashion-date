@@ -104,15 +104,27 @@ export const drawService = {
   async announceDraw(
     adminKey: string,
     drawId: string,
-  ): Promise<{ ok: boolean; drawId: string; winnerNumber: string }> {
-    return request<{ ok: boolean; drawId: string; winnerNumber: string }>(
-      APP_CONFIG.api.adminDraw,
-      {
-        method: "PATCH",
-        adminKey,
-        body: JSON.stringify({ drawId }),
-      },
-    );
+    targetDrawId?: string,
+  ): Promise<{
+    ok: boolean;
+    drawId: string;
+    targetDrawId?: string;
+    winnerNumber: string;
+    drawTitle?: string;
+    prizeTitle?: string;
+  }> {
+    return request<{
+      ok: boolean;
+      drawId: string;
+      targetDrawId?: string;
+      winnerNumber: string;
+      drawTitle?: string;
+      prizeTitle?: string;
+    }>(APP_CONFIG.api.adminDraw, {
+      method: "PATCH",
+      adminKey,
+      body: JSON.stringify({ drawId, targetDrawId }),
+    });
   },
 
 

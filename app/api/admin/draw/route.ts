@@ -145,11 +145,6 @@ export async function POST(request: Request) {
   }
 
   const winnerNumber = String(selected.lucky_number || "").padStart(4, "0");
-  try {
-    await broadcastWinnerAnnouncement(drawIdTarget || sessionDrawId, winnerNumber);
-  } catch (err) {
-    console.error("Erro ao transmitir anúncio em tempo real:", err);
-  }
 
   return Response.json({
     ok: true,
@@ -160,6 +155,7 @@ export async function POST(request: Request) {
       won_at: new Date().toISOString(),
     }),
     drawId: sessionDrawId,
+    targetDrawId: drawIdTarget || null,
   });
 }
 
@@ -184,6 +180,11 @@ export async function PATCH(request: Request) {
 
   const payload = body as Record<string, unknown>;
   const drawId = typeof payload.drawId === "string" ? payload.drawId.trim() : "";
+  const targetDrawId =
+    typeof payload.targetDrawId === "string" && payload.targetDrawId.trim()
+      ? payload.targetDrawId.trim()
+      : "";
+
   if (!drawId) {
     return Response.json({ error: "Sorteio inválido." }, { status: 400 });
   }
@@ -200,6 +201,28 @@ export async function PATCH(request: Request) {
     return Response.json({ error: "Sorteio não encontrado." }, { status: 404 });
   }
 
+  // Obter dados da definição do sorteio (Título e Prêmio) se houver targetDrawId
+  let drawTitle = "";
+  let prizeTitle = "";
+  const effectiveTargetId = targetDrawId || draw.id;
+
+  if (effectiveTargetId) {
+    try {
+      const def = await db
+        .prepare(
+          "SELECT nm_titulo, nm_premio FROM t_draw_definitions WHERE id_sorteio=?",
+        )
+        .bind(effectiveTargetId)
+        .first<{ nm_titulo: string; nm_premio: string }>();
+      if (def) {
+        drawTitle = def.nm_titulo || "";
+        prizeTitle = def.nm_premio || "";
+      }
+    } catch {
+      // Ignora se tabela t_draw_definitions não estiver disponível no ambiente
+    }
+  }
+
   await db.batch([
     db
       .prepare(
@@ -211,15 +234,40 @@ export async function PATCH(request: Request) {
         "INSERT INTO t_settings(cd_configuracao,vl_configuracao) VALUES('latest_winner_number',?) ON CONFLICT(cd_configuracao) DO UPDATE SET vl_configuracao=excluded.vl_configuracao",
       )
       .bind(draw.lucky_number),
+    db
+      .prepare(
+        "INSERT INTO t_settings(cd_configuracao,vl_configuracao) VALUES('latest_target_draw_id',?) ON CONFLICT(cd_configuracao) DO UPDATE SET vl_configuracao=excluded.vl_configuracao",
+      )
+      .bind(effectiveTargetId),
+    db
+      .prepare(
+        "INSERT INTO t_settings(cd_configuracao,vl_configuracao) VALUES('latest_draw_title',?) ON CONFLICT(cd_configuracao) DO UPDATE SET vl_configuracao=excluded.vl_configuracao",
+      )
+      .bind(drawTitle),
+    db
+      .prepare(
+        "INSERT INTO t_settings(cd_configuracao,vl_configuracao) VALUES('latest_prize_title',?) ON CONFLICT(cd_configuracao) DO UPDATE SET vl_configuracao=excluded.vl_configuracao",
+      )
+      .bind(prizeTitle),
   ]);
 
   // Broadcast instant real-time alert via Supabase Realtime (WebSockets)
-  await broadcastWinnerAnnouncement(draw.id, draw.lucky_number);
+  // Agora transmitido estritamente no momento do anúncio público com metadados do sorteio!
+  await broadcastWinnerAnnouncement({
+    drawId: effectiveTargetId,
+    drawTitle: drawTitle || undefined,
+    prizeTitle: prizeTitle || undefined,
+    winnerNumber: draw.lucky_number,
+    timestamp: new Date().toISOString(),
+  });
 
   return Response.json({
     ok: true,
     drawId: draw.id,
+    targetDrawId: effectiveTargetId,
     winnerNumber: draw.lucky_number,
+    drawTitle,
+    prizeTitle,
   });
 }
 

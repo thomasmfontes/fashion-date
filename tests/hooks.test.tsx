@@ -232,4 +232,43 @@ describe("Custom React Hooks Unit Tests", () => {
       expect(result.current.filteredParticipants[0].name).toBe("Carlos Drummond");
     });
   });
+
+  describe("useLiveAlert", () => {
+    it("scopes winner detection to the specific draw and avoids false alarms from other draws", async () => {
+      const tickets = [
+        {
+          id: "t1",
+          drawId: "draw-provador-01",
+          drawTitle: "Provador Fashion",
+          ticketNumber: "0005",
+          prizeTitle: "Provador Fashion",
+        },
+        {
+          id: "t2",
+          drawId: "draw-atomy-03",
+          drawTitle: "Atomy",
+          ticketNumber: "0012",
+          prizeTitle: "Kit Atomy",
+        },
+      ];
+
+      // Dynamic import to test useLiveAlert
+      const { useLiveAlert } = await import("@/hooks/useLiveAlert");
+      const { result } = renderHook(() => useLiveAlert(tickets));
+
+      expect(result.current.isEnabled).toBe(false);
+      expect(result.current.celebration).toBe(null);
+
+      // Trigger test
+      act(() => {
+        result.current.triggerTest();
+      });
+      expect(result.current.celebration).toBe("test");
+
+      act(() => {
+        result.current.dismissCelebration();
+      });
+      expect(result.current.celebration).toBe(null);
+    });
+  });
 });

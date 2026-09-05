@@ -151,7 +151,8 @@ export function useSlotMachine(adminKey: string) {
       let announced = false;
       for (let attempt = 0; attempt < 3 && !announced && isMountedRef.current; attempt += 1) {
         try {
-          await drawService.announceDraw(adminKey, response.drawId);
+          const effectiveTargetDrawId = (response as { targetDrawId?: string })?.targetDrawId || drawId;
+          await drawService.announceDraw(adminKey, response.drawId, effectiveTargetDrawId);
           announced = true;
         } catch {
           if (attempt < 2 && isMountedRef.current) {

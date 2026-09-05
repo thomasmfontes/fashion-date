@@ -16,13 +16,18 @@ export default function LiveDrawAlert({ luckyNumber }: LiveDrawAlertProps) {
     celebration,
     alarmActive,
     drawnNumber,
+    winningTicket,
+    activeDrawTitle,
+    activePrizeTitle,
     enableAlert,
     silenceAlarm,
     dismissCelebration,
     triggerTest,
   } = useLiveAlert(luckyNumber);
 
-  const primaryNumber = Array.isArray(luckyNumber) ? luckyNumber[0] : luckyNumber;
+  const primaryNumber =
+    winningTicket?.ticketNumber ||
+    (Array.isArray(luckyNumber) ? luckyNumber[0] : luckyNumber);
   const hasNumbers = Array.isArray(luckyNumber) ? luckyNumber.length > 0 : Boolean(luckyNumber);
 
   return (

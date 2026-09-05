@@ -28,11 +28,14 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
     celebration,
     alarmActive,
     drawnNumber,
+    winningTicket,
+    activeDrawTitle,
+    activePrizeTitle,
     enableAlert,
     silenceAlarm,
     dismissCelebration,
     triggerTest,
-  } = useLiveAlert(luckyNumbers);
+  } = useLiveAlert(tickets.length > 0 ? tickets : luckyNumbers);
 
   return (
     <>
@@ -86,7 +89,7 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
           </div>
         </div>
 
-        <div style={{ padding: "24px" }}>
+        <div style={{ padding: "clamp(14px, 3.5vw, 24px)" }}>
           {/* Instrução única, concisa e direta ao ponto */}
           <div
             style={{
@@ -249,9 +252,9 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
               <i style={{ width: "32px", height: "1px", background: "rgba(231,194,117,0.7)" }} />
               <span style={{ color: "#e7c275", fontSize: "10px", letterSpacing: "0.22em", fontWeight: 700 }}>
                 {celebration === "winner"
-                  ? "RESULTADO OFICIAL"
+                  ? (activeDrawTitle ? `RESULTADO OFICIAL · ${activeDrawTitle.toUpperCase()}` : "RESULTADO OFICIAL")
                   : celebration === "not-winner"
-                    ? "SORTEIO REALIZADO"
+                    ? (activeDrawTitle ? `SORTEIO REALIZADO · ${activeDrawTitle.toUpperCase()}` : "SORTEIO REALIZADO")
                     : "TESTE DO ALERTA"}
               </span>
               <i style={{ width: "32px", height: "1px", background: "rgba(231,194,117,0.7)" }} />
@@ -261,10 +264,10 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
               style={{
                 fontFamily: 'var(--font-fashion, "Playfair Display", Georgia, serif)',
                 color: "#fff7e8",
-                fontSize: "clamp(46px, 9vw, 84px)",
+                fontSize: "clamp(42px, 8.5vw, 76px)",
                 fontWeight: 600,
-                lineHeight: 1,
-                margin: "8px 0 24px",
+                lineHeight: 1.05,
+                margin: "8px 0 14px",
                 letterSpacing: "-0.02em",
                 textShadow: "0 3px 16px rgba(0, 0, 0, 0.45)",
               }}
@@ -276,12 +279,38 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                   : "Tudo pronto!"}
             </h2>
 
+            {/* Subtítulo do Prêmio quando o usuário for contemplado */}
+            {celebration === "winner" && (activePrizeTitle || activeDrawTitle) && (
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "4px 14px",
+                  borderRadius: "999px",
+                  background: "rgba(231, 194, 117, 0.16)",
+                  border: "1px solid rgba(231, 194, 117, 0.4)",
+                  color: "#f3d48d",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  marginBottom: "16px",
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: "16px", color: "#f3d48d" }}>
+                  workspace_premium
+                </span>
+                <span>
+                  Prêmio: <strong>{activePrizeTitle || activeDrawTitle}</strong>
+                </span>
+              </div>
+            )}
+
             <div className="live-winning-ticket">
               <span>
                 {celebration === "not-winner"
-                  ? "Número Sorteado"
+                  ? "Número Sorteado no Palco"
                   : celebration === "winner"
-                    ? "Número Vencedor"
+                    ? `Seu Número Contemplado${activeDrawTitle ? ` (${activeDrawTitle})` : ""}`
                     : "Seu Número da Sorte"}
               </span>
               <strong
@@ -297,7 +326,10 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                 }}
               >
                 {(() => {
-                  const rawNum = celebration === "not-winner" ? drawnNumber : primaryNumber;
+                  const rawNum =
+                    celebration === "not-winner"
+                      ? drawnNumber
+                      : (winningTicket?.ticketNumber || primaryNumber);
                   if (!rawNum) return "----";
                   const cleanNum = rawNum.replace(/^#/, "");
                   return (
@@ -335,9 +367,9 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
               }}
             >
               {celebration === "winner"
-                ? "Parabéns! Apresente esta tela à organização do evento para receber seu prêmio."
+                ? `Parabéns! Você foi contemplado(a)${activeDrawTitle ? ` no sorteio "${activeDrawTitle}"` : ""}. Apresente esta tela à organização do evento para receber seu prêmio.`
                 : celebration === "not-winner"
-                  ? `O seu número ${primaryNumber?.startsWith("#") ? primaryNumber : `#${primaryNumber}`} não foi sorteado, mas continua válido para os próximos sorteios.`
+                  ? `O número sorteado no palco foi #${drawnNumber.replace(/^#/, "")}${activeDrawTitle ? ` para ${activeDrawTitle}` : ""}. Seus bilhetes continuam registrados para as próximas apurações.`
                   : "Quando o seu número for sorteado, esta celebração aparecerá automaticamente no seu celular."}
             </p>
 
