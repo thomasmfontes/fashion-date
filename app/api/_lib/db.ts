@@ -13,6 +13,9 @@ export type Participant = {
   createdAt: string;
   wonAt: string | null;
   tickets?: import("@/types/participant.types").ParticipantTicket[];
+  email?: string;
+  authUserId?: string;
+  avatarUrl?: string | null;
 };
 
 export const participantFields = `
@@ -22,8 +25,11 @@ export const participantFields = `
   nm_loja AS store,
   nr_whatsapp AS phone,
   nm_instagram AS instagram,
+  user_type AS user_type,
   st_participante AS status,
-  dt_cadastro AS created_at
+  dt_cadastro AS created_at,
+  ds_email AS email,
+  auth_user_id AS auth_user_id
 `;
 
 export function database() {
@@ -89,5 +95,7 @@ export function row(raw: Record<string, unknown>): Participant {
         ? wonAt.toISOString()
         : String(wonAt)
       : null,
+    email: raw.email ? String(raw.email).trim().toLowerCase() : undefined,
+    authUserId: raw.auth_user_id ? String(raw.auth_user_id).trim() : undefined,
   };
 }

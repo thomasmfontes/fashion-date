@@ -99,4 +99,19 @@ export const participantService = {
       },
     );
   },
+
+  /**
+   * Fetches official draw winners history from database (Admin).
+   */
+  async getWinners(adminKey: string): Promise<import("@/types/participant.types").DrawWinnerItem[]> {
+    try {
+      const res = await request<{ ok: boolean; winners: import("@/types/participant.types").DrawWinnerItem[] }>("/api/admin/winners", {
+        method: "GET",
+        adminKey,
+      });
+      return res.winners || [];
+    } catch {
+      return [];
+    }
+  },
 };

@@ -152,7 +152,7 @@ describe("API Contracts & Service Mismatch Regression Suite", () => {
       expect(typeof drawService.announceDraw).toBe("function");
 
       // Verifies route handlers align with active endpoints
-      expect((adminDrawRoute as Record<string, unknown>).GET).toBeUndefined();
+      expect(typeof (adminDrawRoute as Record<string, unknown>).GET).toBe("function");
       expect(typeof (adminDrawRoute as Record<string, unknown>).POST).toBe("function");
       expect(typeof (adminDrawRoute as Record<string, unknown>).PATCH).toBe("function");
     });

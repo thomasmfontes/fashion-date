@@ -6,13 +6,21 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type CelebrationMode = "test" | "winner" | "not-winner" | null;
 
-export function useLiveAlert(userLuckyNumber?: string) {
+export function useLiveAlert(userLuckyNumber?: string | string[]) {
   const [isEnabled, setIsEnabled] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isWebSocketActive, setIsWebSocketActive] = useState(false);
   const [celebration, setCelebration] = useState<CelebrationMode>(null);
   const [alarmActive, setAlarmActive] = useState(false);
   const [drawnNumber, setDrawnNumber] = useState("");
+
+  const numbersList = Array.isArray(userLuckyNumber)
+    ? userLuckyNumber.map((n) => String(n).trim()).filter(Boolean)
+    : userLuckyNumber
+      ? [String(userLuckyNumber).trim()]
+      : [];
+  const primaryNumber = numbersList[0] || "";
+  const hasUserNumbers = numbersList.length > 0;
 
   const lastDrawRef = useRef<string | null>(null);
   const testTimerRef = useRef<number | null>(null);
@@ -42,12 +50,14 @@ export function useLiveAlert(userLuckyNumber?: string) {
       if (!drawId || drawId === lastDrawRef.current) return;
       lastDrawRef.current = drawId;
 
-      const userClean = String(userLuckyNumber || "").trim();
       const winnerClean = String(winnerNumber || "").trim();
       const isWinner =
         Boolean(winnerClean) &&
-        (winnerClean === userClean ||
-          Number(winnerClean) === Number(userClean));
+        numbersList.some(
+          (userClean) =>
+            winnerClean === userClean ||
+            Number(winnerClean) === Number(userClean),
+        );
 
       if (isWinner) {
         celebrate("winner", winnerNumber);
@@ -55,12 +65,12 @@ export function useLiveAlert(userLuckyNumber?: string) {
         celebrate("not-winner", winnerNumber);
       }
     },
-    [celebrate, userLuckyNumber],
+    [celebrate, numbersList],
   );
 
   // 1. Supabase Realtime (WebSockets) Subscription
   useEffect(() => {
-    if (!isEnabled || !userLuckyNumber) return;
+    if (!isEnabled || !hasUserNumbers) return;
 
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
@@ -95,7 +105,7 @@ export function useLiveAlert(userLuckyNumber?: string) {
       setIsWebSocketActive(false);
       supabase.removeChannel(channel);
     };
-  }, [isEnabled, userLuckyNumber, handleWinnerAnnounced]);
+  }, [isEnabled, hasUserNumbers, handleWinnerAnnounced]);
 
   // 2. HTTP Polling as Fallback & Initial Baseline Sync
   const etagRef = useRef<string | null>(null);
@@ -104,7 +114,7 @@ export function useLiveAlert(userLuckyNumber?: string) {
 
   const checkDraw = useCallback(
     async (baseline = false) => {
-      if (!userLuckyNumber) return;
+      if (!hasUserNumbers) return;
       try {
         const headers: Record<string, string> = {};
         if (etagRef.current && !baseline) {
@@ -150,7 +160,7 @@ export function useLiveAlert(userLuckyNumber?: string) {
         }
       }
     },
-    [handleWinnerAnnounced, isWebSocketActive, userLuckyNumber],
+    [handleWinnerAnnounced, isWebSocketActive, hasUserNumbers],
   );
 
   const enableAlert = useCallback(async () => {
@@ -235,6 +245,6 @@ export function useLiveAlert(userLuckyNumber?: string) {
     enableAlert,
     silenceAlarm,
     dismissCelebration,
-    triggerTest: () => celebrate("test", userLuckyNumber || "0000"),
+    triggerTest: () => celebrate("test", primaryNumber || "0000"),
   };
 }

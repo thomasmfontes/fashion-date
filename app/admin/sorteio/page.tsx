@@ -380,7 +380,7 @@ export default function UnifiedDrawPage() {
           <div className="winner-card-body">
             <div className="winner-prize-banner">
               <span className="winner-prize-kicker">Ganhador(a) do Sorteio</span>
-              <h3 className="winner-prize-title">
+              <h3 className="winner-prize-title" suppressHydrationWarning>
                 {activeDraw?.prizeTitle ? activeDraw.prizeTitle : "Prêmio Especial"}
               </h3>
             </div>
@@ -455,7 +455,7 @@ export default function UnifiedDrawPage() {
         </section>
       ) : (
         <section className="draw-stage">
-          <div className="draw-status">
+          <div className="draw-status" suppressHydrationWarning>
             <i />
             {slotMachine.isRunning
               ? "Tambores girando... Aguarde a revelação"

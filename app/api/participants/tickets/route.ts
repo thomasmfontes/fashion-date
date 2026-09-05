@@ -4,8 +4,11 @@ import type { UserType } from "@/types/participant.types";
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const participantId = url.searchParams.get("participantId");
+    const rawParticipantId = url.searchParams.get("participantId");
     const phone = url.searchParams.get("phone")?.replace(/\D/g, "");
+    const participantId = rawParticipantId && !isNaN(Number(rawParticipantId)) && Number(rawParticipantId) > 0
+      ? Number(rawParticipantId)
+      : null;
 
     if (!participantId && (!phone || phone.length < 10)) {
       return Response.json(
@@ -15,6 +18,31 @@ export async function GET(request: Request) {
     }
 
     const db = await initialize();
+
+    // 1. Localizar o participante e seu tipo de usuário
+    let pId = participantId;
+    let uType: string = "lojista";
+    if (participantId) {
+      const p = await db
+        .prepare("SELECT id_participante AS id, user_type FROM t_participants WHERE id_participante = ?")
+        .bind(participantId)
+        .first<{ id: number; user_type: string }>();
+      if (p) {
+        pId = Number(p.id);
+        uType = String(p.user_type || "lojista").toLowerCase();
+      }
+    } else if (phone) {
+      const p = await db
+        .prepare("SELECT id_participante AS id, user_type FROM t_participants WHERE nr_whatsapp = ?")
+        .bind(phone)
+        .first<{ id: number; user_type: string }>();
+      if (p) {
+        pId = Number(p.id);
+        uType = String(p.user_type || "lojista").toLowerCase();
+      }
+    }
+
+
     let query = `
       SELECT 
         t.id_ticket AS id,
@@ -29,9 +57,9 @@ export async function GET(request: Request) {
     `;
 
     let rows: Record<string, unknown>[] = [];
-    if (participantId) {
+    if (pId) {
       query += " WHERE t.id_participante = ? ORDER BY t.dt_inscricao ASC";
-      const result = await db.prepare(query).bind(Number(participantId)).all<Record<string, unknown>>();
+      const result = await db.prepare(query).bind(pId).all<Record<string, unknown>>();
       rows = result.results;
     } else {
       query += `
@@ -78,7 +106,9 @@ export async function POST(request: Request) {
     };
 
     const drawId = payload.drawId?.trim();
-    const participantId = payload.participantId ? Number(payload.participantId) : null;
+    const participantId = payload.participantId && !isNaN(Number(payload.participantId)) && Number(payload.participantId) > 0
+      ? Number(payload.participantId)
+      : null;
     const phone = payload.phone?.replace(/\D/g, "");
 
     if (!drawId || (!participantId && (!phone || phone.length < 10))) {
@@ -150,7 +180,9 @@ export async function POST(request: Request) {
       try {
         const parsed = JSON.parse(draw.target_user_types);
         if (Array.isArray(parsed)) targetTypes = parsed.map((t) => String(t).toLowerCase());
-      } catch {}
+      } catch {
+        /* ignore JSON parse error */
+      }
     }
 
     if (targetTypes.length > 0 && !targetTypes.includes(userType)) {

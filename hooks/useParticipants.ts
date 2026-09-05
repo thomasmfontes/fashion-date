@@ -45,7 +45,7 @@ export function useParticipants(
     try {
       const [data, winnersData] = await Promise.all([
         participantService.getAll(adminKey),
-        drawService.getWinners(adminKey),
+        participantService.getWinners(adminKey),
       ]);
       setParticipants(data.participants || []);
       setWinners(winnersData || []);
@@ -82,7 +82,7 @@ export function useParticipants(
       try {
         const [data, winnersData] = await Promise.all([
           participantService.getAll(adminKey),
-          drawService.getWinners(adminKey),
+          participantService.getWinners(adminKey),
         ]);
         if (!isMounted) return;
         setParticipants(data.participants || []);

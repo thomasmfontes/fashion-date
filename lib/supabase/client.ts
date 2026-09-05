@@ -99,3 +99,46 @@ export async function signOut() {
   if (!supabase) return;
   await supabase.auth.signOut();
 }
+
+/**
+ * Completely signs out the current Supabase user, purges all auth tokens
+ * and participant local storage keys, and triggers a clean transition.
+ */
+export async function performFullUserLogout(onLoggedOut?: () => void) {
+  const supabase = getSupabaseBrowserClient();
+  if (supabase) {
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {
+      /* ignore signout error */
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (
+          key &&
+          (key.startsWith("sb-") ||
+            key.startsWith("fashiondate_") ||
+            key.startsWith("fashion_date_"))
+        ) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+      sessionStorage.clear();
+      window.dispatchEvent(new Event("fashion_date_participant_change"));
+    } catch {
+      /* ignore storage clear error */
+    }
+
+    if (onLoggedOut) {
+      onLoggedOut();
+    } else {
+      window.location.assign("/");
+    }
+  }
+}

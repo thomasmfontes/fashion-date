@@ -12,11 +12,10 @@ export function useDrawCollection(adminKey?: string) {
   const [activeDrawId, setActiveDrawId] = useState<string>("");
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Restore from localStorage immediately on client mount, then sync with DB
+  // Sync with storage on mount and then DB
   useEffect(() => {
     let active = true;
 
-    // 1. Instant local restore (0ms, client-only)
     try {
       const cached = localStorage.getItem(STORAGE_KEY_COLLECTION);
       if (cached) {
@@ -28,16 +27,19 @@ export function useDrawCollection(adminKey?: string) {
           setActiveDrawId(validActive ? validActive.id : parsed[0].id);
         }
       }
-    } catch {}
+    } catch {
+      /* ignore storage read errors */
+    }
 
-    // 2. Network sync from DB
     drawService.getDraws().then((dbDraws) => {
       if (!active) return;
       if (Array.isArray(dbDraws)) {
         setDraws(dbDraws);
         try {
           localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(dbDraws));
-        } catch {}
+        } catch {
+          /* ignore storage quota */
+        }
 
         if (dbDraws.length > 0) {
           const savedActiveId = localStorage.getItem(STORAGE_KEY_ACTIVE_ID);
@@ -46,7 +48,9 @@ export function useDrawCollection(adminKey?: string) {
           setActiveDrawId(nextActive);
           try {
             localStorage.setItem(STORAGE_KEY_ACTIVE_ID, nextActive);
-          } catch {}
+          } catch {
+            /* ignore storage quota */
+          }
         }
       }
       setIsHydrated(true);
@@ -66,7 +70,9 @@ export function useDrawCollection(adminKey?: string) {
       setActiveDrawId(drawId);
       try {
         localStorage.setItem(STORAGE_KEY_ACTIVE_ID, drawId);
-      } catch {}
+      } catch {
+        /* ignore storage quota */
+      }
     },
     [draws],
   );

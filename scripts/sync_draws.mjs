@@ -67,7 +67,7 @@ async function main() {
     VALUES (
       'draw-atomy-03',
       'Atomy',
-      'A definir',
+      'Kit de Produtos Atomy',
       '["lojista", "revendedor", "influencer", "visitante"]'::jsonb,
       true,
       475,

@@ -1,0 +1,190 @@
+/* =========================================================
+   UNIFIED LUXURY SPLASH & LOADING SCREEN (FASHION DATE)
+   ========================================================= */
+
+.fashion-splash-screen {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 999999 !important;
+  min-height: 100svh !important;
+  height: 100vh !important;
+  width: 100vw !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 32px 24px !important;
+  background: radial-gradient(circle at 50% 42%, #ffffff 0%, #fdfbf7 50%, #f5ebe0 100%) !important;
+  color: #3b000f !important;
+  text-align: center !important;
+  overflow: hidden !important;
+  user-select: none !important;
+  box-sizing: border-box !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+.fashion-splash-ambient {
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  background: radial-gradient(circle at 50% 36%, rgba(212, 175, 55, 0.1) 0%, transparent 65%) !important;
+}
+
+.fashion-splash-content {
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 20px !important;
+  max-width: 420px !important;
+  width: 100% !important;
+  margin: auto !important;
+  animation: splashFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
+.fashion-splash-logo-wrap {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 2px !important;
+}
+
+.fashion-splash-logo {
+  width: 250px !important;
+  max-width: 76vw !important;
+  height: auto !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 6px 20px rgba(67, 0, 20, 0.06)) !important;
+  animation: splashBreathe 3.2s ease-in-out infinite alternate !important;
+}
+
+.fashion-splash-kicker {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.24em !important;
+  text-transform: uppercase !important;
+  color: #9a741a !important;
+  margin: 0 !important;
+}
+
+.fashion-splash-kicker i {
+  font-style: normal !important;
+  font-size: 8px !important;
+  color: #c99b36 !important;
+}
+
+.fashion-splash-spinner-wrap {
+  position: relative !important;
+  width: 38px !important;
+  height: 38px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 4px 0 !important;
+}
+
+.fashion-splash-spinner {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  border: 2.5px solid rgba(201, 155, 54, 0.2) !important;
+  border-top-color: #530017 !important;
+  border-right-color: #dfbe75 !important;
+  box-sizing: border-box !important;
+  animation: fdSpinner 0.85s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite !important;
+}
+
+.fashion-splash-track {
+  width: 180px !important;
+  max-width: 60vw !important;
+  height: 2.5px !important;
+  border-radius: 999px !important;
+  background: rgba(201, 155, 54, 0.22) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+.fashion-splash-beam {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  height: 100% !important;
+  width: 45% !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, transparent 0%, #edd299 40%, #c99b36 75%, transparent 100%) !important;
+  box-shadow: 0 0 10px rgba(237, 210, 153, 0.8) !important;
+  animation: splashBeamSlide 1.5s cubic-bezier(0.65, 0, 0.35, 1) infinite !important;
+}
+
+.fashion-splash-status {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+  color: #7d686b !important;
+  margin-top: -4px !important;
+}
+
+.fashion-splash-footer {
+  position: absolute !important;
+  bottom: 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-size: 9.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  color: #a49194 !important;
+  text-transform: uppercase !important;
+}
+
+.fashion-splash-footer .material-symbols-outlined {
+  font-size: 13px !important;
+  color: #c99b36 !important;
+  vertical-align: middle !important;
+}
+
+@keyframes splashFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes splashBreathe {
+  0% {
+    transform: scale(1);
+    opacity: 0.95;
+    filter: drop-shadow(0 4px 18px rgba(67, 0, 20, 0.06));
+  }
+  100% {
+    transform: scale(1.025);
+    opacity: 1;
+    filter: drop-shadow(0 8px 24px rgba(201, 155, 54, 0.22));
+  }
+}
+
+@keyframes splashBeamSlide {
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 110%;
+  }
+}

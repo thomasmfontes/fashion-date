@@ -15,6 +15,36 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       {
+        source: "/app",
+        destination: "/home",
+        permanent: true,
+      },
+      {
+        source: "/sucesso",
+        destination: "/home",
+        permanent: true,
+      },
+      {
+        source: "/cadastro-duplicado",
+        destination: "/home",
+        permanent: true,
+      },
+      {
+        source: "/cadastro",
+        destination: "/inscricao",
+        permanent: true,
+      },
+      {
+        source: "/inicio",
+        destination: "/home",
+        permanent: true,
+      },
+      {
+        source: "/dashboard",
+        destination: "/home",
+        permanent: true,
+      },
+      {
         source: "/termos-de-uso",
         destination: "/#termos",
         permanent: false,

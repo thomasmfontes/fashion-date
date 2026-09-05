@@ -52,7 +52,63 @@ export async function checkLookupRateLimit(
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
+    const authUserId = (url.searchParams.get("authUserId") || "").trim();
+    const email = (url.searchParams.get("email") || "").trim().toLowerCase();
     const phone = (url.searchParams.get("phone") || "").replace(/\D/g, "");
+
+    const db = await initialize();
+    let registrationsOpen = true;
+    try {
+      const regState = await db
+        .prepare(
+          "SELECT vl_configuracao AS value FROM t_settings WHERE cd_configuracao='registrations_open'",
+        )
+        .first<{ value: string }>();
+      if (regState && typeof regState.value === "string") {
+        registrationsOpen = regState.value !== "false";
+      }
+    } catch {}
+
+    // Public health / settings check without params
+    if (!authUserId && !email && !phone) {
+      return Response.json({
+        ok: true,
+        registrationsOpen,
+      });
+    }
+
+    // 1. Direct account lookup for authenticated users (Google/Microsoft)
+    if (authUserId || email) {
+      try {
+        const existing = await db
+          .prepare(
+            `SELECT ${participantFields} FROM t_participants
+             WHERE (auth_user_id IS NOT NULL AND auth_user_id=?)
+                OR (ds_email IS NOT NULL AND ds_email=?)
+             ORDER BY id_participante DESC LIMIT 1`,
+          )
+          .bind(authUserId || null, email || null)
+          .first<Record<string, unknown>>();
+
+        if (existing) {
+          return Response.json({
+            ok: true,
+            registered: true,
+            participant: row(existing),
+            registrationsOpen,
+          });
+        }
+      } catch {
+        // Graceful fallback if ds_email/auth_user_id columns do not exist
+      }
+
+      return Response.json({
+        ok: true,
+        registered: false,
+        participant: null,
+        registrationsOpen,
+      });
+    }
 
     const rateCheck = await checkLookupRateLimit(request, phone);
     if (!rateCheck.allowed) {
@@ -75,7 +131,6 @@ export async function GET(request: Request) {
       );
     }
 
-    const db = await initialize();
     const existing = await db
       .prepare(
         `SELECT ${participantFields} FROM t_participants WHERE nr_whatsapp=?`,
@@ -90,9 +145,17 @@ export async function GET(request: Request) {
       );
     }
 
+    const full = row(existing);
     return Response.json({
       ok: true,
-      participant: row(existing),
+      participant: {
+        id: full.id,
+        name: full.name,
+        store: full.store,
+        luckyNumber: full.luckyNumber,
+        userType: full.userType,
+        tickets: full.tickets,
+      },
     });
   } catch {
     return Response.json(
@@ -132,6 +195,8 @@ export async function POST(request: Request) {
     ? rawType
     : "lojista";
   const consent = payload.consent === true;
+  const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
+  const authUserId = typeof payload.authUserId === "string" ? payload.authUserId.trim() : "";
 
   const isStoreRequired = userType === "lojista" || userType === "revendedor";
 
@@ -173,7 +238,6 @@ export async function POST(request: Request) {
   const store = rawStore || "—";
 
   try {
-
     const db = await initialize();
     const state = await db
       .prepare(
@@ -188,6 +252,7 @@ export async function POST(request: Request) {
       );
     }
 
+    // 1. Check if the WhatsApp number is already in use
     const existing = await db
       .prepare(
         `SELECT ${participantFields} FROM t_participants WHERE nr_whatsapp=?`,
@@ -196,25 +261,174 @@ export async function POST(request: Request) {
       .first<Record<string, unknown>>();
 
     if (existing) {
+      // Check if this WhatsApp is linked to a different authenticated account
+      try {
+        const fullExisting = await db
+          .prepare(
+            `SELECT id_participante, ds_email, auth_user_id FROM t_participants WHERE nr_whatsapp=?`,
+          )
+          .bind(phone)
+          .first<{ id_participante: number; ds_email?: string | null; auth_user_id?: string | null }>();
+
+        if (fullExisting) {
+          const existingAuth = fullExisting.auth_user_id ? String(fullExisting.auth_user_id).trim() : "";
+          const existingEmail = fullExisting.ds_email ? String(fullExisting.ds_email).trim().toLowerCase() : "";
+
+          const isDifferentAccount =
+            (authUserId && existingAuth && existingAuth !== authUserId) ||
+            (email && existingEmail && existingEmail !== email);
+
+          if (isDifferentAccount) {
+            return Response.json(
+              {
+                error:
+                  "Este número de WhatsApp já foi cadastrado por outra conta. Cada número só pode ser vinculado a um único participante.",
+              },
+              { status: 409 },
+            );
+          }
+        }
+      } catch {
+        // Continue gracefully if ds_email/auth_user_id columns don't exist yet
+      }
+
+      // Same user or previous registration: return existing record
       return Response.json({
         participant: row(existing),
         duplicate: true,
       });
     }
 
-    const inserted = await db
-      .prepare(
-        `INSERT INTO t_participants(nr_sorte,nm_participante,nm_loja,nr_whatsapp,nm_instagram,user_type)
-         VALUES(NULL,?,?,?,?,?) RETURNING ${participantFields}`,
-      )
-      .bind(name, store, phone, instagram, userType)
-      .first<Record<string, unknown>>();
+    // 2. Prevent the same authenticated account from registering multiple different phone numbers
+    if (authUserId || email) {
+      try {
+        const existingByAuth = await db
+          .prepare(
+            `SELECT ${participantFields} FROM t_participants WHERE (auth_user_id IS NOT NULL AND auth_user_id=?) OR (ds_email IS NOT NULL AND ds_email=?)`,
+          )
+          .bind(authUserId || null, email || null)
+          .first<Record<string, unknown>>();
+
+        if (existingByAuth) {
+          return Response.json({
+            participant: row(existingByAuth),
+            duplicate: true,
+          });
+        }
+      } catch {
+        // Continue gracefully if columns don't exist yet
+      }
+    }
+
+    // 3. Generate a unique lucky number with collision retry loop
+    let lucky = "";
+    for (let i = 0; i < 20; i++) {
+      const candidate = String(
+        (crypto.getRandomValues(new Uint32Array(1))[0] % 9999) + 1,
+      ).padStart(4, "0");
+      const used = await db
+        .prepare(
+          "SELECT id_participante AS id FROM t_participants WHERE nr_sorte=?",
+        )
+        .bind(candidate)
+        .first();
+      if (!used) {
+        lucky = candidate;
+        break;
+      }
+    }
+
+    if (!lucky) {
+      return Response.json(
+        {
+          error:
+            "Alta demanda de cadastros. Não foi possível gerar um número único agora. Tente novamente em alguns instantes.",
+        },
+        { status: 503 },
+      );
+    }
+
+    // 4. Insert new participant with auth references
+    let inserted: Record<string, unknown> | null = null;
+    try {
+      inserted = await db
+        .prepare(
+          `INSERT INTO t_participants(nr_sorte,nm_participante,nm_loja,nr_whatsapp,nm_instagram,user_type,ds_email,auth_user_id)
+           VALUES(?,?,?,?,?,?,?,?) RETURNING ${participantFields}`,
+        )
+        .bind(lucky, name, store, phone, instagram, userType, email || null, authUserId || null)
+        .first<Record<string, unknown>>();
+    } catch {
+      inserted = await db
+        .prepare(
+          `INSERT INTO t_participants(nr_sorte,nm_participante,nm_loja,nr_whatsapp,nm_instagram,user_type)
+           VALUES(?,?,?,?,?,?) RETURNING ${participantFields}`,
+        )
+        .bind(lucky, name, store, phone, instagram, userType)
+        .first<Record<string, unknown>>();
+    }
 
     if (!inserted) {
       return Response.json(
         { error: "Não foi possível concluir o cadastro. Tente novamente." },
         { status: 500 },
       );
+    }
+
+    // 5. Auto-gerar bilhetes para todos os sorteios elegíveis do evento
+    try {
+      const newPid = Number(inserted.id_participante);
+      const openDraws = await db
+        .prepare(
+          "SELECT id_sorteio, target_user_types, tem_limite, nr_limite_maximo FROM t_draw_definitions WHERE st_sorteio IN ('open', 'ready')"
+        )
+        .all<Record<string, unknown>>();
+
+      for (const draw of openDraws.results) {
+        const drawId = String(draw.id_sorteio);
+        let targetTypes: string[] = [];
+        if (Array.isArray(draw.target_user_types)) {
+          targetTypes = draw.target_user_types.map((t) => String(t).toLowerCase());
+        } else if (typeof draw.target_user_types === "string") {
+          try {
+            const parsed = JSON.parse(draw.target_user_types);
+            if (Array.isArray(parsed)) targetTypes = parsed.map((t) => String(t).toLowerCase());
+          } catch {
+            /* ignore */
+          }
+        }
+
+        if (targetTypes.length === 0 || targetTypes.includes(userType)) {
+          const hasLimit = Boolean(draw.tem_limite && draw.nr_limite_maximo && Number(draw.nr_limite_maximo) > 0);
+          const maxNumber = hasLimit ? Number(draw.nr_limite_maximo) : 9999;
+          let generated = "";
+
+          for (let attempt = 0; attempt < 30; attempt++) {
+            const randomNum = hasLimit
+              ? Math.floor(Math.random() * maxNumber) + 1
+              : Math.floor(Math.random() * 9000) + 1000;
+            const candidate = String(randomNum).padStart(4, "0");
+            const check = await db
+              .prepare("SELECT id_ticket FROM t_draw_tickets WHERE id_sorteio = ? AND nr_bilhete = ?")
+              .bind(drawId, candidate)
+              .first();
+            if (!check) {
+              generated = candidate;
+              break;
+            }
+          }
+
+          if (generated) {
+            await db
+              .prepare("INSERT INTO t_draw_tickets (id_participante, id_sorteio, nr_bilhete) VALUES (?, ?, ?)")
+              .bind(newPid, drawId, generated)
+              .run()
+              .catch(() => {});
+          }
+        }
+      }
+    } catch {
+      // Continue gracefully
     }
 
     return Response.json(
@@ -229,5 +443,64 @@ export async function POST(request: Request) {
       { error: "Não foi possível concluir o cadastro. Tente novamente." },
       { status: 500 },
     );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return Response.json({ error: "Formato de requisição inválido. JSON esperado." }, { status: 400 });
+    }
+
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return Response.json({ error: "Payload inválido." }, { status: 400 });
+    }
+
+    const payload = body as Record<string, unknown>;
+    const id = Number(payload.id);
+    const phone = typeof payload.phone === "string" ? payload.phone.replace(/\D/g, "") : "";
+    const authUserId = typeof payload.authUserId === "string" ? payload.authUserId.trim() : "";
+
+    if ((!Number.isInteger(id) || id <= 0) && (!phone || phone.length < 10) && !authUserId) {
+      return Response.json({ error: "Identificação do participante não informada." }, { status: 400 });
+    }
+
+    const db = await initialize();
+
+    let targetId = id > 0 ? id : null;
+    if (!targetId && authUserId) {
+      const p = await db
+        .prepare("SELECT id_participante AS id FROM t_participants WHERE auth_user_id = ?")
+        .bind(authUserId)
+        .first<{ id: number }>();
+      if (p) targetId = Number(p.id);
+    }
+    if (!targetId && phone) {
+      const p = await db
+        .prepare("SELECT id_participante AS id FROM t_participants WHERE nr_whatsapp = ?")
+        .bind(phone)
+        .first<{ id: number }>();
+      if (p) targetId = Number(p.id);
+    }
+
+    if (!targetId) {
+      return Response.json({ error: "Participante não encontrado." }, { status: 404 });
+    }
+
+    // Atomic cascade deletion: tickets, draws, winners and participant account
+    await db.batch([
+      db.prepare("DELETE FROM t_draw_tickets WHERE id_participante = ?").bind(targetId),
+      db.prepare("DELETE FROM t_draw_winners WHERE id_participante = ?").bind(targetId),
+      db.prepare("DELETE FROM t_draws WHERE id_participante = ?").bind(targetId),
+      db.prepare("DELETE FROM t_participants WHERE id_participante = ?").bind(targetId),
+    ]);
+
+    return Response.json({ ok: true, message: "Conta e dados excluídos com sucesso." });
+  } catch (error) {
+    console.error("Erro ao excluir conta do participante:", error);
+    return Response.json({ error: "Erro ao excluir conta. Tente novamente mais tarde." }, { status: 500 });
   }
 }

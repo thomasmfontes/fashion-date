@@ -33,6 +33,9 @@ function getServerSnapshot(): string {
   return "";
 }
 
+// Throttle lookupByPhone to avoid hitting rate limits on re-renders
+const lastValidatedMap = new Map<string, number>();
+
 export function useSavedParticipant() {
   const rawData = useSyncExternalStore(
     subscribe,
@@ -52,9 +55,12 @@ export function useSavedParticipant() {
   const saveParticipant = useCallback((participant: Participant) => {
     try {
       const json = JSON.stringify(participant);
-      localStorage.setItem(STORAGE_KEYS.registeredUser, json);
-      sessionStorage.setItem(STORAGE_KEYS.userParticipant, json);
-      window.dispatchEvent(new Event(STORAGE_EVENT));
+      const existing = localStorage.getItem(STORAGE_KEYS.registeredUser);
+      if (existing !== json) {
+        localStorage.setItem(STORAGE_KEYS.registeredUser, json);
+        sessionStorage.setItem(STORAGE_KEYS.userParticipant, json);
+        window.dispatchEvent(new Event(STORAGE_EVENT));
+      }
     } catch {
       // storage quota or private mode
     }
@@ -70,15 +76,21 @@ export function useSavedParticipant() {
     }
   }, []);
 
-  // Auto-validate cached participant against database on mount
+  // Auto-validate cached participant against database on mount (once per minute per phone)
   useEffect(() => {
     if (!savedParticipant) return;
     const currentPhone = savedParticipant.phone;
     if (!currentPhone) {
-      // Legacy or corrupted cache without phone
       clearParticipant();
       return;
     }
+
+    const now = Date.now();
+    const lastValidated = lastValidatedMap.get(currentPhone) || 0;
+    if (now - lastValidated < 60000) {
+      return;
+    }
+    lastValidatedMap.set(currentPhone, now);
 
     let active = true;
 
@@ -87,8 +99,15 @@ export function useSavedParticipant() {
       .then((res) => {
         if (!active) return;
         if (res.ok && res.participant) {
-          // Sync fresh data from DB
-          saveParticipant(res.participant);
+          // Only update if properties differ (e.g. synced userType)
+          if (
+            res.participant.id !== savedParticipant.id ||
+            res.participant.userType !== savedParticipant.userType ||
+            res.participant.luckyNumber !== savedParticipant.luckyNumber ||
+            res.participant.name !== savedParticipant.name
+          ) {
+            saveParticipant(res.participant);
+          }
         } else {
           clearParticipant();
         }
@@ -109,7 +128,7 @@ export function useSavedParticipant() {
     return () => {
       active = false;
     };
-  }, [savedParticipant?.phone, clearParticipant, saveParticipant]);
+  }, [savedParticipant, clearParticipant, saveParticipant]);
 
   const lookupByPhone = useCallback(
     async (queryPhone: string): Promise<Participant> => {

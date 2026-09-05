@@ -290,13 +290,27 @@ export function createMockD1Database(): MockD1Database {
 
     // INSERT INTO participants
     if (trimmed.startsWith("INSERT INTO participants") || trimmed.startsWith("INSERT INTO `participants`")) {
-      const [lucky_number, name, store, phone, instagram] = bindings as string[];
+      let lucky_number: string;
+      let name: string;
+      let store: string;
+      let phone: string;
+      let instagram: string;
+
+      if (trimmed.includes("VALUES(NULL,") || trimmed.includes("VALUES (NULL,")) {
+        name = String(bindings[0] || "");
+        store = String(bindings[1] || "");
+        phone = String(bindings[2] || "");
+        instagram = String(bindings[3] || "");
+        lucky_number = String(Math.floor(1000 + Math.random() * 9000));
+      } else {
+        [lucky_number, name, store, phone, instagram] = bindings as string[];
+      }
 
       // Check unique constraints
       if (inMemStore.participants.some((p) => p.phone === phone)) {
         throw new Error("UNIQUE constraint failed: participants.phone");
       }
-      if (inMemStore.participants.some((p) => p.lucky_number === lucky_number)) {
+      if (lucky_number && inMemStore.participants.some((p) => p.lucky_number === lucky_number)) {
         throw new Error("UNIQUE constraint failed: participants.lucky_number");
       }
 

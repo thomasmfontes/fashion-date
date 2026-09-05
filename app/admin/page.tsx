@@ -20,6 +20,7 @@ import { EditParticipantModal } from "@/components/admin/EditParticipantModal";
 import { DeleteParticipantModal } from "@/components/admin/DeleteParticipantModal";
 import { AdminLoginForm } from "@/components/admin/AdminLoginForm";
 import { Toast } from "@/components/ui/toast";
+import { AuthLoadingScreen } from "@/components/public/AuthLoadingScreen";
 
 export function AdminDashboard({
   initialView = "participants",
@@ -134,25 +135,7 @@ export function AdminDashboard({
 
   // Loading boot screen
   if (!isReady) {
-    return (
-      <main className="admin-boot" aria-live="polite">
-        <div className="admin-boot-card">
-          <div className="admin-boot-logo-wrap">
-            <img src="/fashiondate-logo.png" alt="Fashion Date Crente Chic" />
-          </div>
-          <div className="luxury-loader">
-            <div className="luxury-loader-track">
-              <span className="luxury-loader-beam" />
-            </div>
-            <div className="luxury-loader-subtext">
-              <span className="luxury-sparkle">✦</span>
-              <span>Carregando Sistema</span>
-              <span className="luxury-sparkle">✦</span>
-            </div>
-          </div>
-        </div>
-      </main>
-    );
+    return <AuthLoadingScreen message="Painel da Organização" />;
   }
 
   // Login gate

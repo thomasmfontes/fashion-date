@@ -60,6 +60,7 @@ export function useNumericSlotMachine() {
 
   // Update digit arrays if digitCount changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDigits(Array(digitCount).fill("0"));
     setLockedDigits(Array(digitCount).fill(false));
     lockedRef.current = Array(digitCount).fill(false);

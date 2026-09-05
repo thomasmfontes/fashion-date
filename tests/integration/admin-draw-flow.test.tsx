@@ -45,7 +45,7 @@ describe("Component Integration: Admin Authentication & Live Draw Flow", () => {
     expect(handleToggle).toHaveBeenCalledTimes(1);
 
     const drawLink = screen.getByRole("link", {
-      name: /Iniciar Sorteio/i,
+      name: /Abrir Telão|Iniciar Sorteio/i,
     });
     expect(drawLink).toBeDefined();
     expect(drawLink.getAttribute("href")).toBe("/admin/sorteio");

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { AuthLoadingScreen } from "@/components/public/AuthLoadingScreen";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -53,15 +54,49 @@ export default function AuthCallbackPage() {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
 
-        if (session) {
-          // Successfully authenticated, redirect to main registration page
-          window.location.assign("/");
+        async function redirectAfterAuth(user: { id?: string; email?: string } | null | undefined) {
+          if (user) {
+            try {
+              const email = user.email || "";
+              const authUserId = user.id || "";
+              const res = await fetch(
+                `/api/participants?authUserId=${encodeURIComponent(authUserId)}&email=${encodeURIComponent(email)}`,
+              );
+              if (res.ok) {
+                const data = await res.json();
+                if (data?.registered && data?.participant) {
+                  const json = JSON.stringify(data.participant);
+                  localStorage.setItem("fashion_date_registered_user", json);
+                  localStorage.setItem("fashion-date-participant", json);
+                  sessionStorage.setItem("fashion-date-participant", json);
+                  window.dispatchEvent(new Event("fashion_date_participant_change"));
+                  router.replace("/home");
+                  return;
+                }
+              }
+            } catch {}
+
+            // Authenticated with Google/Microsoft, but registration is incomplete
+            try {
+              localStorage.removeItem("fashion_date_registered_user");
+              localStorage.removeItem("fashion-date-participant");
+              sessionStorage.removeItem("fashion-date-participant");
+              window.dispatchEvent(new Event("fashion_date_participant_change"));
+            } catch {}
+            router.replace("/inscricao");
+            return;
+          }
+          router.replace("/");
+        }
+
+        if (session?.user) {
+          await redirectAfterAuth(session.user);
         } else {
           // Listen for next auth event (e.g. hash token exchange)
-          const { data: authListener } = supabase.auth.onAuthStateChange((event, s) => {
-            if (event === "SIGNED_IN" && s) {
+          const { data: authListener } = supabase.auth.onAuthStateChange(async (event, s) => {
+            if (event === "SIGNED_IN" && s?.user) {
               authListener.subscription.unsubscribe();
-              window.location.assign("/");
+              await redirectAfterAuth(s.user);
             }
           });
 
@@ -87,6 +122,10 @@ export default function AuthCallbackPage() {
       isMounted = false;
     };
   }, [router]);
+
+  if (!errorMessage) {
+    return <AuthLoadingScreen message="Conectando sua Conta" />;
+  }
 
   return (
     <main

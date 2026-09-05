@@ -36,7 +36,9 @@ export function useParticipantWallet() {
     try {
       const stored = localStorage.getItem(getWalletStorageKey(participantKey));
       if (stored) return stored;
-    } catch {}
+    } catch {
+      /* ignore storage read error */
+    }
     return "[]";
   }, [savedParticipant, participantKey]);
 
@@ -53,6 +55,14 @@ export function useParticipantWallet() {
     }
   }, [rawTickets]);
 
+  const userType: UserType = savedParticipant?.userType || "lojista";
+  const eligibleDraws = useMemo(() => {
+    return draws.filter((draw) => {
+      if (!draw.targetUserTypes || draw.targetUserTypes.length === 0) return true;
+      return draw.targetUserTypes.includes(userType);
+    });
+  }, [draws, userType]);
+
   // Sync with database on mount or when participant changes
   const pId = savedParticipant?.id;
   const pPhone = savedParticipant?.phone;
@@ -66,14 +76,20 @@ export function useParticipantWallet() {
         phone: pPhone,
       })
       .then((dbTickets) => {
-        if (!active || !Array.isArray(dbTickets)) return;
+        if (!active) return;
+        const currentTickets = Array.isArray(dbTickets) ? dbTickets : [];
+
         try {
-          localStorage.setItem(
-            getWalletStorageKey(participantKey),
-            JSON.stringify(dbTickets),
-          );
-          window.dispatchEvent(new Event(TICKET_EVENT));
-        } catch {}
+          const storageKey = getWalletStorageKey(participantKey);
+          const currentStored = localStorage.getItem(storageKey);
+          const newJson = JSON.stringify(currentTickets);
+          if (currentStored !== newJson) {
+            localStorage.setItem(storageKey, newJson);
+            window.dispatchEvent(new Event(TICKET_EVENT));
+          }
+        } catch {
+          /* ignore storage write error */
+        }
       })
       .catch(() => {
         // Keeps local storage fallback if network is slow
@@ -83,14 +99,6 @@ export function useParticipantWallet() {
       active = false;
     };
   }, [savedParticipant, pId, pPhone, participantKey]);
-
-  const userType: UserType = savedParticipant?.userType || "lojista";
-  const eligibleDraws = useMemo(() => {
-    return draws.filter((draw) => {
-      if (!draw.targetUserTypes || draw.targetUserTypes.length === 0) return true;
-      return draw.targetUserTypes.includes(userType);
-    });
-  }, [draws, userType]);
 
   const getTicket = useCallback(
     (drawId: string): ParticipantTicket | undefined => {
@@ -129,10 +137,21 @@ export function useParticipantWallet() {
             JSON.stringify(updated),
           );
           window.dispatchEvent(new Event(TICKET_EVENT));
-        } catch {}
+        } catch {
+          /* ignore storage write error */
+        }
 
         return officialTicket;
       } catch (err) {
+        const isForbidden =
+          (typeof err === "object" && err !== null && "status" in err && (err as { status: number }).status === 403) ||
+          (err instanceof Error && err.message.includes("exclusivo para outras categorias"));
+
+        if (isForbidden) {
+          console.warn("Participante não é elegível para este sorteio:", err instanceof Error ? err.message : err);
+          return null;
+        }
+
         console.error("Erro ao emitir bilhete no banco:", err);
         // Fallback local if DB error occurs
         let ticketNumStr = "";
@@ -159,7 +178,9 @@ export function useParticipantWallet() {
             JSON.stringify(updated),
           );
           window.dispatchEvent(new Event(TICKET_EVENT));
-        } catch {}
+        } catch {
+          /* ignore storage write error */
+        }
 
         return fallbackTicket;
       }

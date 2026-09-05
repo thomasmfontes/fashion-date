@@ -40,6 +40,8 @@ export interface DrawWinnerItem {
   wonAt: string;
 }
 
+export type SavedParticipant = Participant;
+
 export interface Participant {
   id: number;
   name: string;
@@ -54,6 +56,7 @@ export interface Participant {
   drawId?: number | null;
   email?: string;
   authUserId?: string;
+  avatarUrl?: string | null;
 }
 
 export interface ParticipantFormData {

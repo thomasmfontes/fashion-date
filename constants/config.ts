@@ -4,10 +4,9 @@ export const APP_CONFIG = {
   organizer: "Renata Castanheira - Crente Chic",
   prizeDescription: "Provador Fashion com Renata Castanheira",
   routes: {
-    home: "/",
-    success: "/sucesso",
-    duplicate: "/cadastro-duplicado",
-    photos: "/fotos",
+    root: "/",
+    inscricao: "/inscricao",
+    home: "/home",
     admin: "/admin",
     adminWinners: "/admin/vencedores",
     adminDraw: "/admin/sorteio",
