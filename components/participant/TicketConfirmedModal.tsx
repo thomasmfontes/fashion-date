@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { DrawItem } from "@/types/drawCollection.types";
 import type { ParticipantTicket, SavedParticipant } from "@/types/participant.types";
 
@@ -17,11 +19,38 @@ export function TicketConfirmedModal({
   isOpen,
   onClose,
 }: TicketConfirmedModalProps) {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouchAction;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !mounted) return null;
 
   const rawNum = ticket.ticketNumber.replace(/^#/, "");
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
@@ -35,14 +64,20 @@ export function TicketConfirmedModal({
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
         animation: "liveOverlayIn 0.25s ease both",
+        overscrollBehavior: "contain",
+        touchAction: "none",
       }}
       onClick={onClose}
+      onTouchMove={(e) => e.stopPropagation()}
     >
       <div
         style={{
           position: "relative",
-          maxWidth: "400px",
+          maxWidth: "min(400px, calc(100vw - 32px))",
           width: "100%",
+          maxHeight: "calc(100dvh - 32px)",
+          overflowY: "auto",
+          boxSizing: "border-box",
           background: "#ffffff",
           borderRadius: "20px",
           border: "1.5px solid #ebdcc5",
@@ -192,6 +227,7 @@ export function TicketConfirmedModal({
           <span>Entendi e Fechar</span>
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

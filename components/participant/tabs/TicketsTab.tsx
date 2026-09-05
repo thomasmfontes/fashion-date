@@ -176,15 +176,18 @@ export function TicketsTab({
       <article
         key={draw.id}
         className="stitch-draw-card-luxury"
-        style={
-          isThisCardAnimating
+        style={{
+          boxSizing: "border-box",
+          maxWidth: "100%",
+          overflow: "hidden",
+          ...(isThisCardAnimating
             ? {
                 borderColor: "#c79a36",
                 boxShadow: "0 12px 35px rgba(83, 0, 23, 0.14), 0 0 20px rgba(199, 154, 54, 0.2)",
                 transition: "all 0.3s ease",
               }
-            : undefined
-        }
+            : {}),
+        }}
       >
         <div>
           <div style={{ marginBottom: "12px" }}>
@@ -251,17 +254,18 @@ export function TicketsTab({
           {isThisCardAnimating ? (
             <div
               style={{
-                maxWidth: "460px",
+                maxWidth: "100%",
                 margin: "0 auto",
                 width: "100%",
+                boxSizing: "border-box",
                 background: "radial-gradient(ellipse at 50% 20%, #720023 0%, #460015 55%, #2d000d 100%)",
                 border: "2px solid #e7c275",
                 borderRadius: "18px",
-                padding: "20px 16px 22px",
+                padding: "clamp(14px, 3.5vw, 20px) clamp(8px, 2.5vw, 16px) clamp(16px, 3.5vw, 22px)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: "14px",
+                gap: "12px",
                 boxShadow: "0 12px 35px rgba(45, 0, 13, 0.4), 0 0 25px rgba(231, 194, 117, 0.25)",
                 animation: "bootCardIn 0.3s ease both",
                 position: "relative",
@@ -286,8 +290,8 @@ export function TicketsTab({
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "8px",
-                  padding: "5px 16px",
+                  gap: "6px",
+                  padding: "4px 12px",
                   borderRadius: "999px",
                   background: cardState === "done"
                     ? "linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)"
@@ -302,6 +306,8 @@ export function TicketsTab({
                     ? "0 2px 10px rgba(34, 197, 94, 0.35)"
                     : "0 2px 10px rgba(245, 158, 11, 0.35)",
                   transition: "all 0.3s ease",
+                  maxWidth: "100%",
+                  whiteSpace: "nowrap",
                 }}
               >
                 <span
@@ -328,18 +334,21 @@ export function TicketsTab({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: "8px",
+                  gap: "clamp(4px, 1.5vw, 8px)",
                   padding: "4px 0",
+                  width: "100%",
+                  maxWidth: "100%",
+                  boxSizing: "border-box",
                 }}
               >
                 <span
                   style={{
                     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                    fontSize: "36px",
+                    fontSize: "clamp(24px, 6.5vw, 36px)",
                     color: "#ffe599",
                     fontWeight: 900,
                     lineHeight: 1,
-                    marginRight: "4px",
+                    marginRight: "clamp(2px, 1vw, 4px)",
                     textShadow: "0 0 14px rgba(255, 229, 153, 0.8), 0 2px 5px rgba(0,0,0,0.6)",
                   }}
                 >
@@ -352,8 +361,8 @@ export function TicketsTab({
                     <div
                       key={i}
                       style={{
-                        width: "52px",
-                        height: "68px",
+                        width: "clamp(38px, 11vw, 52px)",
+                        height: "clamp(52px, 15vw, 68px)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -363,12 +372,14 @@ export function TicketsTab({
                         border: isLocked
                           ? "2.5px solid #d4af37"
                           : "2px solid rgba(212, 175, 55, 0.7)",
-                        borderRadius: "12px",
+                        borderRadius: "clamp(8px, 2.5vw, 12px)",
                         boxShadow: isLocked
                           ? "0 0 22px rgba(255, 215, 0, 0.75), 0 8px 18px rgba(0,0,0,0.4)"
                           : "0 6px 14px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.9)",
-                        transform: isLocked ? "scale(1.08)" : "scale(1)",
+                        transform: isLocked ? "scale(1.03)" : "scale(1)",
                         transition: "all 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                        boxSizing: "border-box",
+                        flexShrink: 0,
                       }}
                     >
                       <span
@@ -376,7 +387,7 @@ export function TicketsTab({
                           fontFamily: '"Bodoni Moda", "Cinzel", Georgia, serif',
                           fontVariantNumeric: "lining-nums tabular-nums",
                           fontFeatureSettings: '"lnum" 1, "tnum" 1',
-                          fontSize: "36px",
+                          fontSize: "clamp(26px, 7.5vw, 36px)",
                           fontWeight: 800,
                           color: "#530017",
                           lineHeight: 1,
@@ -452,7 +463,7 @@ export function TicketsTab({
           </div>
         </div>
 
-        <div style={{ padding: "24px" }}>
+        <div style={{ padding: "clamp(12px, 3.5vw, 24px)" }}>
           {visibleTickets.length > 0 ? (
             <>
               {/* Carteira de Números da Sorte (Talões de Gala Haute Couture) */}

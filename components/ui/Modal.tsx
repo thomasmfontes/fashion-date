@@ -5,7 +5,9 @@ import {
   useEffect,
   useRef,
   useId,
+  useState,
 } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   isOpen: boolean;
@@ -103,9 +105,14 @@ export function Modal({
     };
   }, [isOpen, isBusy, onClose]);
 
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  return (
+  if (!isOpen || !mounted) return null;
+
+  return createPortal(
     <div
       className="edit-modal-backdrop"
       role="presentation"
@@ -139,6 +146,7 @@ export function Modal({
         </header>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
