@@ -85,7 +85,7 @@ export function DrawConfigPanel({
           <h1>Sorteios do Evento</h1>
           <span className="stitch-status open" role="status" aria-live="polite">
             <i />
-            {draws.length} {draws.length === 1 ? "Rodada Cadastrada" : "Rodadas Cadastradas"}
+            {draws.length} {draws.length === 1 ? "Sorteio Cadastrado" : "Sorteios Cadastrados"}
           </span>
         </div>
         <div className="stitch-actions">
@@ -104,13 +104,13 @@ export function DrawConfigPanel({
         </div>
       </header>
 
-      {/* Painel Unificado de Rodadas */}
+      {/* Painel Unificado de Sorteios */}
       <div className="stitch-panel-card">
         <div className="stitch-controls-header">
           <div className="stitch-header-info">
             <div className="stitch-header-pill">
-              <span className="material-symbols-outlined">collections_bookmark</span>
-              <span>Acervo de Rodadas</span>
+              <span className="material-symbols-outlined">tune</span>
+              <span>Sorteios do Evento</span>
               <span className="stitch-pill-count">{draws.length}</span>
             </div>
           </div>
@@ -131,9 +131,7 @@ export function DrawConfigPanel({
                 {/* Lado Esquerdo: Ícone Joia + Título + Badges */}
                 <div className="stitch-draw-item-left">
                   <div className="stat-icon-badge draw-badge-box">
-                    <span className="material-symbols-outlined">
-                      {targetTypes.includes("lojista") && targetTypes.length === 1 ? "storefront" : "workspace_premium"}
-                    </span>
+                    <span className="material-symbols-outlined">tune</span>
                   </div>
 
                   <div className="stitch-draw-info">
@@ -143,7 +141,7 @@ export function DrawConfigPanel({
 
                     <div className="stitch-draw-meta-row">
                       <span className="stitch-draw-tag prize">
-                        <span className="material-symbols-outlined">card_giftcard</span>
+                        <span className="material-symbols-outlined">workspace_premium</span>
                         <span>Prêmio: <strong>{draw.prizeTitle}</strong></span>
                       </span>
 
@@ -156,19 +154,15 @@ export function DrawConfigPanel({
 
                       <div className="stitch-audience-tags">
                         {isAllTypes ? (
-                          <span className="stitch-user-pill all">
+                          <span className="stitch-draw-tag audience all">
                             <span className="material-symbols-outlined">groups</span>
                             <span>Todos os Participantes</span>
                           </span>
                         ) : (
-                          targetTypes.map((type) => (
-                            <span key={type} className={`stitch-user-pill ${type}`}>
-                              <span className="material-symbols-outlined">
-                                {USER_TYPE_ICONS[type]}
-                              </span>
-                              <span>{USER_TYPE_LABELS[type]}</span>
-                            </span>
-                          ))
+                          <span className="stitch-draw-tag audience">
+                            <span className="material-symbols-outlined">group</span>
+                            <span>Público: <strong>{targetTypes.map((type) => USER_TYPE_LABELS[type] || type).join(", ")}</strong></span>
+                          </span>
                         )}
                       </div>
                     </div>
@@ -188,9 +182,9 @@ export function DrawConfigPanel({
                       type="button"
                       className="stitch-transmit-btn"
                       onClick={() => handleSelectDraw(draw.id)}
-                      title="Definir esta rodada como ativa no telão"
+                      title="Definir este sorteio como ativo no telão"
                     >
-                      <span className="material-symbols-outlined">play_circle</span>
+                      <span className="material-symbols-outlined">live_tv</span>
                       <span>Transmitir</span>
                     </button>
                   )}
@@ -200,7 +194,7 @@ export function DrawConfigPanel({
                       type="button"
                       onClick={() => handleOpenEdit(draw)}
                       aria-label={`Editar sorteio ${draw.title}`}
-                      title="Editar rodada"
+                      title="Editar sorteio"
                     >
                       <span className="material-symbols-outlined">edit</span>
                     </button>
@@ -209,7 +203,7 @@ export function DrawConfigPanel({
                       type="button"
                       onClick={() => handleDuplicate(draw.id)}
                       aria-label={`Duplicar sorteio ${draw.title}`}
-                      title="Duplicar rodada"
+                      title="Duplicar sorteio"
                     >
                       <span className="material-symbols-outlined">content_copy</span>
                     </button>
@@ -220,7 +214,7 @@ export function DrawConfigPanel({
                         className="danger"
                         onClick={() => handleDeleteDraw(draw.id, draw.title)}
                         aria-label={`Excluir sorteio ${draw.title}`}
-                        title="Excluir rodada"
+                        title="Excluir sorteio"
                       >
                         <span className="material-symbols-outlined">delete</span>
                       </button>
