@@ -205,180 +205,235 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
             </div>
           )}
 
-          <div className="live-winner-content">
-            <header className="live-winner-brand" style={{ marginBottom: "8px" }}>
-              <img
-                src="/fashiondate-logo.png"
-                alt="Fashion Date Crente Chic"
-                style={{
-                  filter: "brightness(0) invert(1) drop-shadow(0 2px 10px rgba(0,0,0,0.5))",
-                  opacity: 0.96,
-                }}
-              />
-              <span style={{ color: "#e7c275", letterSpacing: "0.22em", marginTop: "4px", fontWeight: 700 }}>
-                7ª EDIÇÃO &middot; CRENTE CHIC
-              </span>
-            </header>
+          {(() => {
+            const isNotWinner = celebration === "not-winner";
 
-            <div className="live-winner-kicker" style={{ marginTop: "14px", marginBottom: "8px" }}>
-              <i style={{ width: "32px", height: "1px", background: "rgba(231,194,117,0.7)" }} />
-              <span style={{ color: "#e7c275", fontSize: "10px", letterSpacing: "0.22em", fontWeight: 700 }}>
-                {celebration === "winner"
-                  ? (activeDrawTitle ? `RESULTADO OFICIAL · ${activeDrawTitle.toUpperCase()}` : "RESULTADO OFICIAL")
-                  : celebration === "not-winner"
-                    ? (activeDrawTitle ? `SORTEIO REALIZADO · ${activeDrawTitle.toUpperCase()}` : "SORTEIO REALIZADO")
-                    : "TESTE DO ALERTA"}
-              </span>
-              <i style={{ width: "32px", height: "1px", background: "rgba(231,194,117,0.7)" }} />
-            </div>
+            return (
+              <div className="live-winner-content">
+                <header className="live-winner-brand" style={{ marginBottom: "8px" }}>
+                  <img
+                    src="/fashiondate-logo.png"
+                    alt="Fashion Date Crente Chic"
+                    style={{
+                      filter: isNotWinner
+                        ? "none"
+                        : "brightness(0) invert(1) drop-shadow(0 2px 10px rgba(0,0,0,0.5))",
+                      opacity: 0.96,
+                    }}
+                  />
+                  <span
+                    style={{
+                      color: isNotWinner ? "#786568" : "#e7c275",
+                      letterSpacing: "0.22em",
+                      marginTop: "4px",
+                      fontWeight: 700,
+                      fontSize: "11px",
+                    }}
+                  >
+                    7ª EDIÇÃO &middot; CRENTE CHIC
+                  </span>
+                </header>
 
-            <h2
-              style={{
-                fontFamily: 'var(--font-fashion, "Playfair Display", Georgia, serif)',
-                color: "#fff7e8",
-                fontSize: "clamp(42px, 8.5vw, 76px)",
-                fontWeight: 600,
-                lineHeight: 1.05,
-                margin: "8px 0 14px",
-                letterSpacing: "-0.02em",
-                textShadow: "0 3px 16px rgba(0, 0, 0, 0.45)",
-              }}
-            >
-              {celebration === "winner"
-                ? "Você ganhou!"
-                : celebration === "not-winner"
-                  ? "Não foi dessa vez"
-                  : "Tudo pronto!"}
-            </h2>
+                <div className="live-winner-kicker" style={{ marginTop: "14px", marginBottom: "8px" }}>
+                  <i style={{ width: "32px", height: "1px", background: isNotWinner ? "rgba(154,116,26,0.35)" : "rgba(231,194,117,0.7)" }} />
+                  <span
+                    style={{
+                      color: isNotWinner ? "#855e09" : "#e7c275",
+                      fontSize: "10px",
+                      letterSpacing: "0.22em",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {celebration === "winner"
+                      ? (activeDrawTitle ? `RESULTADO OFICIAL · ${activeDrawTitle.toUpperCase()}` : "RESULTADO OFICIAL")
+                      : isNotWinner
+                        ? (activeDrawTitle ? `SORTEIO REALIZADO · ${activeDrawTitle.toUpperCase()}` : "SORTEIO REALIZADO")
+                        : "TESTE DO ALERTA"}
+                  </span>
+                  <i style={{ width: "32px", height: "1px", background: isNotWinner ? "rgba(154,116,26,0.35)" : "rgba(231,194,117,0.7)" }} />
+                </div>
 
-            {/* Subtítulo do Prêmio quando o usuário for contemplado */}
-            {celebration === "winner" && (activePrizeTitle || activeDrawTitle) && (
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "4px 14px",
-                  borderRadius: "999px",
-                  background: "rgba(231, 194, 117, 0.16)",
-                  border: "1px solid rgba(231, 194, 117, 0.4)",
-                  color: "#f3d48d",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  marginBottom: "16px",
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: "16px", color: "#f3d48d" }}>
-                  workspace_premium
-                </span>
-                <span>
-                  Prêmio: <strong>{activePrizeTitle || activeDrawTitle}</strong>
-                </span>
-              </div>
-            )}
-
-            <div className="live-winning-ticket">
-              <span>
-                {celebration === "not-winner"
-                  ? "Número Sorteado no Palco"
-                  : celebration === "winner"
-                    ? `Seu Número Contemplado${activeDrawTitle ? ` (${activeDrawTitle})` : ""}`
-                    : "Seu Número da Sorte"}
-              </span>
-              <strong
-                style={{
-                  fontFamily: '"Bodoni Moda", "Cinzel", Georgia, serif',
-                  fontVariantNumeric: "lining-nums tabular-nums",
-                  fontFeatureSettings: '"lnum" 1, "tnum" 1',
-                  fontWeight: 800,
-                  letterSpacing: "0.03em",
-                  display: "inline-flex",
-                  alignItems: "baseline",
-                  justifyContent: "center",
-                }}
-              >
-                {(() => {
-                  const rawNum =
-                    celebration === "not-winner"
-                      ? drawnNumber
-                      : (winningTicket?.ticketNumber || primaryNumber);
-                  if (!rawNum) return "----";
-                  const cleanNum = rawNum.replace(/^#/, "");
-                  return (
-                    <>
-                      <span
-                        style={{
-                          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                          fontSize: "0.55em",
-                          color: "#f3d48d",
-                          marginRight: "4px",
-                          fontWeight: 800,
-                          lineHeight: 1,
-                          display: "inline-block",
-                          transform: "translateY(-0.04em)",
-                          textShadow: "0 2px 8px rgba(0,0,0,0.5)",
-                        }}
-                      >
-                        #
-                      </span>
-                      <span>{cleanNum}</span>
-                    </>
-                  );
-                })()}
-              </strong>
-            </div>
-
-            <p
-              style={{
-                color: "rgba(255, 247, 232, 0.9)",
-                fontSize: "14.5px",
-                lineHeight: "1.6",
-                maxWidth: "460px",
-                margin: "20px auto 0",
-                textShadow: "0 1px 3px rgba(0,0,0,0.4)",
-              }}
-            >
-              {celebration === "winner"
-                ? `Parabéns! Você foi contemplado(a)${activeDrawTitle ? ` no sorteio "${activeDrawTitle}"` : ""}. Apresente esta tela à organização do evento para receber seu prêmio.`
-                : celebration === "not-winner"
-                  ? `O número sorteado no palco foi #${drawnNumber.replace(/^#/, "")}${activeDrawTitle ? ` para ${activeDrawTitle}` : ""}. Seus bilhetes continuam registrados para as próximas apurações.`
-                  : "Quando o seu número for sorteado, esta celebração aparecerá automaticamente no seu celular."}
-            </p>
-
-            {celebration === "test" ? (
-              <button
-                type="button"
-                onClick={dismissCelebration}
-                className="live-winner-btn-gold"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>check_circle</span>
-                <span>Fechar Teste</span>
-              </button>
-            ) : celebration === "not-winner" ? (
-              <button
-                type="button"
-                onClick={dismissCelebration}
-                className="live-winner-btn-outline"
-              >
-                <span className="material-symbols-outlined">check</span>
-                <span>Entendi</span>
-              </button>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", marginTop: "24px" }}>
-                <button
-                  type="button"
-                  onClick={dismissCelebration}
-                  className="live-winner-btn-gold"
+                <h2
+                  style={{
+                    fontFamily: 'var(--font-fashion, "Playfair Display", Georgia, serif)',
+                    color: isNotWinner ? "#530017" : "#fff7e8",
+                    fontSize: "clamp(38px, 8.5vw, 68px)",
+                    fontWeight: 600,
+                    lineHeight: 1.1,
+                    margin: "8px 0 14px",
+                    letterSpacing: "-0.02em",
+                    textShadow: isNotWinner ? "none" : "0 3px 16px rgba(0, 0, 0, 0.45)",
+                  }}
                 >
-                  <span className="material-symbols-outlined">arrow_back</span>
-                  <span>Fechar e Voltar ao Portal</span>
-                </button>
-                <span className="live-winner-note">
-                  Procure a organização do evento
-                </span>
+                  {celebration === "winner"
+                    ? "Você ganhou!"
+                    : isNotWinner
+                      ? "Não foi dessa vez"
+                      : "Tudo pronto!"}
+                </h2>
+
+                {/* Subtítulo do Prêmio quando o usuário for contemplado */}
+                {celebration === "winner" && (activePrizeTitle || activeDrawTitle) && (
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "4px 14px",
+                      borderRadius: "999px",
+                      background: "rgba(231, 194, 117, 0.16)",
+                      border: "1px solid rgba(231, 194, 117, 0.4)",
+                      color: "#f3d48d",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: "16px", color: "#f3d48d" }}>
+                      workspace_premium
+                    </span>
+                    <span>
+                      Prêmio: <strong>{activePrizeTitle || activeDrawTitle}</strong>
+                    </span>
+                  </div>
+                )}
+
+                <div
+                  className="live-winning-ticket"
+                  style={
+                    isNotWinner
+                      ? {
+                          background: "#ffffff",
+                          borderColor: "#ebdcc5",
+                          boxShadow: "0 14px 40px rgba(67, 0, 20, 0.08)",
+                        }
+                      : undefined
+                  }
+                >
+                  <span style={{ color: isNotWinner ? "#855e09" : undefined }}>
+                    {isNotWinner
+                      ? "Número Sorteado no Palco"
+                      : celebration === "winner"
+                        ? `Seu Número Contemplado${activeDrawTitle ? ` (${activeDrawTitle})` : ""}`
+                        : "Seu Número da Sorte"}
+                  </span>
+                  <strong
+                    style={{
+                      fontFamily: '"Bodoni Moda", "Cinzel", Georgia, serif',
+                      fontVariantNumeric: "lining-nums tabular-nums",
+                      fontFeatureSettings: '"lnum" 1, "tnum" 1',
+                      fontWeight: 800,
+                      letterSpacing: "0.03em",
+                      display: "inline-flex",
+                      alignItems: "baseline",
+                      justifyContent: "center",
+                      color: isNotWinner ? "#530017" : undefined,
+                    }}
+                  >
+                    {(() => {
+                      const rawNum =
+                        isNotWinner
+                          ? drawnNumber
+                          : (winningTicket?.ticketNumber || primaryNumber);
+                      if (!rawNum) return "----";
+                      const cleanNum = rawNum.replace(/^#/, "");
+                      return (
+                        <>
+                          <span
+                            style={{
+                              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                              fontSize: "0.55em",
+                              color: isNotWinner ? "#9a741a" : "#f3d48d",
+                              marginRight: "4px",
+                              fontWeight: 800,
+                              lineHeight: 1,
+                              display: "inline-block",
+                              transform: "translateY(-0.04em)",
+                              textShadow: isNotWinner ? "none" : "0 2px 8px rgba(0,0,0,0.5)",
+                            }}
+                          >
+                            #
+                          </span>
+                          <span style={{ textShadow: isNotWinner ? "none" : undefined }}>{cleanNum}</span>
+                        </>
+                      );
+                    })()}
+                  </strong>
+                </div>
+
+                <p
+                  style={{
+                    color: isNotWinner ? "#5a474a" : "rgba(255, 247, 232, 0.9)",
+                    fontSize: "14.5px",
+                    lineHeight: "1.6",
+                    maxWidth: "460px",
+                    margin: "20px auto 0",
+                    textShadow: isNotWinner ? "none" : "0 1px 3px rgba(0,0,0,0.4)",
+                  }}
+                >
+                  {celebration === "winner"
+                    ? `Parabéns! Você foi contemplado(a)${activeDrawTitle ? ` no sorteio "${activeDrawTitle}"` : ""}. Apresente esta tela à organização do evento para receber seu prêmio.`
+                    : isNotWinner
+                      ? `O número sorteado no palco foi #${drawnNumber.replace(/^#/, "")}${activeDrawTitle ? ` para ${activeDrawTitle}` : ""}. Seus bilhetes continuam registrados para as próximas apurações.`
+                      : "Quando o seu número for sorteado, esta celebração aparecerá automaticamente no seu celular."}
+                </p>
+
+                {celebration === "test" ? (
+                  <button
+                    type="button"
+                    onClick={dismissCelebration}
+                    className="live-winner-btn-gold"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>check_circle</span>
+                    <span>Fechar Teste</span>
+                  </button>
+                ) : isNotWinner ? (
+                  <button
+                    type="button"
+                    onClick={dismissCelebration}
+                    style={{
+                      minWidth: "180px",
+                      minHeight: "46px",
+                      marginTop: "24px",
+                      padding: "12px 32px",
+                      borderRadius: "10px",
+                      background: "#530017",
+                      color: "#ffffff",
+                      border: "1px solid #530017",
+                      fontSize: "11.5px",
+                      fontWeight: 700,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      boxShadow: "0 4px 14px rgba(83, 0, 23, 0.22)",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      transition: "all 0.18s ease",
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>check</span>
+                    <span>Entendi</span>
+                  </button>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", marginTop: "24px" }}>
+                    <button
+                      type="button"
+                      onClick={dismissCelebration}
+                      className="live-winner-btn-gold"
+                    >
+                      <span className="material-symbols-outlined">arrow_back</span>
+                      <span>Fechar e Voltar ao Portal</span>
+                    </button>
+                    <span className="live-winner-note">
+                      Procure a organização do evento
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
         </div>
       )}
     </>

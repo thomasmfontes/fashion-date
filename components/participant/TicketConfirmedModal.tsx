@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { DrawItem } from "@/types/drawCollection.types";
 import type { ParticipantTicket, SavedParticipant } from "@/types/participant.types";
+import { useSoundFx } from "@/hooks/useSoundFx";
+
+const CONFETTI_COLORS = ["#c99b36", "#530017", "#e8c66d", "#8b2f47", "#f8efe1"];
 
 interface TicketConfirmedModalProps {
   draw: DrawItem;
@@ -20,10 +23,26 @@ export function TicketConfirmedModal({
   onClose,
 }: TicketConfirmedModalProps) {
   const [mounted, setMounted] = useState(false);
+  const { playVictory, stopVictory } = useSoundFx();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Toca o áudio de sucesso assim que o modal de número garantido abre
+  useEffect(() => {
+    if (!isOpen) return;
+
+    try {
+      playVictory();
+    } catch {
+      // Ignora restrições eventuais de áudio
+    }
+
+    return () => {
+      stopVictory();
+    };
+  }, [isOpen, playVictory, stopVictory]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -70,9 +89,37 @@ export function TicketConfirmedModal({
       onClick={onClose}
       onTouchMove={(e) => e.stopPropagation()}
     >
+      {/* Chuva de Confetes Festivos da Conquista do Número */}
+      <div
+        className="confetti"
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 10001,
+        }}
+      >
+        {Array.from({ length: 50 }, (_, index) => (
+          <i
+            key={index}
+            style={
+              {
+                left: `${(index * 37) % 101}%`,
+                background: CONFETTI_COLORS[index % CONFETTI_COLORS.length],
+                animationDelay: `-${(index % 11) * 0.14}s`,
+                animationDuration: `${2.8 + (index % 7) * 0.22}s`,
+                "--drift": `${(index % 2 ? 1 : -1) * (25 + (index % 60))}px`,
+              } as CSSProperties
+            }
+          />
+        ))}
+      </div>
+
       <div
         style={{
           position: "relative",
+          zIndex: 10002,
           maxWidth: "min(400px, calc(100vw - 32px))",
           width: "100%",
           maxHeight: "calc(100dvh - 32px)",
