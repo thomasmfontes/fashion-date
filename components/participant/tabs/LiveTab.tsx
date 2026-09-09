@@ -310,7 +310,18 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                       : undefined
                   }
                 >
-                  <span style={{ color: isNotWinner ? "#855e09" : undefined }}>
+                  <span
+                    style={{
+                      display: "block",
+                      color: isNotWinner ? "#855e09" : "rgba(255, 247, 232, 0.72)",
+                      fontSize: isNotWinner ? "11.5px" : "9px",
+                      fontWeight: 700,
+                      letterSpacing: isNotWinner ? "0.12em" : "0.22em",
+                      textTransform: "uppercase",
+                      marginBottom: isNotWinner ? "6px" : undefined,
+                      textShadow: isNotWinner ? "none" : undefined,
+                    }}
+                  >
                     {isNotWinner
                       ? "Número Sorteado no Palco"
                       : celebration === "winner"
@@ -328,6 +339,7 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                       alignItems: "baseline",
                       justifyContent: "center",
                       color: isNotWinner ? "#530017" : undefined,
+                      textShadow: isNotWinner ? "none" : undefined,
                     }}
                   >
                     {(() => {
@@ -343,7 +355,7 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                             style={{
                               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               fontSize: "0.55em",
-                              color: isNotWinner ? "#9a741a" : "#f3d48d",
+                              color: isNotWinner ? "#855e09" : "#f3d48d",
                               marginRight: "4px",
                               fontWeight: 800,
                               lineHeight: 1,
@@ -354,7 +366,14 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                           >
                             #
                           </span>
-                          <span style={{ textShadow: isNotWinner ? "none" : undefined }}>{cleanNum}</span>
+                          <span
+                            style={{
+                              color: isNotWinner ? "#530017" : undefined,
+                              textShadow: isNotWinner ? "none" : undefined,
+                            }}
+                          >
+                            {cleanNum}
+                          </span>
                         </>
                       );
                     })()}

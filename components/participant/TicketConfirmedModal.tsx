@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, useRef, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { DrawItem } from "@/types/drawCollection.types";
 import type { ParticipantTicket, SavedParticipant } from "@/types/participant.types";
@@ -24,14 +24,25 @@ export function TicketConfirmedModal({
 }: TicketConfirmedModalProps) {
   const [mounted, setMounted] = useState(false);
   const { playVictory, stopVictory } = useSoundFx();
+  const hasPlayedRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Toca o áudio de sucesso assim que o modal de número garantido abre
+  const handleClose = () => {
+    try {
+      stopVictory();
+    } catch {
+      // Ignora erro
+    }
+    onClose();
+  };
+
+  // Toca a melodia triunfal e vibra o aparelho ao abrir o modal
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || hasPlayedRef.current) return;
+    hasPlayedRef.current = true;
 
     try {
       playVictory();
@@ -39,10 +50,14 @@ export function TicketConfirmedModal({
       // Ignora restrições eventuais de áudio
     }
 
-    return () => {
-      stopVictory();
-    };
-  }, [isOpen, playVictory, stopVictory]);
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try {
+        navigator.vibrate([120, 60, 180, 60, 350]);
+      } catch {
+        // Ignora restrições
+      }
+    }
+  }, [isOpen, playVictory]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -54,7 +69,7 @@ export function TicketConfirmedModal({
     document.body.style.touchAction = "none";
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     window.addEventListener("keydown", handleKeyDown);
 
@@ -63,7 +78,7 @@ export function TicketConfirmedModal({
       document.body.style.touchAction = originalTouchAction;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen || !mounted) return null;
 
@@ -86,7 +101,7 @@ export function TicketConfirmedModal({
         overscrollBehavior: "contain",
         touchAction: "none",
       }}
-      onClick={onClose}
+      onClick={handleClose}
       onTouchMove={(e) => e.stopPropagation()}
     >
       {/* Chuva de Confetes Festivos da Conquista do Número */}
@@ -269,7 +284,7 @@ export function TicketConfirmedModal({
             justifyContent: "center",
             fontSize: "12px",
           }}
-          onClick={onClose}
+          onClick={handleClose}
         >
           <span>Entendi e Fechar</span>
         </button>

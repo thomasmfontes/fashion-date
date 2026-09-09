@@ -74,6 +74,38 @@ export class SoundSynthesizer {
     }
   }
 
+  playVictoryFanfare(): void {
+    if (this.isMuted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      // Triumphant Haute Couture fanfare chime (C5, E5, G5, C6, E6)
+      const notes = [
+        { freq: 523.25, time: 0, dur: 0.22, gain: 0.16 },
+        { freq: 659.25, time: 0.1, dur: 0.22, gain: 0.18 },
+        { freq: 783.99, time: 0.2, dur: 0.26, gain: 0.2 },
+        { freq: 1046.5, time: 0.35, dur: 0.85, gain: 0.24 },
+        { freq: 1318.51, time: 0.48, dur: 0.95, gain: 0.18 },
+      ];
+
+      notes.forEach((note) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(note.freq, ctx.currentTime + note.time);
+        gain.gain.setValueAtTime(0.001, ctx.currentTime + note.time);
+        gain.gain.linearRampToValueAtTime(note.gain, ctx.currentTime + note.time + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + note.time + note.dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + note.time);
+        osc.stop(ctx.currentTime + note.time + note.dur + 0.05);
+      });
+    } catch {
+      // Audio context fallback
+    }
+  }
+
   private victoryAudio: HTMLAudioElement | null = null;
 
   private getVictoryAudio(): HTMLAudioElement | null {
@@ -92,14 +124,19 @@ export class SoundSynthesizer {
   playVictory(): void {
     if (this.isMuted || typeof window === "undefined") return;
     if (process.env.NODE_ENV === "test") return;
+
+    // 1. Sintetiza o acorde de fanfarra via Web Audio API (0ms de latência, à prova de falhas)
+    this.playVictoryFanfare();
+
+    // 2. Toca o arquivo de estúdio /sounds/victory.mp3 em paralelo
     const audio = this.getVictoryAudio();
     if (audio && typeof audio.play === "function") {
       try {
         audio.currentTime = 0;
         const p = audio.play();
         if (p !== undefined) {
-          p.catch(() => {
-            // Ignore autoplay restriction before gesture
+          p.catch((err) => {
+            console.warn("Victory mp3 playback notice:", err);
           });
         }
       } catch {
