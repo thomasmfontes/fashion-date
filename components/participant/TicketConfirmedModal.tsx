@@ -23,7 +23,7 @@ export function TicketConfirmedModal({
   onClose,
 }: TicketConfirmedModalProps) {
   const [mounted, setMounted] = useState(false);
-  const { playVictory, stopVictory } = useSoundFx();
+  const { playSuccess } = useSoundFx();
   const hasPlayedRef = useRef(false);
 
   useEffect(() => {
@@ -31,21 +31,16 @@ export function TicketConfirmedModal({
   }, []);
 
   const handleClose = () => {
-    try {
-      stopVictory();
-    } catch {
-      // Ignora erro
-    }
     onClose();
   };
 
-  // Toca a melodia triunfal e vibra o aparelho ao abrir o modal
+  // Toca o chime suave de conquista e vibra o aparelho ao abrir o modal
   useEffect(() => {
     if (!isOpen || hasPlayedRef.current) return;
     hasPlayedRef.current = true;
 
     try {
-      playVictory();
+      playSuccess();
     } catch {
       // Ignora restrições eventuais de áudio
     }
@@ -57,7 +52,7 @@ export function TicketConfirmedModal({
         // Ignora restrições
       }
     }
-  }, [isOpen, playVictory]);
+  }, [isOpen, playSuccess]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -104,33 +99,6 @@ export function TicketConfirmedModal({
       onClick={handleClose}
       onTouchMove={(e) => e.stopPropagation()}
     >
-      {/* Chuva de Confetes Festivos da Conquista do Número */}
-      <div
-        className="confetti"
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          inset: 0,
-          pointerEvents: "none",
-          zIndex: 10001,
-        }}
-      >
-        {Array.from({ length: 50 }, (_, index) => (
-          <i
-            key={index}
-            style={
-              {
-                left: `${(index * 37) % 101}%`,
-                background: CONFETTI_COLORS[index % CONFETTI_COLORS.length],
-                animationDelay: `-${(index % 11) * 0.14}s`,
-                animationDuration: `${2.8 + (index % 7) * 0.22}s`,
-                "--drift": `${(index % 2 ? 1 : -1) * (25 + (index % 60))}px`,
-              } as CSSProperties
-            }
-          />
-        ))}
-      </div>
-
       <div
         style={{
           position: "relative",
@@ -288,6 +256,33 @@ export function TicketConfirmedModal({
         >
           <span>Entendi e Fechar</span>
         </button>
+      </div>
+
+      {/* Chuva de Confetes Festivos da Conquista do Número (caindo na frente do modal) */}
+      <div
+        className="confetti"
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 10005,
+        }}
+      >
+        {Array.from({ length: 50 }, (_, index) => (
+          <i
+            key={index}
+            style={
+              {
+                left: `${(index * 37) % 101}%`,
+                background: CONFETTI_COLORS[index % CONFETTI_COLORS.length],
+                animationDelay: `-${(index % 11) * 0.14}s`,
+                animationDuration: `${2.8 + (index % 7) * 0.22}s`,
+                "--drift": `${(index % 2 ? 1 : -1) * (25 + (index % 60))}px`,
+              } as CSSProperties
+            }
+          />
+        ))}
       </div>
     </div>,
     document.body

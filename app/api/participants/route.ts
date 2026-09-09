@@ -1,5 +1,5 @@
 import { consumeRateLimit } from "@/db/runtime";
-import { initialize, participantFields, row } from "../_lib/db";
+import { getParticipantTickets, initialize, participantFields, row } from "../_lib/db";
 
 /**
  * Irreversible stable hash for rate-limiter target keys to avoid plain PII in edge counters.
@@ -91,10 +91,11 @@ export async function GET(request: Request) {
           .first<Record<string, unknown>>();
 
         if (existing) {
+          const tickets = await getParticipantTickets(db, Number(existing.id || existing.id_participante));
           return Response.json({
             ok: true,
             registered: true,
-            participant: row(existing),
+            participant: row({ ...existing, tickets }),
             registrationsOpen,
           });
         }
@@ -145,7 +146,8 @@ export async function GET(request: Request) {
       );
     }
 
-    const full = row(existing);
+    const tickets = await getParticipantTickets(db, Number(existing.id || existing.id_participante));
+    const full = row({ ...existing, tickets });
     return Response.json({
       ok: true,
       participant: {
@@ -292,9 +294,10 @@ export async function POST(request: Request) {
         // Continue gracefully if ds_email/auth_user_id columns don't exist yet
       }
 
-      // Same user or previous registration: return existing record
+      // Same user or previous registration: return existing record with tickets
+      const existingTickets = await getParticipantTickets(db, Number(existing.id || existing.id_participante));
       return Response.json({
-        participant: row(existing),
+        participant: row({ ...existing, tickets: existingTickets }),
         duplicate: true,
       });
     }
@@ -310,8 +313,9 @@ export async function POST(request: Request) {
           .first<Record<string, unknown>>();
 
         if (existingByAuth) {
+          const authTickets = await getParticipantTickets(db, Number(existingByAuth.id || existingByAuth.id_participante));
           return Response.json({
-            participant: row(existingByAuth),
+            participant: row({ ...existingByAuth, tickets: authTickets }),
             duplicate: true,
           });
         }
@@ -320,51 +324,23 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. Generate a unique lucky number with collision retry loop
-    let lucky = "";
-    for (let i = 0; i < 20; i++) {
-      const candidate = String(
-        (crypto.getRandomValues(new Uint32Array(1))[0] % 9999) + 1,
-      ).padStart(4, "0");
-      const used = await db
-        .prepare(
-          "SELECT id_participante AS id FROM t_participants WHERE nr_sorte=?",
-        )
-        .bind(candidate)
-        .first();
-      if (!used) {
-        lucky = candidate;
-        break;
-      }
-    }
-
-    if (!lucky) {
-      return Response.json(
-        {
-          error:
-            "Alta demanda de cadastros. Não foi possível gerar um número único agora. Tente novamente em alguns instantes.",
-        },
-        { status: 503 },
-      );
-    }
-
-    // 4. Insert new participant with auth references
+    // 3. Insert new participant
     let inserted: Record<string, unknown> | null = null;
     try {
       inserted = await db
         .prepare(
-          `INSERT INTO t_participants(nr_sorte,nm_participante,nm_loja,nr_whatsapp,nm_instagram,user_type,ds_email,auth_user_id)
-           VALUES(?,?,?,?,?,?,?,?) RETURNING ${participantFields}`,
+          `INSERT INTO t_participants(nm_participante,nm_loja,nr_whatsapp,nm_instagram,user_type,ds_email,auth_user_id)
+           VALUES(?,?,?,?,?,?,?) RETURNING ${participantFields}`,
         )
-        .bind(lucky, name, store, phone, instagram, userType, email || null, authUserId || null)
+        .bind(name, store, phone, instagram, userType, email || null, authUserId || null)
         .first<Record<string, unknown>>();
     } catch {
       inserted = await db
         .prepare(
-          `INSERT INTO t_participants(nr_sorte,nm_participante,nm_loja,nr_whatsapp,nm_instagram,user_type)
-           VALUES(?,?,?,?,?,?) RETURNING ${participantFields}`,
+          `INSERT INTO t_participants(nm_participante,nm_loja,nr_whatsapp,nm_instagram,user_type)
+           VALUES(?,?,?,?,?) RETURNING ${participantFields}`,
         )
-        .bind(lucky, name, store, phone, instagram, userType)
+        .bind(name, store, phone, instagram, userType)
         .first<Record<string, unknown>>();
     }
 
@@ -375,12 +351,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // 5. Auto-gerar bilhetes para todos os sorteios elegíveis do evento
+    // 4. Auto-gerar bilhetes para todos os sorteios elegíveis do evento
+    const newPid = Number(inserted.id_participante || inserted.id);
+    const createdTickets: Array<{
+      drawId: string;
+      drawTitle: string;
+      prizeTitle: string;
+      ticketNumber: string;
+      enteredAt: string;
+    }> = [];
+
     try {
-      const newPid = Number(inserted.id_participante);
       const openDraws = await db
         .prepare(
-          "SELECT id_sorteio, target_user_types, tem_limite, nr_limite_maximo FROM t_draw_definitions WHERE st_sorteio IN ('open', 'ready')"
+          "SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo FROM t_draw_definitions WHERE st_sorteio IN ('open', 'ready')"
         )
         .all<Record<string, unknown>>();
 
@@ -404,27 +388,56 @@ export async function POST(request: Request) {
           let generated = "";
 
           for (let attempt = 0; attempt < 30; attempt++) {
+            const randomVal = crypto.getRandomValues(new Uint32Array(1))[0];
             const randomNum = hasLimit
-              ? Math.floor(Math.random() * maxNumber) + 1
-              : Math.floor(Math.random() * 9000) + 1000;
+              ? (randomVal % maxNumber) + 1
+              : (randomVal % 9999) + 1;
             const candidate = String(randomNum).padStart(4, "0");
             const check = await db
               .prepare("SELECT id_ticket FROM t_draw_tickets WHERE id_sorteio = ? AND nr_bilhete = ?")
               .bind(drawId, candidate)
               .first();
-            if (!check) {
+            const checkLegacy = await db
+              .prepare("SELECT id FROM participants WHERE lucky_number = ?")
+              .bind(candidate)
+              .first()
+              .catch(() => null);
+
+            if (!check && !checkLegacy) {
               generated = candidate;
               break;
             }
           }
 
-          if (generated) {
+          if (!generated) {
             await db
-              .prepare("INSERT INTO t_draw_tickets (id_participante, id_sorteio, nr_bilhete) VALUES (?, ?, ?)")
-              .bind(newPid, drawId, generated)
+              .prepare("DELETE FROM t_participants WHERE id_participante = ?")
+              .bind(newPid)
               .run()
               .catch(() => {});
+
+            return Response.json(
+              {
+                error:
+                  "Alta demanda de cadastros. Não foi possível gerar um número único agora. Tente novamente em alguns instantes.",
+              },
+              { status: 503 },
+            );
           }
+
+          await db
+            .prepare("INSERT INTO t_draw_tickets (id_participante, id_sorteio, nr_bilhete) VALUES (?, ?, ?)")
+            .bind(newPid, drawId, generated)
+            .run()
+            .catch(() => {});
+
+          createdTickets.push({
+            drawId,
+            drawTitle: String(draw.nm_titulo || drawId),
+            prizeTitle: String(draw.nm_premio || "Prêmio"),
+            ticketNumber: generated,
+            enteredAt: new Date().toISOString(),
+          });
         }
       }
     } catch {
@@ -433,7 +446,7 @@ export async function POST(request: Request) {
 
     return Response.json(
       {
-        participant: row(inserted),
+        participant: row({ ...inserted, tickets: createdTickets }),
         duplicate: false,
       },
       { status: 201 },

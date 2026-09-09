@@ -20,7 +20,6 @@ export type Participant = {
 
 export const participantFields = `
   id_participante AS id,
-  nr_sorte AS lucky_number,
   nm_participante AS name,
   nm_loja AS store,
   nr_whatsapp AS phone,
@@ -43,6 +42,32 @@ export function database() {
  */
 export async function initialize() {
   return database();
+}
+
+export async function getParticipantTickets(
+  db: { prepare: (sql: string) => { bind: (...args: unknown[]) => { all: <T>() => Promise<{ results: T[] }> } } },
+  participantId: number,
+): Promise<import("@/types/participant.types").ParticipantTicket[]> {
+  try {
+    const res = await db
+      .prepare(`
+        SELECT 
+          dt.id_sorteio AS "drawId",
+          COALESCE(def.nm_titulo, dt.id_sorteio) AS "drawTitle",
+          COALESCE(def.nm_premio, 'Prêmio') AS "prizeTitle",
+          dt.nr_bilhete AS "ticketNumber",
+          dt.dt_inscricao AS "enteredAt"
+        FROM t_draw_tickets dt
+        LEFT JOIN t_draw_definitions def ON def.id_sorteio = dt.id_sorteio
+        WHERE dt.id_participante = ?
+        ORDER BY dt.dt_inscricao ASC
+      `)
+      .bind(participantId)
+      .all<Record<string, unknown>>();
+    return (res?.results || []) as unknown as import("@/types/participant.types").ParticipantTicket[];
+  } catch {
+    return [];
+  }
 }
 
 export function adminAllowed(request: Request): boolean {

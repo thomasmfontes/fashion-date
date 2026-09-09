@@ -106,6 +106,16 @@ export class SoundSynthesizer {
     }
   }
 
+  /**
+   * Toca exclusivamente o chime suave de sucesso ao garantir um número da sorte.
+   * Não toca o áudio do vencedor (/sounds/victory.mp3), mantendo a comemoração
+   * leve e agradável sem confundir com a tela de vencedor oficial.
+   */
+  playSuccessChime(): void {
+    if (this.isMuted) return;
+    this.playVictoryFanfare();
+  }
+
   private victoryAudio: HTMLAudioElement | null = null;
 
   private getVictoryAudio(): HTMLAudioElement | null {

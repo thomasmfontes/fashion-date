@@ -11,7 +11,6 @@ export async function GET(request: Request) {
       .prepare(
         `SELECT 
           p.id_participante AS id,
-          p.nr_sorte AS lucky_number,
           p.nm_participante AS name,
           p.nm_loja AS store,
           p.nr_whatsapp AS phone,

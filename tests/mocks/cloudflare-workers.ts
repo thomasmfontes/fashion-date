@@ -22,10 +22,31 @@ export interface DrawRecord {
   drawn_at: string;
 }
 
+export interface DrawDefinitionRecord {
+  id: string;
+  id_sorteio: string;
+  nm_titulo: string;
+  nm_premio: string;
+  target_user_types: string[];
+  tem_limite: boolean;
+  nr_limite_maximo: number | null;
+  st_sorteio: string;
+}
+
+export interface DrawTicketRecord {
+  id_ticket: number;
+  id_participante: number;
+  id_sorteio: string;
+  nr_bilhete: string;
+  dt_inscricao: string;
+}
+
 export interface InMemStore {
   participants: ParticipantRecord[];
   settings: Map<string, string>;
   draws: DrawRecord[];
+  drawDefinitions: DrawDefinitionRecord[];
+  drawTickets: DrawTicketRecord[];
   autoIncrementId: number;
   tables: Set<string>;
   indexes: Set<string>;
@@ -50,6 +71,8 @@ export const inMemStore: InMemStore = {
   participants: [],
   settings: new Map<string, string>(),
   draws: [],
+  drawDefinitions: [],
+  drawTickets: [],
   autoIncrementId: 1,
   tables: new Set(["participants", "settings", "draws"]),
   indexes: new Set([
@@ -87,6 +110,19 @@ export function resetInMemStore() {
   inMemStore.participants = [];
   inMemStore.settings = new Map<string, string>([["registrations_open", "true"]]);
   inMemStore.draws = [];
+  inMemStore.drawDefinitions = [
+    {
+      id: "draw-default",
+      id_sorteio: "draw-default",
+      nm_titulo: "Sorteio Oficial",
+      nm_premio: "Prêmio Especial",
+      target_user_types: ["lojista", "revendedor", "influencer", "visitante"],
+      tem_limite: false,
+      nr_limite_maximo: null,
+      st_sorteio: "open",
+    },
+  ];
+  inMemStore.drawTickets = [];
   inMemStore.autoIncrementId = 1;
   inMemStore.tables = new Set(["participants", "settings", "draws"]);
   inMemStore.indexes = new Set([
@@ -258,7 +294,22 @@ export function createMockD1Database(): MockD1Database {
     // SELECT p.*, ... FROM participants p ORDER BY p.id DESC
     if (trimmed.startsWith("SELECT p.*") || trimmed.startsWith("SELECT * FROM participants ORDER BY id DESC") || trimmed.startsWith("SELECT * FROM participants ORDER BY p.id DESC") || trimmed.includes("FROM participants p ORDER BY p.id DESC")) {
       const sorted = [...inMemStore.participants].sort((a, b) => b.id - a.id);
-      return { results: sorted, success: true };
+      const withTickets = sorted.map((p) => {
+        const userTickets = inMemStore.drawTickets
+          .filter((t) => t.id_participante === p.id)
+          .map((t) => ({
+            drawId: t.id_sorteio,
+            drawTitle: "Sorteio Oficial",
+            prizeTitle: "Prêmio Especial",
+            ticketNumber: t.nr_bilhete,
+            enteredAt: t.dt_inscricao,
+          }));
+        return {
+          ...p,
+          tickets: userTickets,
+        };
+      });
+      return { results: withTickets, success: true };
     }
 
     // SELECT id FROM participants WHERE id=? or SELECT * FROM participants WHERE id=?
@@ -288,15 +339,89 @@ export function createMockD1Database(): MockD1Database {
       return { results: [], success: true };
     }
 
+    // SELECT ... FROM t_draw_definitions
+    if (trimmed.includes("FROM t_draw_definitions") || trimmed.includes("FROM `t_draw_definitions`")) {
+      return { results: [...inMemStore.drawDefinitions], success: true };
+    }
+
+    // SELECT id_ticket FROM t_draw_tickets WHERE id_sorteio = ? AND nr_bilhete = ?
+    if (
+      trimmed.includes("FROM t_draw_tickets WHERE") &&
+      (trimmed.includes("nr_bilhete = ?") || trimmed.includes("nr_bilhete=?"))
+    ) {
+      const [drawId, ticketNumber] = bindings as [string, string];
+      const found = inMemStore.drawTickets.find(
+        (t) => (t.id_sorteio === drawId || String(t.id_ticket) === String(drawId)) && t.nr_bilhete === ticketNumber,
+      );
+      return { results: found ? [found] : [], success: true };
+    }
+
+    // SELECT ... FROM t_draw_tickets
+    if (trimmed.includes("FROM t_draw_tickets")) {
+      const pIdMatch = trimmed.match(/(?:id_participante|dt\.id|id)\s*=\s*\?/);
+      if (pIdMatch && bindings.length > 0) {
+        const pId = Number(bindings[0]);
+        const userTickets = inMemStore.drawTickets
+          .filter((t) => t.id_participante === pId)
+          .map((t) => ({
+            id: t.id_ticket,
+            id_ticket: t.id_ticket,
+            participant_id: t.id_participante,
+            id_participante: t.id_participante,
+            draw_id: t.id_sorteio,
+            id_sorteio: t.id_sorteio,
+            drawId: t.id_sorteio,
+            drawTitle: "Sorteio Oficial",
+            prizeTitle: "Prêmio Especial",
+            ticketNumber: t.nr_bilhete,
+            nr_bilhete: t.nr_bilhete,
+            enteredAt: t.dt_inscricao,
+            dt_inscricao: t.dt_inscricao,
+          }));
+        return { results: userTickets, success: true };
+      }
+      return { results: inMemStore.drawTickets, success: true };
+    }
+
+    // INSERT INTO t_draw_tickets
+    if (trimmed.includes("INSERT INTO t_draw_tickets")) {
+      const [id_participante, id_sorteio, nr_bilhete] = bindings as [number, string, string];
+      const ticket: DrawTicketRecord = {
+        id_ticket: inMemStore.drawTickets.length + 1,
+        id_participante: Number(id_participante),
+        id_sorteio: String(id_sorteio),
+        nr_bilhete: String(nr_bilhete),
+        dt_inscricao: new Date().toISOString(),
+      };
+      inMemStore.drawTickets.push(ticket);
+      const p = inMemStore.participants.find((item) => item.id === Number(id_participante));
+      if (p && !p.lucky_number) {
+        p.lucky_number = String(nr_bilhete);
+      }
+      return { results: [ticket], success: true };
+    }
+
     // INSERT INTO participants
     if (trimmed.startsWith("INSERT INTO participants") || trimmed.startsWith("INSERT INTO `participants`")) {
-      let lucky_number: string;
-      let name: string;
-      let store: string;
-      let phone: string;
-      let instagram: string;
+      let lucky_number: string = "";
+      let name: string = "";
+      let store: string = "";
+      let phone: string = "";
+      let instagram: string = "";
 
-      if (trimmed.includes("VALUES(NULL,") || trimmed.includes("VALUES (NULL,")) {
+      const colMatch = trimmed.match(/INSERT INTO `?participants`?\s*\(([^)]+)\)/i);
+      if (colMatch) {
+        const cols = colMatch[1].split(",").map((c) => c.trim().toLowerCase());
+        const bindObj: Record<string, string> = {};
+        cols.forEach((col, idx) => {
+          bindObj[col] = String(bindings[idx] ?? "");
+        });
+        name = bindObj.name || "";
+        store = bindObj.store || "";
+        phone = bindObj.phone || "";
+        instagram = bindObj.instagram || "";
+        lucky_number = bindObj.lucky_number || "";
+      } else if (trimmed.includes("VALUES(NULL,") || trimmed.includes("VALUES (NULL,")) {
         name = String(bindings[0] || "");
         store = String(bindings[1] || "");
         phone = String(bindings[2] || "");

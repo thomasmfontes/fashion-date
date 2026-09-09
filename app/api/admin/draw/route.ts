@@ -94,9 +94,6 @@ export async function POST(request: Request) {
     // 2. Fallback to active participants if no ticket was found or no drawIdTarget
     if (!winnerRow) {
       let filterClause = "WHERE st_participante='active'";
-      if (maxNumber) {
-        filterClause += ` AND nr_sorte ~ '^[0-9]+$' AND CAST(nr_sorte AS INTEGER) <= ${maxNumber}`;
-      }
       if (targetTypes.length > 0) {
         const typesStr = targetTypes.map((t) => `'${t}'`).join(",");
         filterClause += ` AND LOWER(COALESCE(user_type, 'lojista')) IN (${typesStr})`;
@@ -115,7 +112,14 @@ export async function POST(request: Request) {
 
       winnerRow = await transaction.prepare(updateQuery).first<Record<string, unknown>>();
       if (winnerRow) {
-        winningTicketNumber = String(winnerRow.lucky_number || "").padStart(4, "0");
+        const existingTicket = await transaction
+          .prepare("SELECT nr_bilhete FROM t_draw_tickets WHERE id_participante=? ORDER BY dt_inscricao ASC LIMIT 1")
+          .bind(Number(winnerRow.id))
+          .first<{ nr_bilhete: string }>();
+
+        winningTicketNumber = existingTicket?.nr_bilhete
+          ? String(existingTicket.nr_bilhete).padStart(4, "0")
+          : String(winnerRow.id).padStart(4, "0");
         winnerRow.lucky_number = winningTicketNumber;
       }
     }
@@ -324,9 +328,6 @@ export async function GET(request: Request) {
       // Se não houver bilhetes avulsos em t_draw_tickets para este sorteio, usa os participantes cadastrados
       if (count === 0) {
         let pFilter = "WHERE st_participante = 'active'";
-        if (maxNumber) {
-          pFilter += ` AND nr_sorte ~ '^[0-9]+$' AND CAST(nr_sorte AS INTEGER) <= ${maxNumber}`;
-        }
         if (targetTypes.length > 0) {
           const typesStr = targetTypes.map((t) => `'${t}'`).join(",");
           pFilter += ` AND LOWER(COALESCE(user_type, 'lojista')) IN (${typesStr})`;
@@ -344,9 +345,6 @@ export async function GET(request: Request) {
       }
     } else {
       let filterClause = "WHERE st_participante = 'active'";
-      if (maxNumber) {
-        filterClause += ` AND nr_sorte ~ '^[0-9]+$' AND CAST(nr_sorte AS INTEGER) <= ${maxNumber}`;
-      }
       if (targetTypes.length > 0) {
         const typesStr = targetTypes.map((t) => `'${t}'`).join(",");
         filterClause += ` AND LOWER(COALESCE(user_type, 'lojista')) IN (${typesStr})`;
