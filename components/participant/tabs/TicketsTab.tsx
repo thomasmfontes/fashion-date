@@ -473,33 +473,36 @@ export function TicketsTab({
                       className={`stitch-wallet-ticket${isTicketWinner ? " is-winner" : ""}`}
                     >
                       <div>
-                        <div className="stitch-wallet-ticket-top">
-                          <span className="stitch-wallet-ticket-kicker">
-                            <span
-                              className="material-symbols-outlined"
-                              style={{ fontSize: "16px", color: "#c79a36" }}
-                            >
-                              confirmation_number
-                            </span>
-                            <span>Número da Sorte</span>
-                          </span>
-
-                          {isTicketWinner ? (
-                            <span className="stitch-wallet-ticket-badge-contemplado">
+                        {isTicketWinner ? (
+                          <div className="stitch-wallet-ticket-top is-winner">
+                            <div className="stitch-wallet-ticket-winner-header">
+                              <span className="stitch-gold-filigree-line left" aria-hidden="true" />
+                              <div className="stitch-wallet-ticket-badge-contemplado-center">
+                                <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#ffd778" }}>
+                                  workspace_premium
+                                </span>
+                                <span>Número Contemplado</span>
+                              </div>
+                              <span className="stitch-gold-filigree-line right" aria-hidden="true" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="stitch-wallet-ticket-top">
+                            <span className="stitch-wallet-ticket-kicker">
                               <span
                                 className="material-symbols-outlined"
-                                style={{ fontSize: "14px", color: "#9a741a" }}
+                                style={{ fontSize: "16px", color: "#c79a36" }}
                               >
-                                workspace_premium
+                                confirmation_number
                               </span>
-                              <span>Contemplado</span>
+                              <span>Número da Sorte</span>
                             </span>
-                          ) : (
+
                             <span className="stitch-status open" style={{ padding: "2px 8px", fontSize: "10px" }}>
                               <i /> Ativo
                             </span>
-                          )}
-                        </div>
+                          </div>
+                        )}
 
                         {/* Selo Central Majestoso do Número */}
                         <div className="stitch-wallet-ticket-badge-box">

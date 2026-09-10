@@ -4063,48 +4063,114 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
   color: #786568;
 }
 
-/* Estado de Bilhete Sorteado / Contemplado (Estilo Ouro Nobre Haute Couture) */
+/* Estado de Bilhete Sorteado / Contemplado (Imperial Vinho Marsala Haute Couture) */
 .stitch-wallet-ticket.is-winner {
-  border-color: #c79a36 !important;
-  background: linear-gradient(165deg, #ffffff 0%, #fdfbf7 55%, #faf4e6 100%) !important;
-  box-shadow: 0 6px 24px rgba(199, 154, 54, 0.18) !important;
-  position: relative;
+  background: linear-gradient(155deg, #530017 0%, #430014 55%, #2a000c 100%) !important;
+  border: 2px solid #c79a36 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 36px rgba(83, 0, 23, 0.45), 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  padding: 22px 20px !important;
 }
 
 .stitch-wallet-ticket.is-winner:hover {
-  transform: translateY(-2px);
-  border-color: #9a741a !important;
-  box-shadow: 0 10px 30px rgba(199, 154, 54, 0.25) !important;
+  transform: translateY(-3px) !important;
+  border-color: #e5b955 !important;
+  box-shadow: 0 16px 44px rgba(83, 0, 23, 0.55), 0 6px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+.stitch-wallet-ticket.is-winner .stitch-wallet-ticket-kicker {
+  color: #f7e1b5 !important;
+}
+
+.stitch-wallet-ticket.is-winner .stitch-wallet-ticket-kicker .material-symbols-outlined {
+  color: #ffd778 !important;
 }
 
 .stitch-wallet-ticket.is-winner .stitch-wallet-ticket-badge-box {
-  background: radial-gradient(circle at center, #ffffff 0%, #faf3e1 100%) !important;
-  border: 1.5px solid rgba(199, 154, 54, 0.55) !important;
-  box-shadow: inset 0 2px 5px rgba(154, 116, 26, 0.06), 0 3px 12px rgba(199, 154, 54, 0.1) !important;
+  background: linear-gradient(145deg, #ffffff 0%, #fef5e0 50%, #f7e3b5 100%) !important;
+  border: 2px solid #c79a36 !important;
+  border-radius: 14px !important;
+  box-shadow: inset 0 2px 6px rgba(154, 116, 26, 0.12), 0 6px 18px rgba(0, 0, 0, 0.28) !important;
+  margin: 14px 0 12px !important;
 }
 
 .stitch-wallet-ticket.is-winner .stitch-wallet-ticket-num {
   color: #530017 !important;
+  font-weight: 800 !important;
 }
 
 .stitch-wallet-ticket.is-winner .stitch-wallet-ticket-num .hash {
-  color: #c79a36 !important;
+  color: #9a741a !important;
 }
 
-.stitch-wallet-ticket-badge-contemplado {
+.stitch-wallet-ticket.is-winner .stitch-ticket-perforation {
+  background-image: linear-gradient(to right, rgba(232, 198, 109, 0.65) 60%, rgba(255, 255, 255, 0) 0%) !important;
+  margin: 14px 0 12px !important;
+}
+
+.stitch-wallet-ticket.is-winner .stitch-wallet-ticket-draw {
+  color: #ffffff !important;
+  font-family: var(--font-fashion, serif) !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+}
+
+.stitch-wallet-ticket.is-winner .stitch-wallet-ticket-prize {
+  color: #f3dfdf !important;
+}
+
+.stitch-wallet-ticket.is-winner .stitch-wallet-ticket-prize .material-symbols-outlined {
+  color: #ffd778 !important;
+}
+
+.stitch-wallet-ticket.is-winner .stitch-wallet-ticket-prize strong {
+  color: #ffd778 !important;
+}
+
+.stitch-wallet-ticket-top.is-winner {
+  justify-content: center !important;
+  margin-bottom: 12px !important;
+}
+
+.stitch-wallet-ticket-winner-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.stitch-gold-filigree-line {
+  flex: 1;
+  height: 1px;
+}
+
+.stitch-gold-filigree-line.left {
+  background: linear-gradient(to right, transparent 0%, rgba(255, 215, 120, 0.4) 60%, #ffd778 100%);
+}
+
+.stitch-gold-filigree-line.right {
+  background: linear-gradient(to left, transparent 0%, rgba(255, 215, 120, 0.4) 60%, #ffd778 100%);
+}
+
+.stitch-wallet-ticket-badge-contemplado-center {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
+  gap: 7px;
+  padding: 5px 16px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #fff9ee 0%, #fdf0d5 100%);
-  border: 1px solid #d4ab48;
-  color: #855e09;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(199, 154, 54, 0.25) 100%);
+  border: 1.5px solid rgba(255, 215, 120, 0.75);
+  color: #ffe08a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  box-shadow: 0 2px 6px rgba(154, 116, 26, 0.12);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
 }
 
 /* Card do Sorteio Disponível (Haute Couture) */
