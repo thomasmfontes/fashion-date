@@ -164,9 +164,9 @@ export default function LiveDrawAlert({ luckyNumber }: LiveDrawAlertProps) {
                     }}
                   >
                     {celebration === "winner"
-                      ? "RESULTADO OFICIAL"
+                      ? (activeDrawTitle ? `RESULTADO OFICIAL · ${activeDrawTitle.toUpperCase()}` : "RESULTADO OFICIAL")
                       : isNotWinner
-                        ? "SORTEIO REALIZADO"
+                        ? (activeDrawTitle ? activeDrawTitle.toUpperCase() : "SORTEIO REALIZADO")
                         : "TESTE DO ALERTA"}
                   </span>
                   <i style={{ width: "32px", height: "1px", background: isNotWinner ? "rgba(154,116,26,0.35)" : "rgba(231,194,117,0.7)" }} />
@@ -270,22 +270,22 @@ export default function LiveDrawAlert({ luckyNumber }: LiveDrawAlertProps) {
                   </strong>
                 </div>
 
-                <p
-                  style={{
-                    color: isNotWinner ? "#5a474a" : "rgba(255, 247, 232, 0.9)",
-                    fontSize: "14.5px",
-                    lineHeight: "1.6",
-                    maxWidth: "460px",
-                    margin: "20px auto 0",
-                    textShadow: isNotWinner ? "none" : "0 1px 3px rgba(0,0,0,0.4)",
-                  }}
-                >
-                  {celebration === "winner"
-                    ? "Parabéns! Apresente esta tela à organização do evento para receber seu prêmio."
-                    : isNotWinner
-                      ? `O seu número ${primaryNumber?.startsWith("#") ? primaryNumber : `#${primaryNumber}`} não foi sorteado, mas continua válido para os próximos sorteios.`
+                {!isNotWinner && (
+                  <p
+                    style={{
+                      color: "rgba(255, 247, 232, 0.9)",
+                      fontSize: "14.5px",
+                      lineHeight: "1.6",
+                      maxWidth: "460px",
+                      margin: "20px auto 0",
+                      textShadow: "0 1px 3px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    {celebration === "winner"
+                      ? "Parabéns! Apresente esta tela à organização do evento para receber seu prêmio."
                       : "Quando o seu número for sorteado, esta celebração aparecerá automaticamente no seu celular."}
-                </p>
+                  </p>
+                )}
 
                 {celebration === "test" ? (
                   <button

@@ -247,7 +247,7 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                     {celebration === "winner"
                       ? (activeDrawTitle ? `RESULTADO OFICIAL · ${activeDrawTitle.toUpperCase()}` : "RESULTADO OFICIAL")
                       : isNotWinner
-                        ? (activeDrawTitle ? `SORTEIO REALIZADO · ${activeDrawTitle.toUpperCase()}` : "SORTEIO REALIZADO")
+                        ? (activeDrawTitle ? activeDrawTitle.toUpperCase() : "SORTEIO REALIZADO")
                         : "TESTE DO ALERTA"}
                   </span>
                   <i style={{ width: "32px", height: "1px", background: isNotWinner ? "rgba(154,116,26,0.35)" : "rgba(231,194,117,0.7)" }} />
@@ -323,7 +323,7 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                     }}
                   >
                     {isNotWinner
-                      ? "Número Sorteado no Palco"
+                      ? "Número Sorteado"
                       : celebration === "winner"
                         ? `Seu Número Contemplado${activeDrawTitle ? ` (${activeDrawTitle})` : ""}`
                         : "Seu Número da Sorte"}
@@ -380,22 +380,22 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                   </strong>
                 </div>
 
-                <p
-                  style={{
-                    color: isNotWinner ? "#5a474a" : "rgba(255, 247, 232, 0.9)",
-                    fontSize: "14.5px",
-                    lineHeight: "1.6",
-                    maxWidth: "460px",
-                    margin: "20px auto 0",
-                    textShadow: isNotWinner ? "none" : "0 1px 3px rgba(0,0,0,0.4)",
-                  }}
-                >
-                  {celebration === "winner"
-                    ? `Parabéns! Você foi contemplado(a)${activeDrawTitle ? ` no sorteio "${activeDrawTitle}"` : ""}. Apresente esta tela à organização do evento para receber seu prêmio.`
-                    : isNotWinner
-                      ? `O número sorteado no palco foi #${drawnNumber.replace(/^#/, "")}${activeDrawTitle ? ` para ${activeDrawTitle}` : ""}. Seus bilhetes continuam registrados para as próximas apurações.`
+                {!isNotWinner && (
+                  <p
+                    style={{
+                      color: "rgba(255, 247, 232, 0.9)",
+                      fontSize: "14.5px",
+                      lineHeight: "1.6",
+                      maxWidth: "460px",
+                      margin: "20px auto 0",
+                      textShadow: "0 1px 3px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    {celebration === "winner"
+                      ? `Parabéns! Você foi contemplado(a)${activeDrawTitle ? ` no sorteio "${activeDrawTitle}"` : ""}. Apresente esta tela à organização do evento para receber seu prêmio.`
                       : "Quando o seu número for sorteado, esta celebração aparecerá automaticamente no seu celular."}
-                </p>
+                  </p>
+                )}
 
                 {celebration === "test" ? (
                   <button
