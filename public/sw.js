@@ -1,11 +1,13 @@
 // Fashion Date Service Worker
-const CACHE_NAME = 'fashion-date-v1';
+const CACHE_NAME = 'fashion-date-v2';
 const PRECACHE_ASSETS = [
   '/',
   '/site.webmanifest',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
+  '/icons/maskable-icon-512x512.png',
   '/icons/apple-touch-icon.png',
+  '/favicon.svg',
   '/fashiondate-logo.png'
 ];
 
