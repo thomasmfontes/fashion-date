@@ -1,13 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import "./globals.css";
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#4b0014",
+  themeColor: "#530017",
 };
 
 export const metadata: Metadata = {
@@ -53,11 +54,20 @@ export const metadata: Metadata = {
       "Participe do sorteio exclusivo Provador Fashion no Fashion Date Crente Chic by Renata Castanheira.",
     images: ["/fashiondate-logo.png"],
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Fashion Date",
+  },
   icons: {
     icon: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
       { url: "/favicon.svg", type: "image/svg+xml" },
     ],
-    apple: [{ url: "/favicon.svg" }],
+    apple: [
+      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   manifest: "/site.webmanifest",
   robots: {
@@ -135,6 +145,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <ServiceWorkerRegister />
         {children}
         <Analytics />
         <SpeedInsights />
