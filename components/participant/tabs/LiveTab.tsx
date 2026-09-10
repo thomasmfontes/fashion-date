@@ -245,7 +245,7 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                     }}
                   >
                     {celebration === "winner"
-                      ? (activeDrawTitle ? `RESULTADO OFICIAL · ${activeDrawTitle.toUpperCase()}` : "RESULTADO OFICIAL")
+                      ? (activeDrawTitle ? activeDrawTitle.toUpperCase() : "SORTEIO OFICIAL")
                       : isNotWinner
                         ? (activeDrawTitle ? activeDrawTitle.toUpperCase() : "SORTEIO REALIZADO")
                         : "TESTE DO ALERTA"}
@@ -314,18 +314,18 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                     style={{
                       display: "block",
                       color: isNotWinner ? "#855e09" : "rgba(255, 247, 232, 0.72)",
-                      fontSize: isNotWinner ? "11.5px" : "9px",
+                      fontSize: isNotWinner ? "11.5px" : "11px",
                       fontWeight: 700,
-                      letterSpacing: isNotWinner ? "0.12em" : "0.22em",
+                      letterSpacing: isNotWinner ? "0.12em" : "0.16em",
                       textTransform: "uppercase",
-                      marginBottom: isNotWinner ? "6px" : undefined,
+                      marginBottom: isNotWinner ? "6px" : "4px",
                       textShadow: isNotWinner ? "none" : undefined,
                     }}
                   >
                     {isNotWinner
                       ? "Número Sorteado"
                       : celebration === "winner"
-                        ? `Seu Número Contemplado${activeDrawTitle ? ` (${activeDrawTitle})` : ""}`
+                        ? "Número Sorteado"
                         : "Seu Número da Sorte"}
                   </span>
                   <strong
