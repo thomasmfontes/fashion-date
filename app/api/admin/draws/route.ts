@@ -22,6 +22,7 @@ export async function POST(request: Request) {
       : ["lojista", "revendedor", "influencer", "visitante"];
     const hasLimit = Boolean(payload.hasNumberLimit);
     const maxNumber = hasLimit && payload.maxNumber ? Number(payload.maxNumber) : null;
+    const drawDate = payload.drawDate ? String(payload.drawDate).trim().slice(0, 10) : null;
 
     if (!title || !prizeTitle) {
       return Response.json(
@@ -35,8 +36,8 @@ export async function POST(request: Request) {
 
     await db
       .prepare(
-        `INSERT INTO t_draw_definitions (id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, st_sorteio)
-         VALUES (?, ?, ?, ?::jsonb, ?, ?, 'ready')`,
+        `INSERT INTO t_draw_definitions (id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, dt_sorteio, st_sorteio)
+         VALUES (?, ?, ?, ?::jsonb, ?, ?, ?, 'ready')`,
       )
       .bind(
         drawId,
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
         JSON.stringify(targetUserTypes),
         hasLimit,
         maxNumber,
+        drawDate,
       )
       .run();
 
@@ -57,6 +59,7 @@ export async function POST(request: Request) {
         targetUserTypes,
         hasNumberLimit: hasLimit,
         maxNumber,
+        drawDate,
         status: "ready",
         order: 1,
         createdAt: new Date().toISOString(),
@@ -89,7 +92,7 @@ export async function PATCH(request: Request) {
 
     const db = await initialize();
     const existing = await db
-      .prepare("SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, st_sorteio FROM t_draw_definitions WHERE id_sorteio = ?")
+      .prepare("SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, dt_sorteio, st_sorteio FROM t_draw_definitions WHERE id_sorteio = ?")
       .bind(drawId)
       .first<{
         id_sorteio: string;
@@ -98,6 +101,7 @@ export async function PATCH(request: Request) {
         target_user_types: unknown;
         tem_limite: boolean;
         nr_limite_maximo: number | null;
+        dt_sorteio: string | Date | null;
         st_sorteio: string;
       }>();
 
@@ -110,12 +114,15 @@ export async function PATCH(request: Request) {
     const targetUserTypes = payload.targetUserTypes !== undefined ? payload.targetUserTypes : existing.target_user_types;
     const hasLimit = payload.hasNumberLimit !== undefined ? Boolean(payload.hasNumberLimit) : existing.tem_limite;
     const maxNumber = hasLimit ? (payload.maxNumber !== undefined ? (payload.maxNumber ? Number(payload.maxNumber) : null) : existing.nr_limite_maximo) : null;
+    const drawDate = payload.drawDate !== undefined
+      ? (payload.drawDate ? String(payload.drawDate).trim().slice(0, 10) : null)
+      : (existing.dt_sorteio instanceof Date ? existing.dt_sorteio.toISOString().slice(0, 10) : (existing.dt_sorteio ? String(existing.dt_sorteio).slice(0, 10) : null));
     const status = payload.status !== undefined ? payload.status : existing.st_sorteio;
 
     await db
       .prepare(
         `UPDATE t_draw_definitions 
-         SET nm_titulo = ?, nm_premio = ?, target_user_types = ?::jsonb, tem_limite = ?, nr_limite_maximo = ?, st_sorteio = ?
+         SET nm_titulo = ?, nm_premio = ?, target_user_types = ?::jsonb, tem_limite = ?, nr_limite_maximo = ?, dt_sorteio = ?, st_sorteio = ?
          WHERE id_sorteio = ?`,
       )
       .bind(
@@ -124,6 +131,7 @@ export async function PATCH(request: Request) {
         JSON.stringify(targetUserTypes),
         hasLimit,
         maxNumber,
+        drawDate,
         status,
         drawId,
       )
@@ -138,6 +146,7 @@ export async function PATCH(request: Request) {
         targetUserTypes,
         hasNumberLimit: hasLimit,
         maxNumber,
+        drawDate,
         status,
       },
     });

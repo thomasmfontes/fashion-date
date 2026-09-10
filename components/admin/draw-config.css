@@ -153,6 +153,17 @@
   color: #9a741a !important;
 }
 
+.stitch-draw-tag.date {
+  background: #fcfbf9 !important;
+  border-color: #ebdcc5 !important;
+  color: #530017 !important;
+}
+
+.stitch-draw-tag.date .material-symbols-outlined {
+  font-size: 14px !important;
+  color: #9a741a !important;
+}
+
 .stitch-draw-tag.audience {
   background: #ffffff !important;
   border-color: #ebdcc5 !important;
@@ -538,7 +549,8 @@
   color: #4a3639 !important;
 }
 
-.modal-field input[type="text"] {
+.modal-field input[type="text"],
+.modal-field input[type="date"] {
   display: block !important;
   width: 100% !important;
   min-height: 44px !important;
@@ -554,9 +566,36 @@
   transition: all 0.16s ease !important;
 }
 
-.modal-field input[type="text"]:focus {
+.modal-field input[type="text"]:focus,
+.modal-field input[type="date"]:focus {
   border-color: #530017 !important;
   box-shadow: 0 0 0 3px rgba(83, 0, 23, 0.08) !important;
+}
+
+.modal-field input[type="date"] {
+  cursor: pointer !important;
+}
+
+.modal-field input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer !important;
+  filter: sepia(0.4) saturate(2) hue-rotate(320deg) brightness(0.65) !important;
+  opacity: 0.75 !important;
+  padding: 4px !important;
+  border-radius: 4px !important;
+  transition: opacity 0.15s ease, transform 0.15s ease !important;
+}
+
+.modal-field input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1 !important;
+  transform: scale(1.08) !important;
+}
+
+.modal-field small {
+  display: block !important;
+  font-size: 11px !important;
+  color: #8c7679 !important;
+  margin-top: 2px !important;
+  line-height: 1.4 !important;
 }
 
 .modal-footer-actions {

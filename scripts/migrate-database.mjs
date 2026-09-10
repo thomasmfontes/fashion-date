@@ -76,9 +76,12 @@ async function runMigration() {
         nr_limite_maximo INTEGER,
         st_sorteio TEXT NOT NULL DEFAULT 'open',
         dt_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
+      )
     `;
-    console.log("   ✅ t_draw_definitions pronta.");
+    await sql`
+      ALTER TABLE public.t_draw_definitions ADD COLUMN IF NOT EXISTS dt_sorteio DATE
+    `;
+    console.log("   ✅ t_draw_definitions pronta (com coluna dt_sorteio).");
 
     // 3. Tabela t_draw_tickets (Bilhetes Individuais da Carteira)
     console.log("3️⃣ Criando tabela t_draw_tickets...");

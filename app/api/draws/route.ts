@@ -6,7 +6,7 @@ export async function GET() {
     const db = await initialize();
     const result = await db
       .prepare(
-        "SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, st_sorteio, dt_criacao FROM t_draw_definitions ORDER BY dt_criacao ASC",
+        "SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, st_sorteio, dt_sorteio, dt_criacao FROM t_draw_definitions ORDER BY dt_criacao ASC",
       )
       .all<Record<string, unknown>>();
 
@@ -28,6 +28,10 @@ export async function GET() {
           ? "in_progress"
           : "ready";
 
+      const drawDate = r.dt_sorteio instanceof Date
+        ? r.dt_sorteio.toISOString().slice(0, 10)
+        : (r.dt_sorteio ? String(r.dt_sorteio).slice(0, 10) : null);
+
       return {
         id: String(r.id_sorteio),
         title: String(r.nm_titulo),
@@ -35,6 +39,7 @@ export async function GET() {
         targetUserTypes: targetUserTypes as DrawItem["targetUserTypes"],
         hasNumberLimit: Boolean(r.tem_limite),
         maxNumber: r.nr_limite_maximo ? Number(r.nr_limite_maximo) : undefined,
+        drawDate,
         status,
         order: index + 1,
         createdAt: r.dt_criacao instanceof Date ? r.dt_criacao.toISOString() : String(r.dt_criacao),

@@ -34,6 +34,9 @@ export function CreateEditDrawModal({
   const [maxNumber, setMaxNumber] = useState<string>(
     initialData?.maxNumber ? String(initialData.maxNumber) : ""
   );
+  const [drawDate, setDrawDate] = useState<string>(
+    initialData?.drawDate ? initialData.drawDate.slice(0, 10) : ""
+  );
 
   // Animation states for smooth sliding enter & exit
   const [shouldRender, setShouldRender] = useState(false);
@@ -78,6 +81,7 @@ export function CreateEditDrawModal({
             : null
         );
         setMaxNumber(initialData.maxNumber ? String(initialData.maxNumber) : "");
+        setDrawDate(initialData.drawDate ? initialData.drawDate.slice(0, 10) : "");
       } else {
         // Quando for novo sorteio, nenhum campo vem pré-selecionado
         setTitle("");
@@ -85,6 +89,7 @@ export function CreateEditDrawModal({
         setSelectedTypes([]);
         setHasNumberLimit(null);
         setMaxNumber("");
+        setDrawDate("");
       }
     }
   }, [initialData, isOpen]);
@@ -170,6 +175,7 @@ export function CreateEditDrawModal({
       targetUserTypes: selectedTypes,
       hasNumberLimit: Boolean(hasNumberLimit),
       maxNumber: hasNumberLimit && maxNumber ? parseInt(maxNumber, 10) : null,
+      drawDate: drawDate || null,
     });
     handleSmoothClose();
   }
@@ -250,6 +256,20 @@ export function CreateEditDrawModal({
                 onChange={(e) => setPrizeTitle(e.target.value)}
                 placeholder="Ex: Look Completo Crente Chic / Vaga no Provador"
               />
+            </div>
+
+            {/* Draw Date Input */}
+            <div className="modal-field">
+              <label htmlFor="modal-draw-date">Data do Sorteio</label>
+              <input
+                id="modal-draw-date"
+                type="date"
+                value={drawDate}
+                onChange={(e) => setDrawDate(e.target.value)}
+              />
+              <small>
+                Os números da sorte não contemplados ficarão inativos e esmaecidos na carteira 1 dia após a data definida.
+              </small>
             </div>
 
             {/* Target User Types Selection */}

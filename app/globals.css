@@ -176,6 +176,8 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
 .stitch-status.closed i{background:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.25)}
 .stitch-status.gold{border-color:#d4ab48;background:#fff8eb;color:#855e09}
 .stitch-status.gold span{color:#9a741a}
+.stitch-status.expired{border-color:#dfdedb;background:#eceae5;color:#78726d}
+.stitch-status.expired i{background:#9ca3af;box-shadow:0 0 0 2px rgba(156,163,175,.2)}
 .stitch-actions{display:flex;gap:12px}
 .stitch-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border-radius:8px;text-decoration:none;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .18s ease}
 .stitch-button.outline{border:1px solid #d8c8bc;background:#fff;color:#530017}
@@ -3654,7 +3656,7 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
   overflow: hidden;
 }
 
-.stitch-wallet-ticket:hover {
+.stitch-wallet-ticket:not(.is-expired):hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 28px rgba(83, 0, 23, 0.09);
   border-color: #c79a36;
@@ -3978,7 +3980,7 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
   box-sizing: border-box;
 }
 
-.stitch-wallet-ticket:hover {
+.stitch-wallet-ticket:not(.is-expired):hover {
   transform: translateY(-2px);
   border-color: #c79a36;
   box-shadow: 0 8px 24px rgba(154, 116, 26, 0.12);
@@ -4171,6 +4173,82 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
   text-transform: uppercase;
   box-shadow: 0 2px 14px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   white-space: nowrap;
+}
+
+/* Estado de Número da Sorte Encerrado (Não contemplado) - Totalmente Estático sem Hover */
+.stitch-wallet-ticket.is-expired,
+.stitch-wallet-ticket.is-expired:hover {
+  background: #f6f5f2 !important;
+  border: 1.5px solid #dedbd4 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03) !important;
+  opacity: 0.58 !important;
+  filter: grayscale(0.5) !important;
+  transform: none !important;
+  cursor: default !important;
+  transition: none !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.stitch-wallet-ticket.is-expired .stitch-wallet-ticket-top,
+.stitch-wallet-ticket.is-expired:hover .stitch-wallet-ticket-top {
+  opacity: 0.9 !important;
+}
+
+.stitch-wallet-ticket.is-expired .stitch-wallet-ticket-kicker,
+.stitch-wallet-ticket.is-expired:hover .stitch-wallet-ticket-kicker {
+  color: #8c827a !important;
+}
+
+.stitch-wallet-ticket.is-expired .stitch-wallet-ticket-kicker .material-symbols-outlined,
+.stitch-wallet-ticket.is-expired:hover .stitch-wallet-ticket-kicker .material-symbols-outlined {
+  color: #9c938b !important;
+}
+
+.stitch-wallet-ticket.is-expired .stitch-wallet-ticket-badge-box,
+.stitch-wallet-ticket.is-expired:hover .stitch-wallet-ticket-badge-box {
+  background: #ebe8e1 !important;
+  border: 1.5px solid #dcd7cf !important;
+  box-shadow: none !important;
+}
+
+.stitch-wallet-ticket.is-expired .stitch-wallet-ticket-num,
+.stitch-wallet-ticket.is-expired .stitch-wallet-ticket-num *,
+.stitch-wallet-ticket.is-expired:hover .stitch-wallet-ticket-num,
+.stitch-wallet-ticket.is-expired:hover .stitch-wallet-ticket-num * {
+  color: #706863 !important;
+}
+
+.stitch-wallet-ticket.is-expired .stitch-wallet-ticket-num .hash,
+.stitch-wallet-ticket.is-expired:hover .stitch-wallet-ticket-num .hash {
+  color: #9c938b !important;
+}
+
+.stitch-wallet-ticket.is-expired .stitch-ticket-perforation,
+.stitch-wallet-ticket.is-expired:hover .stitch-ticket-perforation {
+  background-image: linear-gradient(to right, #dedad4 60%, rgba(255, 255, 255, 0) 0%) !important;
+  opacity: 0.5 !important;
+}
+
+.stitch-wallet-ticket.is-expired .stitch-wallet-ticket-draw,
+.stitch-wallet-ticket.is-expired:hover .stitch-wallet-ticket-draw {
+  color: #635b57 !important;
+}
+
+.stitch-wallet-ticket.is-expired .stitch-wallet-ticket-prize,
+.stitch-wallet-ticket.is-expired:hover .stitch-wallet-ticket-prize {
+  color: #8a827d !important;
+}
+
+.stitch-wallet-ticket.is-expired .stitch-wallet-ticket-prize .material-symbols-outlined,
+.stitch-wallet-ticket.is-expired:hover .stitch-wallet-ticket-prize .material-symbols-outlined {
+  color: #9c938b !important;
+}
+
+.stitch-wallet-ticket.is-expired .stitch-wallet-ticket-prize strong,
+.stitch-wallet-ticket.is-expired:hover .stitch-wallet-ticket-prize strong {
+  color: #635b57 !important;
+  font-weight: 600 !important;
 }
 
 /* Card do Sorteio Disponível (Haute Couture) */

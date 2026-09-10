@@ -6,6 +6,7 @@ import type { DrawItem, CreateDrawDTO } from "@/types/drawCollection.types";
 import { USER_TYPE_LABELS, USER_TYPE_ICONS } from "@/types/participant.types";
 import { useDrawCollection } from "@/hooks/useDrawCollection";
 import { CreateEditDrawModal } from "@/components/admin/CreateEditDrawModal";
+import { DeleteDrawModal } from "@/components/admin/DeleteDrawModal";
 import { DrawTransitionLink } from "@/components/admin/DrawTransitionLink";
 
 interface DrawConfigPanelProps {
@@ -38,6 +39,7 @@ export function DrawConfigPanel({
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDraw, setEditingDraw] = useState<DrawItem | null>(null);
+  const [drawToDelete, setDrawToDelete] = useState<{ id: string; title: string } | null>(null);
 
   function handleOpenCreate() {
     setEditingDraw(null);
@@ -65,11 +67,15 @@ export function DrawConfigPanel({
     onShowToast(`Sorteio ativo no Telão: "${selected?.title || "Sorteio"}"`, "success");
   }
 
-  async function handleDeleteDraw(drawId: string, title: string) {
-    if (window.confirm(`Deseja remover o sorteio "${title}"?`)) {
-      await deleteDraw(drawId);
-      onShowToast("Sorteio removido.", "info");
-    }
+  function handleRequestDelete(drawId: string, title: string) {
+    setDrawToDelete({ id: drawId, title });
+  }
+
+  async function handleConfirmDelete() {
+    if (!drawToDelete) return;
+    await deleteDraw(drawToDelete.id);
+    onShowToast("Sorteio removido.", "info");
+    setDrawToDelete(null);
   }
 
   async function handleDuplicate(drawId: string) {
@@ -152,6 +158,13 @@ export function DrawConfigPanel({
                         </span>
                       )}
 
+                      {draw.drawDate && (
+                        <span className="stitch-draw-tag date" title="Data programada para o sorteio">
+                          <span className="material-symbols-outlined">calendar_today</span>
+                          <span>Data: <strong>{new Date(draw.drawDate.slice(0, 10) + "T12:00:00").toLocaleDateString("pt-BR")}</strong></span>
+                        </span>
+                      )}
+
                       <div className="stitch-audience-tags">
                         {isAllTypes ? (
                           <span className="stitch-draw-tag audience all">
@@ -212,7 +225,7 @@ export function DrawConfigPanel({
                       <button
                         type="button"
                         className="danger"
-                        onClick={() => handleDeleteDraw(draw.id, draw.title)}
+                        onClick={() => handleRequestDelete(draw.id, draw.title)}
                         aria-label={`Excluir sorteio ${draw.title}`}
                         title="Excluir sorteio"
                       >
@@ -233,6 +246,14 @@ export function DrawConfigPanel({
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveDraw}
         initialData={editingDraw}
+      />
+
+      {/* Modal de Confirmação de Exclusão Padronizado */}
+      <DeleteDrawModal
+        isOpen={Boolean(drawToDelete)}
+        drawTitle={drawToDelete?.title || ""}
+        onClose={() => setDrawToDelete(null)}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );

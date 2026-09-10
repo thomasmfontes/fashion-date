@@ -24,6 +24,9 @@ export interface ParticipantTicket {
   enteredAt: string;
   isWinner?: boolean;
   wonAt?: string | null;
+  drawDate?: string | null;
+  drawStatus?: string;
+  isExpired?: boolean;
 }
 
 export interface DrawWinnerItem {

@@ -430,8 +430,13 @@ export function TicketsTab({
           <h1>Meus Números da Sorte</h1>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginTop: "4px" }}>
             <span className="stitch-status open" role="status" aria-live="polite">
-              <i /> {visibleTickets.length} {visibleTickets.length === 1 ? "Número Ativo" : "Números Ativos"}
+              <i /> {visibleTickets.filter((t) => !t.isExpired).length} {visibleTickets.filter((t) => !t.isExpired).length === 1 ? "Número Ativo" : "Números Ativos"}
             </span>
+            {visibleTickets.some((t) => t.isExpired && !t.isWinner) && (
+              <span className="stitch-status expired" role="status">
+                <i /> {visibleTickets.filter((t) => t.isExpired && !t.isWinner).length} Encerrado(s)
+              </span>
+            )}
           </div>
         </div>
 
@@ -464,66 +469,84 @@ export function TicketsTab({
             <>
               {/* Carteira de Números da Sorte (Talões de Gala Haute Couture) */}
               <div className="stitch-wallet-grid">
-                {visibleTickets.map((t) => {
-                  const isTicketWinner = Boolean(t.isWinner);
+                {[...visibleTickets]
+                  .sort((a, b) => {
+                    const aWin = Boolean(a.isWinner);
+                    const bWin = Boolean(b.isWinner);
+                    if (aWin !== bWin) return aWin ? -1 : 1;
+                    const aExp = Boolean(a.isExpired);
+                    const bExp = Boolean(b.isExpired);
+                    if (aExp !== bExp) return aExp ? 1 : -1;
+                    return 0;
+                  })
+                  .map((t) => {
+                    const isTicketWinner = Boolean(t.isWinner);
+                    const isTicketExpired = Boolean(t.isExpired) && !isTicketWinner;
 
-                  return (
-                    <article
-                      key={t.drawId}
-                      className={`stitch-wallet-ticket${isTicketWinner ? " is-winner" : ""}`}
-                    >
-                      <div>
-                        {isTicketWinner ? (
-                          <div className="stitch-wallet-ticket-top is-winner">
-                            <div className="stitch-wallet-ticket-winner-header">
-                              <span className="stitch-gold-filigree-line left" aria-hidden="true" />
-                              <div className="stitch-wallet-ticket-badge-contemplado-center">
-                                <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#ffd778" }}>
-                                  workspace_premium
-                                </span>
-                                <span>Número Contemplado</span>
+                    return (
+                      <article
+                        key={t.drawId}
+                        className={`stitch-wallet-ticket${isTicketWinner ? " is-winner" : isTicketExpired ? " is-expired" : ""}`}
+                        style={isTicketExpired ? { pointerEvents: "none", cursor: "default", transform: "none", transition: "none" } : undefined}
+                      >
+                        <div>
+                          {isTicketWinner ? (
+                            <div className="stitch-wallet-ticket-top is-winner">
+                              <div className="stitch-wallet-ticket-winner-header">
+                                <span className="stitch-gold-filigree-line left" aria-hidden="true" />
+                                <div className="stitch-wallet-ticket-badge-contemplado-center">
+                                  <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#ffd778" }}>
+                                    workspace_premium
+                                  </span>
+                                  <span>Número Contemplado</span>
+                                </div>
+                                <span className="stitch-gold-filigree-line right" aria-hidden="true" />
                               </div>
-                              <span className="stitch-gold-filigree-line right" aria-hidden="true" />
                             </div>
-                          </div>
-                        ) : (
-                          <div className="stitch-wallet-ticket-top">
-                            <span className="stitch-wallet-ticket-kicker">
-                              <span
-                                className="material-symbols-outlined"
-                                style={{ fontSize: "16px", color: "#c79a36" }}
-                              >
-                                confirmation_number
+                          ) : (
+                            <div className="stitch-wallet-ticket-top">
+                              <span className="stitch-wallet-ticket-kicker">
+                                <span
+                                  className="material-symbols-outlined"
+                                  style={{ fontSize: "16px", color: isTicketExpired ? "#9c938b" : "#c79a36" }}
+                                >
+                                  confirmation_number
+                                </span>
+                                <span>Número da Sorte</span>
                               </span>
-                              <span>Número da Sorte</span>
-                            </span>
 
-                            <span className="stitch-status open" style={{ padding: "2px 8px", fontSize: "10px" }}>
-                              <i /> Ativo
-                            </span>
-                          </div>
-                        )}
+                              {isTicketExpired ? (
+                                <span className="stitch-status expired" style={{ padding: "2px 8px", fontSize: "10px" }}>
+                                  <i /> Encerrado
+                                </span>
+                              ) : (
+                                <span className="stitch-status open" style={{ padding: "2px 8px", fontSize: "10px" }}>
+                                  <i /> Ativo
+                                </span>
+                              )}
+                            </div>
+                          )}
 
                         {/* Selo Central Majestoso do Número */}
                         <div className="stitch-wallet-ticket-badge-box">
                           <div className="stitch-wallet-ticket-num">
-                            <span className="hash">#</span>
-                            <span>{t.ticketNumber}</span>
+                            <span className="hash" style={isTicketExpired ? { color: "#9c938b" } : undefined}>#</span>
+                            <span style={isTicketExpired ? { color: "#706863" } : undefined}>{t.ticketNumber}</span>
                           </div>
                         </div>
                       </div>
 
                       <div>
                         <div className="stitch-ticket-perforation" />
-                        <div className="stitch-wallet-ticket-draw">{t.drawTitle}</div>
+                        <div className="stitch-wallet-ticket-draw" style={isTicketExpired ? { color: "#635b57" } : undefined}>{t.drawTitle}</div>
                         <div className="stitch-wallet-ticket-prize">
                           <span
                             className="material-symbols-outlined"
-                            style={{ fontSize: "15px", color: "#9a741a" }}
+                            style={{ fontSize: "15px", color: isTicketExpired ? "#9c938b" : "#9a741a" }}
                           >
                             workspace_premium
                           </span>
-                          <span>Prêmio: <strong>{t.prizeTitle || t.drawTitle}</strong></span>
+                          <span>Prêmio: <strong style={isTicketExpired ? { color: "#635b57" } : undefined}>{t.prizeTitle || t.drawTitle}</strong></span>
                         </div>
                       </div>
                     </article>

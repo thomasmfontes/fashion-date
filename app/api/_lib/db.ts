@@ -57,6 +57,8 @@ export async function getParticipantTickets(
           COALESCE(def.nm_premio, 'Prêmio') AS "prizeTitle",
           dt.nr_bilhete AS "ticketNumber",
           dt.dt_inscricao AS "enteredAt",
+          def.st_sorteio AS "drawStatus",
+          def.dt_sorteio AS "drawDate",
           (EXISTS(
             SELECT 1 FROM t_draw_winners w 
             WHERE w.id_sorteio = dt.id_sorteio 
@@ -73,14 +75,36 @@ export async function getParticipantTickets(
       `)
       .bind(participantId)
       .all<Record<string, unknown>>();
-    return ((res?.results || []) as Array<Record<string, unknown>>).map((t) => ({
-      drawId: String(t.drawId),
-      drawTitle: String(t.drawTitle),
-      prizeTitle: String(t.prizeTitle),
-      ticketNumber: String(t.ticketNumber),
-      enteredAt: t.enteredAt instanceof Date ? t.enteredAt.toISOString() : String(t.enteredAt),
-      isWinner: Boolean(t.isWinner),
-    }));
+
+    const now = Date.now();
+    return ((res?.results || []) as Array<Record<string, unknown>>).map((t) => {
+      const isWinner = Boolean(t.isWinner);
+      const drawStatus = t.drawStatus ? String(t.drawStatus) : "ready";
+      const drawDate = t.drawDate instanceof Date
+        ? t.drawDate.toISOString().slice(0, 10)
+        : (t.drawDate ? String(t.drawDate).slice(0, 10) : null);
+
+      let isExpired = false;
+      if (!isWinner && drawDate) {
+        const targetTime = new Date(`${drawDate}T23:59:59`).getTime();
+        // Expira apenas 1 dia após a data definida do evento (24h de tolerância após o fim do dia)
+        if (!isNaN(targetTime) && now > (targetTime + 24 * 60 * 60 * 1000)) {
+          isExpired = true;
+        }
+      }
+
+      return {
+        drawId: String(t.drawId),
+        drawTitle: String(t.drawTitle),
+        prizeTitle: String(t.prizeTitle),
+        ticketNumber: String(t.ticketNumber),
+        enteredAt: t.enteredAt instanceof Date ? t.enteredAt.toISOString() : String(t.enteredAt),
+        isWinner,
+        drawStatus,
+        drawDate,
+        isExpired,
+      };
+    });
   } catch {
     return [];
   }
@@ -114,6 +138,9 @@ export function row(raw: Record<string, unknown>): Participant {
     tickets = tickets.map((t) => ({
       ...t,
       isWinner: Boolean(t.isWinner),
+      isExpired: Boolean(t.isExpired),
+      drawDate: t.drawDate ? String(t.drawDate).slice(0, 10) : null,
+      drawStatus: t.drawStatus ? String(t.drawStatus) : undefined,
     }));
   }
 

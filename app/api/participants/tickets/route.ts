@@ -53,6 +53,8 @@ export async function GET(request: Request) {
         t.dt_inscricao AS entered_at,
         d.nm_titulo AS draw_title,
         d.nm_premio AS prize_title,
+        d.st_sorteio AS draw_status,
+        d.dt_sorteio AS draw_date,
         (EXISTS(
           SELECT 1 FROM t_draw_winners w 
           WHERE w.id_sorteio = t.id_sorteio 
@@ -81,15 +83,36 @@ export async function GET(request: Request) {
       rows = result.results;
     }
 
-    const tickets = rows.map((r) => ({
-      id: Number(r.id),
-      drawId: String(r.draw_id),
-      drawTitle: String(r.draw_title),
-      prizeTitle: String(r.prize_title),
-      ticketNumber: String(r.ticket_number),
-      enteredAt: r.entered_at instanceof Date ? r.entered_at.toISOString() : String(r.entered_at),
-      isWinner: Boolean(r.is_winner),
-    }));
+    const now = Date.now();
+    const tickets = rows.map((r) => {
+      const isWinner = Boolean(r.is_winner);
+      const drawStatus = r.draw_status ? String(r.draw_status) : "ready";
+      const drawDate = r.draw_date instanceof Date
+        ? r.draw_date.toISOString().slice(0, 10)
+        : (r.draw_date ? String(r.draw_date).slice(0, 10) : null);
+
+      let isExpired = false;
+      if (!isWinner && drawDate) {
+        const targetTime = new Date(`${drawDate}T23:59:59`).getTime();
+        // Expira apenas 1 dia após a data definida do sorteio
+        if (!isNaN(targetTime) && now > (targetTime + 24 * 60 * 60 * 1000)) {
+          isExpired = true;
+        }
+      }
+
+      return {
+        id: Number(r.id),
+        drawId: String(r.draw_id),
+        drawTitle: String(r.draw_title),
+        prizeTitle: String(r.prize_title),
+        ticketNumber: String(r.ticket_number),
+        enteredAt: r.entered_at instanceof Date ? r.entered_at.toISOString() : String(r.entered_at),
+        isWinner,
+        drawStatus,
+        drawDate,
+        isExpired,
+      };
+    });
 
     return Response.json({ ok: true, tickets });
   } catch (error) {
