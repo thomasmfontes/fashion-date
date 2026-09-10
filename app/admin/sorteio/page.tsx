@@ -381,10 +381,7 @@ export default function UnifiedDrawPage() {
 
           <div className="winner-card-body">
             <div className="winner-prize-banner">
-              <span className="winner-prize-kicker">Ganhador(a) do Sorteio</span>
-              <h3 className="winner-prize-title" suppressHydrationWarning>
-                {activeDraw?.prizeTitle ? activeDraw.prizeTitle : "Prêmio Especial"}
-              </h3>
+              <span className="winner-prize-kicker">Ganhador do Sorteio</span>
             </div>
 
             <h2 className="winner-name">{slotMachine.winner.name}</h2>

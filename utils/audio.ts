@@ -135,10 +135,7 @@ export class SoundSynthesizer {
     if (this.isMuted || typeof window === "undefined") return;
     if (process.env.NODE_ENV === "test") return;
 
-    // 1. Sintetiza o acorde de fanfarra via Web Audio API (0ms de latência, à prova de falhas)
-    this.playVictoryFanfare();
-
-    // 2. Toca o arquivo de estúdio /sounds/victory.mp3 em paralelo
+    // Toca exclusivamente o áudio oficial do vencedor (/sounds/victory.mp3)
     const audio = this.getVictoryAudio();
     if (audio && typeof audio.play === "function") {
       try {
@@ -146,11 +143,11 @@ export class SoundSynthesizer {
         const p = audio.play();
         if (p !== undefined) {
           p.catch((err) => {
-            console.warn("Victory mp3 playback notice:", err);
+            console.warn("Victory mp3 playback error:", err);
           });
         }
-      } catch {
-        // Ignore audio playback error
+      } catch (err) {
+        console.warn("Victory mp3 playback error:", err);
       }
     }
   }
