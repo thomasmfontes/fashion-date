@@ -22,6 +22,8 @@ export interface ParticipantTicket {
   prizeTitle: string;
   ticketNumber: string;
   enteredAt: string;
+  isWinner?: boolean;
+  wonAt?: string | null;
 }
 
 export interface DrawWinnerItem {

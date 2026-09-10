@@ -52,7 +52,16 @@ export async function GET(request: Request) {
         t.nr_bilhete AS ticket_number,
         t.dt_inscricao AS entered_at,
         d.nm_titulo AS draw_title,
-        d.nm_premio AS prize_title
+        d.nm_premio AS prize_title,
+        (EXISTS(
+          SELECT 1 FROM t_draw_winners w 
+          WHERE w.id_sorteio = t.id_sorteio 
+            AND (w.nr_bilhete = t.nr_bilhete OR (w.id_participante = t.id_participante AND (w.nr_bilhete IS NULL OR w.nr_bilhete = '')))
+        ) OR EXISTS(
+          SELECT 1 FROM t_draws dw 
+          WHERE dw.id_participante = t.id_participante 
+            AND dw.nr_sorte = t.nr_bilhete
+        )) AS is_winner
       FROM t_draw_tickets t
       JOIN t_draw_definitions d ON t.id_sorteio = d.id_sorteio
     `;
@@ -79,6 +88,7 @@ export async function GET(request: Request) {
       prizeTitle: String(r.prize_title),
       ticketNumber: String(r.ticket_number),
       enteredAt: r.entered_at instanceof Date ? r.entered_at.toISOString() : String(r.entered_at),
+      isWinner: Boolean(r.is_winner),
     }));
 
     return Response.json({ ok: true, tickets });

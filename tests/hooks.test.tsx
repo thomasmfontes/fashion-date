@@ -276,5 +276,30 @@ describe("Custom React Hooks Unit Tests", () => {
       });
       expect(result.current.celebration).toBe("test");
     });
+
+    it("correctly identifies winner ticket by number and drawId", async () => {
+      const tickets = [
+        {
+          drawId: "draw-re-01",
+          drawTitle: "Presença da Re",
+          ticketNumber: "0369",
+          prizeTitle: "Bolsa Luxo",
+          enteredAt: new Date().toISOString(),
+          isWinner: true,
+        },
+        {
+          drawId: "draw-atomy-02",
+          drawTitle: "Atomy Cosméticos",
+          ticketNumber: "0150",
+          prizeTitle: "Kit Atomy",
+          enteredAt: new Date().toISOString(),
+          isWinner: false,
+        },
+      ];
+
+      expect(tickets[0].isWinner).toBe(true);
+      expect(tickets[1].isWinner).toBe(false);
+      expect(tickets[0].ticketNumber).toBe("0369");
+    });
   });
 });

@@ -28,7 +28,8 @@ export async function GET(request: Request) {
                   'drawTitle', COALESCE(def.nm_titulo, dt.id_sorteio),
                   'prizeTitle', COALESCE(def.nm_premio, 'Prêmio'),
                   'ticketNumber', dt.nr_bilhete,
-                  'enteredAt', dt.dt_inscricao
+                  'enteredAt', dt.dt_inscricao,
+                  'isWinner', (EXISTS(SELECT 1 FROM t_draw_winners w WHERE w.id_sorteio = dt.id_sorteio AND (w.nr_bilhete = dt.nr_bilhete OR (w.id_participante = dt.id_participante AND (w.nr_bilhete IS NULL OR w.nr_bilhete = '')))) OR EXISTS(SELECT 1 FROM t_draws d WHERE d.id_participante = dt.id_participante AND d.nr_sorte = dt.nr_bilhete))
                 ) ORDER BY dt.dt_inscricao ASC
               )
               FROM t_draw_tickets dt

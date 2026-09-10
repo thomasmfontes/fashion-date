@@ -117,41 +117,67 @@ export function HomeTab({
           {tickets.length > 0 ? (
             <>
               <div className="stitch-wallet-grid">
-                {tickets.map((t) => (
-                  <article key={t.drawId} className="stitch-wallet-ticket">
-                    <div>
-                      <div className="stitch-wallet-ticket-top">
-                        <span className="stitch-wallet-ticket-kicker">
-                          <span className="material-symbols-outlined" style={{ fontSize: "16px", color: "#c79a36" }}>
-                            confirmation_number
-                          </span>
-                          <span>Número da Sorte</span>
-                        </span>
-                        <span className="stitch-status open" style={{ padding: "2px 8px", fontSize: "10px" }}>
-                          <i /> Ativo
-                        </span>
-                      </div>
+                {tickets.map((t) => {
+                  const isTicketWinner = Boolean(t.isWinner);
 
-                      <div className="stitch-wallet-ticket-badge-box">
-                        <div className="stitch-wallet-ticket-num">
-                          <span className="hash">#</span>
-                          <span>{t.ticketNumber}</span>
+                  return (
+                    <article
+                      key={t.drawId}
+                      className={`stitch-wallet-ticket${isTicketWinner ? " is-winner" : ""}`}
+                    >
+                      <div>
+                        <div className="stitch-wallet-ticket-top">
+                          <span className="stitch-wallet-ticket-kicker">
+                            <span
+                              className="material-symbols-outlined"
+                              style={{ fontSize: "16px", color: "#c79a36" }}
+                            >
+                              confirmation_number
+                            </span>
+                            <span>Número da Sorte</span>
+                          </span>
+
+                          {isTicketWinner ? (
+                            <span className="stitch-wallet-ticket-badge-contemplado">
+                              <span
+                                className="material-symbols-outlined"
+                                style={{ fontSize: "14px", color: "#9a741a" }}
+                              >
+                                workspace_premium
+                              </span>
+                              <span>Contemplado</span>
+                            </span>
+                          ) : (
+                            <span className="stitch-status open" style={{ padding: "2px 8px", fontSize: "10px" }}>
+                              <i /> Ativo
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="stitch-wallet-ticket-badge-box">
+                          <div className="stitch-wallet-ticket-num">
+                            <span className="hash">#</span>
+                            <span>{t.ticketNumber}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div>
-                      <div className="stitch-ticket-perforation" />
-                      <div className="stitch-wallet-ticket-draw">{t.drawTitle}</div>
-                      <div className="stitch-wallet-ticket-prize">
-                        <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#9a741a" }}>
-                          workspace_premium
-                        </span>
-                        <span>Prêmio: <strong>{t.prizeTitle || t.drawTitle}</strong></span>
+                      <div>
+                        <div className="stitch-ticket-perforation" />
+                        <div className="stitch-wallet-ticket-draw">{t.drawTitle}</div>
+                        <div className="stitch-wallet-ticket-prize">
+                          <span
+                            className="material-symbols-outlined"
+                            style={{ fontSize: "15px", color: "#9a741a" }}
+                          >
+                            workspace_premium
+                          </span>
+                          <span>Prêmio: <strong>{t.prizeTitle || t.drawTitle}</strong></span>
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
               </div>
 
               {eligibleDraws.length > tickets.length && (

@@ -6,6 +6,7 @@ import type { ParticipantTicket, UserType } from "@/types/participant.types";
 import { useSavedParticipant } from "./useSavedParticipant";
 import { useDrawCollection } from "./useDrawCollection";
 import { ticketService } from "@/services/ticketService";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const TICKET_EVENT = "fashiondate_ticket_wallet_change";
 
@@ -70,33 +71,93 @@ export function useParticipantWallet() {
     if (!savedParticipant) return;
     let active = true;
 
-    ticketService
-      .getParticipantTickets({
-        participantId: pId,
-        phone: pPhone,
-      })
-      .then((dbTickets) => {
-        if (!active) return;
-        const currentTickets = Array.isArray(dbTickets) ? dbTickets : [];
+    const fetchTicketsFromDb = () => {
+      ticketService
+        .getParticipantTickets({
+          participantId: pId,
+          phone: pPhone,
+        })
+        .then((dbTickets) => {
+          if (!active) return;
+          const currentTickets = Array.isArray(dbTickets) ? dbTickets : [];
 
-        try {
-          const storageKey = getWalletStorageKey(participantKey);
-          const currentStored = localStorage.getItem(storageKey);
-          const newJson = JSON.stringify(currentTickets);
-          if (currentStored !== newJson) {
-            localStorage.setItem(storageKey, newJson);
-            window.dispatchEvent(new Event(TICKET_EVENT));
+          try {
+            const storageKey = getWalletStorageKey(participantKey);
+            const currentStored = localStorage.getItem(storageKey);
+            const newJson = JSON.stringify(currentTickets);
+            if (currentStored !== newJson) {
+              localStorage.setItem(storageKey, newJson);
+              window.dispatchEvent(new Event(TICKET_EVENT));
+            }
+          } catch {
+            /* ignore storage write error */
           }
-        } catch {
-          /* ignore storage write error */
+        })
+        .catch(() => {
+          // Keeps local storage fallback if network is slow
+        });
+    };
+
+    fetchTicketsFromDb();
+
+    // Supabase Realtime channel for instantaneous winner update (<50ms)
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+      return () => {
+        active = false;
+      };
+    }
+
+    const channel = supabase.channel(`wallet-draw-sync-${participantKey}`, {
+      config: { broadcast: { ack: false } },
+    });
+
+    channel
+      .on("broadcast", { event: "winner-announced" }, (eventMsg) => {
+        const payload = (eventMsg?.payload || eventMsg || {}) as {
+          winnerNumber?: string;
+          drawId?: string;
+        };
+        const cleanWinner = String(payload.winnerNumber || "").replace(/\D/g, "");
+
+        if (cleanWinner) {
+          try {
+            const storageKey = getWalletStorageKey(participantKey);
+            const currentStored = localStorage.getItem(storageKey);
+            if (currentStored) {
+              const currentList = JSON.parse(currentStored) as ParticipantTicket[];
+              if (Array.isArray(currentList)) {
+                let changed = false;
+                const updatedList = currentList.map((t) => {
+                  const tNum = String(t.ticketNumber || "").replace(/\D/g, "");
+                  const isMatch =
+                    tNum === cleanWinner &&
+                    (!payload.drawId || !t.drawId || t.drawId === payload.drawId);
+                  if (isMatch && !t.isWinner) {
+                    changed = true;
+                    return { ...t, isWinner: true };
+                  }
+                  return t;
+                });
+                if (changed) {
+                  localStorage.setItem(storageKey, JSON.stringify(updatedList));
+                  window.dispatchEvent(new Event(TICKET_EVENT));
+                }
+              }
+            }
+          } catch {
+            /* ignore storage write error */
+          }
         }
+
+        // Also fetch full DB state to ensure complete consistency
+        fetchTicketsFromDb();
       })
-      .catch(() => {
-        // Keeps local storage fallback if network is slow
-      });
+      .subscribe();
 
     return () => {
       active = false;
+      supabase.removeChannel(channel);
     };
   }, [savedParticipant, pId, pPhone, participantKey]);
 

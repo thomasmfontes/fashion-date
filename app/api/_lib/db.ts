@@ -56,7 +56,16 @@ export async function getParticipantTickets(
           COALESCE(def.nm_titulo, dt.id_sorteio) AS "drawTitle",
           COALESCE(def.nm_premio, 'Prêmio') AS "prizeTitle",
           dt.nr_bilhete AS "ticketNumber",
-          dt.dt_inscricao AS "enteredAt"
+          dt.dt_inscricao AS "enteredAt",
+          (EXISTS(
+            SELECT 1 FROM t_draw_winners w 
+            WHERE w.id_sorteio = dt.id_sorteio 
+              AND (w.nr_bilhete = dt.nr_bilhete OR (w.id_participante = dt.id_participante AND (w.nr_bilhete IS NULL OR w.nr_bilhete = '')))
+          ) OR EXISTS(
+            SELECT 1 FROM t_draws d 
+            WHERE d.id_participante = dt.id_participante 
+              AND d.nr_sorte = dt.nr_bilhete
+          )) AS "isWinner"
         FROM t_draw_tickets dt
         LEFT JOIN t_draw_definitions def ON def.id_sorteio = dt.id_sorteio
         WHERE dt.id_participante = ?
@@ -64,7 +73,14 @@ export async function getParticipantTickets(
       `)
       .bind(participantId)
       .all<Record<string, unknown>>();
-    return (res?.results || []) as unknown as import("@/types/participant.types").ParticipantTicket[];
+    return ((res?.results || []) as Array<Record<string, unknown>>).map((t) => ({
+      drawId: String(t.drawId),
+      drawTitle: String(t.drawTitle),
+      prizeTitle: String(t.prizeTitle),
+      ticketNumber: String(t.ticketNumber),
+      enteredAt: t.enteredAt instanceof Date ? t.enteredAt.toISOString() : String(t.enteredAt),
+      isWinner: Boolean(t.isWinner),
+    }));
   } catch {
     return [];
   }
@@ -93,6 +109,12 @@ export function row(raw: Record<string, unknown>): Participant {
       const parsed = JSON.parse(raw.tickets);
       if (Array.isArray(parsed)) tickets = parsed;
     } catch {}
+  }
+  if (Array.isArray(tickets)) {
+    tickets = tickets.map((t) => ({
+      ...t,
+      isWinner: Boolean(t.isWinner),
+    }));
   }
 
   let luckyNumber = raw.lucky_number && String(raw.lucky_number) !== "null"
