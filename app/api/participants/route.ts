@@ -1,5 +1,6 @@
 import { consumeRateLimit } from "@/db/runtime";
 import { getParticipantTickets, initialize, participantFields, row } from "../_lib/db";
+import { broadcastParticipantUpdate } from "@/lib/supabase/server";
 
 /**
  * Irreversible stable hash for rate-limiter target keys to avoid plain PII in edge counters.
@@ -444,6 +445,9 @@ export async function POST(request: Request) {
       // Continue gracefully
     }
 
+    // Notifica em tempo real o painel administrativo (<50ms)
+    broadcastParticipantUpdate("registered").catch(() => {});
+
     return Response.json(
       {
         participant: row({ ...inserted, tickets: createdTickets }),
@@ -510,6 +514,9 @@ export async function DELETE(request: Request) {
       db.prepare("DELETE FROM t_draws WHERE id_participante = ?").bind(targetId),
       db.prepare("DELETE FROM t_participants WHERE id_participante = ?").bind(targetId),
     ]);
+
+    // Notifica em tempo real o painel administrativo (<50ms)
+    broadcastParticipantUpdate("deleted").catch(() => {});
 
     return Response.json({ ok: true, message: "Conta e dados excluídos com sucesso." });
   } catch (error) {

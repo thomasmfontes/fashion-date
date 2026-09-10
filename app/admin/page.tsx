@@ -51,6 +51,7 @@ export function AdminDashboard({
     sortBy,
     setSortBy,
     exportToCSV,
+    isLiveSyncActive,
     updateLocalParticipant,
     removeLocalParticipant,
   } = useParticipants(adminKey, logout);
@@ -185,6 +186,7 @@ export function AdminDashboard({
             <AdminHeader
               registrationsOpen={registrationsOpen}
               onToggleRegistrations={handleToggleRegistrations}
+              isLiveSyncActive={isLiveSyncActive}
             />
 
             <AdminMetrics stats={stats} />

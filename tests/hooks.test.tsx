@@ -269,6 +269,12 @@ describe("Custom React Hooks Unit Tests", () => {
         result.current.dismissCelebration();
       });
       expect(result.current.celebration).toBe(null);
+
+      // Trigger test a second time to ensure it works multiple times
+      act(() => {
+        result.current.triggerTest();
+      });
+      expect(result.current.celebration).toBe("test");
     });
   });
 });

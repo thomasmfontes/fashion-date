@@ -1,4 +1,5 @@
 import { initialize } from "@/app/api/_lib/db";
+import { broadcastParticipantUpdate } from "@/lib/supabase/server";
 import type { UserType } from "@/types/participant.types";
 
 export async function GET(request: Request) {
@@ -260,6 +261,9 @@ export async function POST(request: Request) {
         { status: 500 },
       );
     }
+
+    // Notifica em tempo real o painel administrativo (<50ms)
+    broadcastParticipantUpdate("ticket_created").catch(() => {});
 
     return Response.json({
       ok: true,

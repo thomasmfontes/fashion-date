@@ -78,3 +78,58 @@ export async function broadcastWinnerAnnouncement(
     console.warn("Supabase Realtime broadcast warning:", err);
   }
 }
+
+export async function broadcastParticipantUpdate(
+  reason: "registered" | "ticket_created" | "updated" | "deleted" = "registered",
+): Promise<void> {
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    "https://ehgbrsnjwfdgxazhdhnr.supabase.co";
+
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    return;
+  }
+
+  try {
+    const supabase = createClient(url, key, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+
+    const channel = supabase.channel("live-draw");
+
+    await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => resolve(), 1500);
+
+      channel.subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          try {
+            await channel.send({
+              type: "broadcast",
+              event: "participant-updated",
+              payload: { reason, timestamp: new Date().toISOString() },
+            });
+          } catch {
+            // Ignore broadcast failure
+          } finally {
+            clearTimeout(timeout);
+            resolve();
+          }
+        }
+      });
+    });
+
+    await supabase.removeChannel(channel);
+  } catch (err) {
+    console.warn("Realtime broadcast participant update warning:", err);
+  }
+}
+

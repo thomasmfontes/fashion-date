@@ -3,6 +3,7 @@ import { participantService } from "@/services/participantService";
 import { drawService } from "@/services/drawService";
 import { ApiError } from "@/services/apiClient";
 import { exportParticipantsToCSV } from "@/utils/csvExport";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type {
   Participant,
   DrawWinnerItem,
@@ -24,6 +25,7 @@ export function useParticipants(
   const [userTypeFilter, setUserTypeFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [error, setError] = useState("");
+  const [isLiveSyncActive, setIsLiveSyncActive] = useState(true);
 
   const availableUserTypes = useMemo(() => {
     const set = new Set<string>();
@@ -33,82 +35,155 @@ export function useParticipants(
     return Array.from(set);
   }, [participants]);
 
-  const loadData = useCallback(async () => {
-    if (!adminKey) {
-      setParticipants([]);
-      setWinners([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      const [data, winnersData] = await Promise.all([
-        participantService.getAll(adminKey),
-        participantService.getWinners(adminKey),
-      ]);
-      setParticipants(data.participants || []);
-      setWinners(winnersData || []);
-      const regState = data.registrationsOpen ?? data.settings?.registrationsOpen;
-      if (typeof regState === "boolean") {
-        setRegistrationsOpen(regState);
-      }
-    } catch (requestError) {
-      if (requestError instanceof ApiError && requestError.status === 401) {
-        setError("Sua sessão expirou. Entre novamente para acessar o painel.");
-        onUnauthorized?.();
-      } else {
-        setError("Não foi possível carregar os participantes. Tente novamente.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [adminKey, onUnauthorized]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    Promise.resolve().then(async () => {
-      if (!isMounted) return;
+  const loadData = useCallback(
+    async (silent = false) => {
       if (!adminKey) {
         setParticipants([]);
         setWinners([]);
         setLoading(false);
         return;
       }
-
-      setLoading(true);
-      setError("");
+      if (!silent) {
+        setLoading(true);
+        setError("");
+      }
       try {
         const [data, winnersData] = await Promise.all([
           participantService.getAll(adminKey),
           participantService.getWinners(adminKey),
         ]);
-        if (!isMounted) return;
-        setParticipants(data.participants || []);
-        setWinners(winnersData || []);
+
+        const newParticipants = data.participants || [];
+        setParticipants((prev) => {
+          if (
+            prev.length === newParticipants.length &&
+            JSON.stringify(prev) === JSON.stringify(newParticipants)
+          ) {
+            return prev;
+          }
+          return newParticipants;
+        });
+
+        const newWinners = winnersData || [];
+        setWinners((prev) => {
+          if (
+            prev.length === newWinners.length &&
+            JSON.stringify(prev) === JSON.stringify(newWinners)
+          ) {
+            return prev;
+          }
+          return newWinners;
+        });
+
         const regState =
           data.registrationsOpen ?? data.settings?.registrationsOpen;
         if (typeof regState === "boolean") {
           setRegistrationsOpen(regState);
         }
       } catch (requestError) {
-        if (!isMounted) return;
         if (requestError instanceof ApiError && requestError.status === 401) {
           setError("Sua sessão expirou. Entre novamente para acessar o painel.");
           onUnauthorized?.();
-        } else {
+        } else if (!silent) {
           setError("Não foi possível carregar os participantes. Tente novamente.");
         }
       } finally {
-        if (isMounted) setLoading(false);
+        if (!silent) {
+          setLoading(false);
+        }
       }
+    },
+    [adminKey, onUnauthorized],
+  );
+
+  // 1. Supabase Realtime (WebSockets) para push instantâneo (<50ms)
+  useEffect(() => {
+    if (!adminKey) return;
+
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+
+    const channel = supabase.channel("admin-participants-sync", {
+      config: {
+        broadcast: { ack: false },
+      },
     });
 
+    channel
+      .on("broadcast", { event: "participant-updated" }, () => {
+        loadData(true);
+      })
+      .on("broadcast", { event: "winner-announced" }, () => {
+        loadData(true);
+      })
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "t_participants" },
+        () => {
+          loadData(true);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "t_draw_tickets" },
+        () => {
+          loadData(true);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "t_draws" },
+        () => {
+          loadData(true);
+        },
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setIsLiveSyncActive(true);
+        } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+          setIsLiveSyncActive(false);
+        }
+      });
+
     return () => {
-      isMounted = false;
+      supabase.removeChannel(channel);
     };
-  }, [adminKey, onUnauthorized]);
+  }, [adminKey, loadData]);
+
+  // 2. Smart Polling contínuo em segundo plano (a cada 4.5s quando ativo, e ao focar na aba)
+  useEffect(() => {
+    if (!adminKey) return;
+
+    // Carregamento inicial explícito com loader
+    loadData(false);
+
+    const interval = setInterval(() => {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible"
+      ) {
+        loadData(true);
+      }
+    }, 4500);
+
+    const handleVisibilityOrFocus = () => {
+      if (
+        typeof document === "undefined" ||
+        document.visibilityState === "visible"
+      ) {
+        loadData(true);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityOrFocus);
+    window.addEventListener("focus", handleVisibilityOrFocus);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityOrFocus);
+      window.removeEventListener("focus", handleVisibilityOrFocus);
+    };
+  }, [adminKey, loadData]);
 
   // Derived statistics
   const stats: ParticipantStats = useMemo(() => {
@@ -228,6 +303,7 @@ export function useParticipants(
     sortBy,
     setSortBy,
     exportToCSV,
+    isLiveSyncActive,
     loadData,
     updateLocalParticipant,
     removeLocalParticipant,

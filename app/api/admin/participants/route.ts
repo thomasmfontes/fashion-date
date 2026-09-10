@@ -1,4 +1,5 @@
 import { adminAllowed, initialize, participantFields, row } from "../../_lib/db";
+import { broadcastParticipantUpdate } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   if (!adminAllowed(request)) {
@@ -97,6 +98,10 @@ export async function PATCH(request: Request) {
       )
       .bind(id)
       .first<{ won_at: string | null }>();
+
+    // Notifica em tempo real o painel administrativo (<50ms)
+    broadcastParticipantUpdate("updated").catch(() => {});
+
     return Response.json({ participant: row({ ...updated, won_at: draw?.won_at || null }) });
   } catch {
     return Response.json({ error: "Este WhatsApp já está vinculado a outro cadastro." }, { status: 409 });
@@ -133,5 +138,9 @@ export async function DELETE(request: Request) {
     db.prepare("DELETE FROM t_draws WHERE id_participante=?").bind(id),
     db.prepare("DELETE FROM t_participants WHERE id_participante=?").bind(id),
   ]);
+
+  // Notifica em tempo real o painel administrativo (<50ms)
+  broadcastParticipantUpdate("deleted").catch(() => {});
+
   return Response.json({ ok: true });
 }

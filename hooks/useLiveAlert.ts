@@ -101,11 +101,19 @@ export function useLiveAlert(
       winnerNumber: string,
       announcedDrawTitle?: string,
       announcedPrizeTitle?: string,
+      announcementTimestamp?: string,
     ) => {
-      if (!announcedDrawId || announcedDrawId === lastDrawRef.current) return;
-      lastDrawRef.current = announcedDrawId;
-
       const cleanWinner = String(winnerNumber || "").trim().replace(/^#/, "");
+      if (!announcedDrawId || !cleanWinner) return;
+
+      // Deduplicação inteligente por sorteio + número sorteado (+ timestamp quando disponível)
+      // Permite múltiplos sorteios seguidos, re-sorteios e novas apurações do mesmo sorteio
+      const eventKey = announcementTimestamp
+        ? `${announcedDrawId}:${cleanWinner}:${announcementTimestamp}`
+        : `${announcedDrawId}:${cleanWinner}`;
+
+      if (lastDrawRef.current === eventKey) return;
+      lastDrawRef.current = eventKey;
       const cleanWinnerInt = Number(cleanWinner);
 
       // 1. Procura se o participante possui bilhete vinculado a este sorteio específico
@@ -182,12 +190,13 @@ export function useLiveAlert(
             winnerNumber?: string;
             drawTitle?: string;
             prizeTitle?: string;
+            timestamp?: string;
           };
         }) => {
-          const { drawId, winnerNumber, drawTitle, prizeTitle } =
+          const { drawId, winnerNumber, drawTitle, prizeTitle, timestamp } =
             payload?.payload || {};
           if (drawId && winnerNumber) {
-            handleWinnerAnnounced(drawId, winnerNumber, drawTitle, prizeTitle);
+            handleWinnerAnnounced(drawId, winnerNumber, drawTitle, prizeTitle, timestamp);
           }
         },
       )
@@ -247,7 +256,10 @@ export function useLiveAlert(
         };
 
         if (baseline) {
-          lastDrawRef.current = data.drawId;
+          lastDrawRef.current =
+            data.drawId && data.winnerNumber
+              ? `${data.drawId}:${String(data.winnerNumber).replace(/^#/, "").trim()}`
+              : null;
           return;
         }
 
