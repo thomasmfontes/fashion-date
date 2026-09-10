@@ -1,5 +1,5 @@
 // Fashion Date Service Worker
-const CACHE_NAME = 'fashion-date-v2';
+const CACHE_NAME = 'fashion-date-v3';
 const PRECACHE_ASSETS = [
   '/',
   '/site.webmanifest',
