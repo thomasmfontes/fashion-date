@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { Participant } from "@/types/participant.types";
+import type { Participant, UserType } from "@/types/participant.types";
+import { USER_TYPE_LABELS } from "@/types/participant.types";
 import { formatName, formatPhone, cleanPhone, formatInstagram } from "@/utils/formatters";
 import { Modal } from "@/components/ui/Modal";
 
@@ -13,6 +14,7 @@ interface EditParticipantModalProps {
     id: number;
     name: string;
     store: string;
+    city?: string;
     phone: string;
     instagram: string;
   }) => Promise<void>;
@@ -29,6 +31,7 @@ function EditFormContent({
 }) {
   const [name, setName] = useState(participant.name);
   const [store, setStore] = useState(participant.store);
+  const [city, setCity] = useState(participant.city || "");
   const [phone, setPhone] = useState(formatPhone(participant.phone));
   const [instagram, setInstagram] = useState(formatInstagram(participant.instagram));
   const [isSaving, setIsSaving] = useState(false);
@@ -44,6 +47,7 @@ function EditFormContent({
         id: participant.id,
         name: name.trim(),
         store: store.trim(),
+        city: city.trim(),
         phone: cleanPhone(phone),
         instagram: formatInstagram(instagram),
       });
@@ -64,7 +68,7 @@ function EditFormContent({
       title="Editar Cadastro"
       badge={
         <span className="edit-ticket-badge">
-          Perfil: <strong style={{ textTransform: "capitalize" }}>{participant.userType || "Lojista"}</strong>
+          Perfil: <strong>{USER_TYPE_LABELS[participant.userType as UserType] || participant.userType || "Marca / Atacado"}</strong>
         </span>
       }
       isBusy={isSaving}
@@ -84,12 +88,23 @@ function EditFormContent({
             />
           </label>
           <label htmlFor="edit-store">
-            <span>Nome da Loja</span>
+            <span>Nome da Loja / Marca</span>
             <input
               id="edit-store"
               value={store}
               placeholder="Ex: Boutique Elegance"
               onChange={(e) => setStore(e.target.value)}
+              required
+              disabled={isSaving}
+            />
+          </label>
+          <label htmlFor="edit-city">
+            <span>Cidade / UF</span>
+            <input
+              id="edit-city"
+              value={city}
+              placeholder="Ex: São Paulo - SP"
+              onChange={(e) => setCity(e.target.value)}
               required
               disabled={isSaving}
             />

@@ -6,6 +6,7 @@ export type Participant = {
   luckyNumber: string;
   name: string;
   store: string;
+  city?: string;
   phone: string;
   instagram: string;
   userType?: UserType;
@@ -22,6 +23,7 @@ export const participantFields = `
   id_participante AS id,
   nm_participante AS name,
   nm_loja AS store,
+  nm_cidade AS city,
   nr_whatsapp AS phone,
   nm_instagram AS instagram,
   user_type AS user_type,
@@ -158,6 +160,7 @@ export function row(raw: Record<string, unknown>): Participant {
     tickets,
     name: String(raw.name),
     store: String(raw.store),
+    city: raw.city ? String(raw.city).trim() : (raw.nm_cidade ? String(raw.nm_cidade).trim() : undefined),
     phone: String(raw.phone),
     instagram: String(raw.instagram),
     userType,

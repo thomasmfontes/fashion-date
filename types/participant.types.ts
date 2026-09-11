@@ -3,10 +3,10 @@ export type { AdminView, DrawMode } from "@/types/admin.types";
 export type UserType = "lojista" | "revendedor" | "influencer" | "visitante";
 
 export const USER_TYPE_LABELS: Record<UserType, string> = {
-  lojista: "Lojista",
-  revendedor: "Revendedor",
+  lojista: "Marca / Atacado",
+  revendedor: "Lojista / Revendedor",
   influencer: "Influenciador",
-  visitante: "Visitante",
+  visitante: "Visitante / Consumidor Final",
 };
 
 export const USER_TYPE_ICONS: Record<UserType, string> = {
@@ -38,6 +38,7 @@ export interface DrawWinnerItem {
   participantId: number;
   name: string;
   store: string;
+  city?: string;
   phone: string;
   instagram: string;
   userType?: UserType;
@@ -51,6 +52,7 @@ export interface Participant {
   id: number;
   name: string;
   store: string;
+  city?: string;
   phone: string;
   instagram: string;
   luckyNumber: string;
@@ -67,6 +69,7 @@ export interface Participant {
 export interface ParticipantFormData {
   name: string;
   store: string;
+  city: string;
   phone: string;
   instagram: string;
   consent: boolean;

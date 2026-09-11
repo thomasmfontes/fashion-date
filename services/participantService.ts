@@ -69,6 +69,7 @@ export const participantService = {
       id: number;
       name: string;
       store: string;
+      city?: string;
       phone: string;
       instagram: string;
     },

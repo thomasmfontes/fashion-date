@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import type { DrawWinnerItem, SortOption } from "@/types/participant.types";
+import type { DrawWinnerItem, SortOption, UserType } from "@/types/participant.types";
+import { USER_TYPE_LABELS } from "@/types/participant.types";
 import { Pagination } from "@/components/ui/Pagination";
 import { WinnerDetailsModal } from "@/components/admin/WinnerDetailsModal";
 import {
@@ -43,12 +44,13 @@ export function WinnersTable({
   }, [winners]);
 
   const availableUserTypes = useMemo(() => {
-    const map = new Map<string, { type: string; count: number }>();
+    const map = new Map<string, { label: string; rawType: string; count: number }>();
     winners.forEach((w) => {
-      const type = (w.userType || "Lojista").trim();
-      const current = map.get(type.toLowerCase()) || { type, count: 0 };
+      const raw = (w.userType || "lojista").toLowerCase().trim();
+      const label = USER_TYPE_LABELS[raw as UserType] || raw;
+      const current = map.get(raw) || { label, rawType: raw, count: 0 };
       current.count += 1;
-      map.set(type.toLowerCase(), current);
+      map.set(raw, current);
     });
     return Array.from(map.values());
   }, [winners]);
@@ -289,8 +291,8 @@ export function WinnersTable({
             >
               <option value="all">Todos os Perfis</option>
               {availableUserTypes.map((u) => (
-                <option key={u.type} value={u.type} style={{ textTransform: "capitalize" }}>
-                  {u.type.charAt(0).toUpperCase() + u.type.slice(1)}
+                <option key={u.rawType} value={u.rawType}>
+                  {u.label}
                 </option>
               ))}
             </select>
@@ -386,10 +388,9 @@ export function WinnersTable({
                               fontSize: "11px",
                               color: "#8c6414",
                               fontWeight: 600,
-                              textTransform: "capitalize",
                             }}
                           >
-                            {item.userType}
+                            {USER_TYPE_LABELS[item.userType as UserType] || item.userType}
                           </span>
                         )}
                       </td>

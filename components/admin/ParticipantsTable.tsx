@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import type { Participant } from "@/types/participant.types";
+import type { Participant, UserType } from "@/types/participant.types";
+import { USER_TYPE_LABELS } from "@/types/participant.types";
 import { Pagination } from "@/components/ui/Pagination";
 import { ParticipantTicketsModal } from "@/components/admin/ParticipantTicketsModal";
 import {
@@ -155,12 +156,19 @@ export function ParticipantsTable({
                 <td className="stitch-name">
                   <div>{item.name}</div>
                   {item.userType && (
-                    <span style={{ fontSize: "11px", color: "#8c6414", fontWeight: 600, textTransform: "capitalize" }}>
-                      {item.userType}
+                    <span style={{ fontSize: "11px", color: "#8c6414", fontWeight: 600 }}>
+                      {USER_TYPE_LABELS[item.userType as UserType] || item.userType}
                     </span>
                   )}
                 </td>
-                <td>{item.store}</td>
+                <td>
+                  <div>{item.store}</div>
+                  {item.city && (
+                    <div style={{ fontSize: "11px", color: "#8c787a", marginTop: "2px" }}>
+                      {item.city}
+                    </div>
+                  )}
+                </td>
                 <td>
                   <div className="stitch-contacts">
                     <a
@@ -229,7 +237,9 @@ export function ParticipantsTable({
               <div className="pcm-user">
                 <h3 className="pcm-name">{item.name}</h3>
                 {item.userType && (
-                  <span className="pcm-tag">{item.userType}</span>
+                  <span className="pcm-tag">
+                    {USER_TYPE_LABELS[item.userType as UserType] || item.userType}
+                  </span>
                 )}
               </div>
 
@@ -262,6 +272,13 @@ export function ParticipantsTable({
                 <span className="material-symbols-outlined">storefront</span>
                 <span>{item.store || "—"}</span>
               </div>
+
+              {item.city && (
+                <div className="pcm-city" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#786568" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#9a741a" }}>location_on</span>
+                  <span>{item.city}</span>
+                </div>
+              )}
 
               <div className="pcm-date">
                 <span className="material-symbols-outlined">schedule</span>

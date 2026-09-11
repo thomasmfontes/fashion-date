@@ -2807,14 +2807,14 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 42px;
-  min-height: 42px;
-  padding: 6px 12px;
+  min-height: 44px;
+  height: auto;
+  padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid #e3d9cf;
   background: #ffffff;
   color: #4a3639;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   text-align: left;

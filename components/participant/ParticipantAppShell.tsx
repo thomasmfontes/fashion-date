@@ -38,7 +38,7 @@ export function ParticipantAppShell({
 
   const resolvedAvatar = !avatarError ? (avatarUrl || participant?.avatarUrl || null) : null;
   const userType: UserType = participant?.userType || "lojista";
-  const userTypeLabel = USER_TYPE_LABELS[userType] || "Lojista";
+  const userTypeLabel = USER_TYPE_LABELS[userType] || USER_TYPE_LABELS.lojista;
 
   // Close mobile menu on Escape key
   useEffect(() => {

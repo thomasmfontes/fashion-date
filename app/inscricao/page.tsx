@@ -17,6 +17,7 @@ const HERO_IMAGE_URL = "/renata-hero.jpg";
 interface FieldErrors {
   name?: string;
   store?: string;
+  city?: string;
   phone?: string;
   instagram?: string;
   consent?: string;
@@ -31,6 +32,7 @@ export default function InscricaoPage() {
   const [userType, setUserType] = useState<UserType>("lojista");
   const [name, setName] = useState("");
   const [store, setStore] = useState("");
+  const [city, setCity] = useState("");
   const [phone, setPhone] = useState("");
   const [instagram, setInstagram] = useState("");
   const [consent, setConsent] = useState(false);
@@ -43,6 +45,7 @@ export default function InscricaoPage() {
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const storeInputRef = useRef<HTMLInputElement>(null);
+  const cityInputRef = useRef<HTMLInputElement>(null);
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const instagramInputRef = useRef<HTMLInputElement>(null);
   const consentInputRef = useRef<HTMLInputElement>(null);
@@ -84,6 +87,11 @@ export default function InscricaoPage() {
     if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }));
   }
 
+  function handleCityChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setCity(e.target.value);
+    if (fieldErrors.city) setFieldErrors((prev) => ({ ...prev, city: undefined }));
+  }
+
   function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
     setPhone(formatPhone(e.target.value));
     if (fieldErrors.phone) setFieldErrors((prev) => ({ ...prev, phone: undefined }));
@@ -102,6 +110,7 @@ export default function InscricaoPage() {
   function validate(): boolean {
     const errors: FieldErrors = {};
     const trimmedName = name.trim();
+    const trimmedCity = city.trim();
     const digitsOnly = cleanPhone(phone);
     const trimmedInsta = instagram.trim();
 
@@ -112,8 +121,12 @@ export default function InscricaoPage() {
     if (userType === "lojista" || userType === "revendedor") {
       const trimmedStore = store.trim();
       if (!trimmedStore || trimmedStore.length < 2) {
-        errors.store = "Informe o nome da loja ou marca.";
+        errors.store = "Informe o nome da marca ou empresa.";
       }
+    }
+
+    if (!trimmedCity || trimmedCity.length < 2) {
+      errors.city = "Informe sua cidade e estado.";
     }
 
     if (!digitsOnly || digitsOnly.length < 10 || digitsOnly.length > 11) {
@@ -132,6 +145,7 @@ export default function InscricaoPage() {
 
     if (errors.name) nameInputRef.current?.focus();
     else if (errors.store) storeInputRef.current?.focus();
+    else if (errors.city) cityInputRef.current?.focus();
     else if (errors.phone) phoneInputRef.current?.focus();
     else if (errors.instagram) instagramInputRef.current?.focus();
     else if (errors.consent) consentInputRef.current?.focus();
@@ -156,6 +170,7 @@ export default function InscricaoPage() {
       const payload = {
         name: name.trim(),
         store: (userType === "lojista" || userType === "revendedor") ? store.trim() : "—",
+        city: city.trim(),
         phone: cleanPhone(phone),
         instagram: instagram.trim().replace(/^@+/, ""),
         consent,
@@ -349,46 +364,61 @@ export default function InscricaoPage() {
               )}
             </div>
 
+            {(userType === "lojista" || userType === "revendedor") && (
+              <div className="signup-field-group">
+                <label htmlFor="signup-store">Nome da Marca / Empresa *</label>
+                <input
+                  ref={storeInputRef}
+                  id="signup-store"
+                  name="store"
+                  autoCapitalize="words"
+                  placeholder={
+                    userType === "lojista"
+                      ? "Ex: Bella Chic Atacado"
+                      : "Ex: Boutique da Ana / Loja"
+                  }
+                  value={store}
+                  onChange={(e) => {
+                    setStore(e.target.value);
+                    if (fieldErrors.store) setFieldErrors((prev) => ({ ...prev, store: undefined }));
+                  }}
+                  required
+                  aria-required="true"
+                  aria-invalid={Boolean(fieldErrors.store)}
+                  disabled={isFormDisabled}
+                />
+                {fieldErrors.store && (
+                  <span id="signup-store-error" className="field-error-message" role="alert">
+                    <span className="material-symbols-outlined error-icon" aria-hidden="true">
+                      error
+                    </span>
+                    <span>{fieldErrors.store}</span>
+                  </span>
+                )}
+              </div>
+            )}
+
             <div className="signup-field-group">
-              <label htmlFor="signup-store">
-                {userType === "lojista"
-                  ? "Nome da loja ou marca *"
-                  : userType === "revendedor"
-                    ? "Nome da marca / revenda *"
-                    : userType === "influencer"
-                      ? "Nicho / Agência / Canal (Opcional)"
-                      : "Empresa / Cidade (Opcional)"}
-              </label>
+              <label htmlFor="signup-city">Cidade e Estado *</label>
               <input
-                ref={storeInputRef}
-                id="signup-store"
-                name="store"
+                ref={cityInputRef}
+                id="signup-city"
+                name="city"
                 autoCapitalize="words"
-                placeholder={
-                  userType === "lojista"
-                    ? "Ex: Boutique Elegance"
-                    : userType === "revendedor"
-                      ? "Ex: Bella Moda Revendas"
-                      : userType === "influencer"
-                        ? "Ex: Moda Evangélica & Lifestyle"
-                        : "Ex: São Paulo - SP"
-                }
-                value={store}
-                onChange={(e) => {
-                  setStore(e.target.value);
-                  if (fieldErrors.store) setFieldErrors((prev) => ({ ...prev, store: undefined }));
-                }}
-                required={userType === "lojista" || userType === "revendedor"}
-                aria-required={userType === "lojista" || userType === "revendedor"}
-                aria-invalid={Boolean(fieldErrors.store)}
+                placeholder="Ex: São Paulo - SP"
+                value={city}
+                onChange={handleCityChange}
+                required
+                aria-required="true"
+                aria-invalid={Boolean(fieldErrors.city)}
                 disabled={isFormDisabled}
               />
-              {fieldErrors.store && (
-                <span id="signup-store-error" className="field-error-message" role="alert">
+              {fieldErrors.city && (
+                <span id="signup-city-error" className="field-error-message" role="alert">
                   <span className="material-symbols-outlined error-icon" aria-hidden="true">
                     error
                   </span>
-                  <span>{fieldErrors.store}</span>
+                  <span>{fieldErrors.city}</span>
                 </span>
               )}
             </div>

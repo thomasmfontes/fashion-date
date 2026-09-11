@@ -14,6 +14,7 @@ export async function GET(request: Request) {
           p.id_participante AS id,
           p.nm_participante AS name,
           p.nm_loja AS store,
+          p.nm_cidade AS city,
           p.nr_whatsapp AS phone,
           p.nm_instagram AS instagram,
           p.user_type AS user_type,
@@ -83,6 +84,7 @@ export async function PATCH(request: Request) {
   const id = Number(payload.id);
   const name = typeof payload.name === "string" ? payload.name.trim() : "";
   const store = typeof payload.store === "string" ? payload.store.trim() : "";
+  const city = typeof payload.city === "string" ? payload.city.trim() : "";
   const phone = typeof payload.phone === "string" ? payload.phone.replace(/\D/g, "") : "";
   const instagram = typeof payload.instagram === "string" ? payload.instagram.trim().replace(/^@?/, "@") : "";
 
@@ -94,10 +96,10 @@ export async function PATCH(request: Request) {
     const db = await initialize();
     const updated = await db.prepare(
       `UPDATE t_participants
-       SET nm_participante=?, nm_loja=?, nr_whatsapp=?, nm_instagram=?
+       SET nm_participante=?, nm_loja=?, nm_cidade=?, nr_whatsapp=?, nm_instagram=?
        WHERE id_participante=? RETURNING ${participantFields}`,
     )
-      .bind(name, store, phone, instagram, id).first<Record<string, unknown>>();
+      .bind(name, store, city || null, phone, instagram, id).first<Record<string, unknown>>();
     if (!updated) return Response.json({ error: "Participante não encontrado." }, { status: 404 });
     const draw = await db
       .prepare(

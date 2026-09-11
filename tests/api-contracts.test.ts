@@ -27,6 +27,7 @@ describe("API Contracts & Service Mismatch Regression Suite", () => {
         body: JSON.stringify({
           name: "Roberta Alves",
           store: "Alves Store",
+          city: "São Paulo - SP",
           phone: "11988884444",
           instagram: "@roberta",
           consent: true,
@@ -56,6 +57,7 @@ describe("API Contracts & Service Mismatch Regression Suite", () => {
         body: JSON.stringify({
           name: "Lucas Silva",
           store: "Lucas Store",
+          city: "São Paulo - SP",
           phone: "11988883333",
           instagram: "@lucas",
           consent: true,
@@ -72,6 +74,7 @@ describe("API Contracts & Service Mismatch Regression Suite", () => {
           id,
           name: "Lucas Silva Atualizado",
           store: "Lucas Modas Prime",
+          city: "Rio de Janeiro - RJ",
           phone: "(11) 98888-3333",
           instagram: "@lucasprime",
         }),
@@ -94,6 +97,7 @@ describe("API Contracts & Service Mismatch Regression Suite", () => {
         body: JSON.stringify({
           name: "Gisele Souza",
           store: "Gisele Boutique",
+          city: "São Paulo - SP",
           phone: "11988882222",
           instagram: "@gisele",
           consent: true,

@@ -189,6 +189,7 @@ export async function POST(request: Request) {
   const payload = body as Record<string, unknown>;
   const name = typeof payload.name === "string" ? payload.name.trim() : "";
   const rawStore = typeof payload.store === "string" ? payload.store.trim() : "";
+  const city = typeof payload.city === "string" ? payload.city.trim() : "";
   const phone = typeof payload.phone === "string" ? payload.phone.replace(/\D/g, "") : "";
   const instagram = typeof payload.instagram === "string"
     ? payload.instagram.trim().replace(/^@?/, "@")
@@ -213,6 +214,13 @@ export async function POST(request: Request) {
   if (isStoreRequired && (!rawStore || rawStore.length < 2)) {
     return Response.json(
       { error: "Informe o nome da sua loja ou marca." },
+      { status: 400 },
+    );
+  }
+
+  if (!city || city.length < 2) {
+    return Response.json(
+      { error: "Informe sua cidade e estado (mínimo 2 caracteres)." },
       { status: 400 },
     );
   }
@@ -330,19 +338,29 @@ export async function POST(request: Request) {
     try {
       inserted = await db
         .prepare(
-          `INSERT INTO t_participants(nm_participante,nm_loja,nr_whatsapp,nm_instagram,user_type,ds_email,auth_user_id)
-           VALUES(?,?,?,?,?,?,?) RETURNING ${participantFields}`,
+          `INSERT INTO t_participants(nm_participante,nm_loja,nm_cidade,nr_whatsapp,nm_instagram,user_type,ds_email,auth_user_id)
+           VALUES(?,?,?,?,?,?,?,?) RETURNING ${participantFields}`,
         )
-        .bind(name, store, phone, instagram, userType, email || null, authUserId || null)
+        .bind(name, store, city, phone, instagram, userType, email || null, authUserId || null)
         .first<Record<string, unknown>>();
     } catch {
-      inserted = await db
-        .prepare(
-          `INSERT INTO t_participants(nm_participante,nm_loja,nr_whatsapp,nm_instagram,user_type)
-           VALUES(?,?,?,?,?) RETURNING ${participantFields}`,
-        )
-        .bind(name, store, phone, instagram, userType)
-        .first<Record<string, unknown>>();
+      try {
+        inserted = await db
+          .prepare(
+            `INSERT INTO t_participants(nm_participante,nm_loja,nm_cidade,nr_whatsapp,nm_instagram,user_type)
+             VALUES(?,?,?,?,?,?) RETURNING ${participantFields}`,
+          )
+          .bind(name, store, city, phone, instagram, userType)
+          .first<Record<string, unknown>>();
+      } catch {
+        inserted = await db
+          .prepare(
+            `INSERT INTO t_participants(nm_participante,nm_loja,nr_whatsapp,nm_instagram,user_type)
+             VALUES(?,?,?,?,?) RETURNING ${participantFields}`,
+          )
+          .bind(name, store, phone, instagram, userType)
+          .first<Record<string, unknown>>();
+      }
     }
 
     if (!inserted) {

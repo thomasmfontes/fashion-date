@@ -23,6 +23,7 @@ describe("Business Flow: Live Draw State Machine & Winner Lifecycle", () => {
         body: JSON.stringify({
           name: `Participante ${i}`,
           store: `Loja ${i}`,
+          city: "São Paulo - SP",
           phone: `1197777000${i}`,
           instagram: `@participante_${i}`,
           consent: true,

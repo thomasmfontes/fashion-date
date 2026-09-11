@@ -59,6 +59,7 @@ describe("Component Integration: Public Attendee Registration & Verification Flo
                 luckyNumber: "0789",
                 name: body.name,
                 store: body.store,
+                city: body.city || "São Paulo - SP",
                 phone: body.phone,
                 instagram: body.instagram,
                 userType: body.userType || "lojista",
@@ -77,6 +78,7 @@ describe("Component Integration: Public Attendee Registration & Verification Flo
                 luckyNumber: "0789",
                 name: "Renata Castanheira",
                 store: "Boutique Crente Chic",
+                city: "São Paulo - SP",
                 phone: "11987654321",
                 instagram: "crentechic",
                 userType: "lojista",
@@ -95,7 +97,8 @@ describe("Component Integration: Public Attendee Registration & Verification Flo
 
     // Form fields are accessible
     const nameInput = screen.getByLabelText(/Nome completo/i);
-    const storeInput = screen.getByLabelText(/Nome da loja/i);
+    const storeInput = screen.getByLabelText(/Nome da Marca/i);
+    const cityInput = screen.getByLabelText(/Cidade/i);
     const phoneInput = screen.getByLabelText(/WhatsApp/i);
     const instagramInput = screen.getByLabelText(/Instagram/i);
     const consentCheckbox = screen.getByRole("checkbox");
@@ -106,6 +109,7 @@ describe("Component Integration: Public Attendee Registration & Verification Flo
     // Fill form
     await user.type(nameInput, "Renata Castanheira");
     await user.type(storeInput, "Boutique Crente Chic");
+    await user.type(cityInput, "São Paulo - SP");
     await user.type(phoneInput, "11987654321");
     await user.type(instagramInput, "crentechic");
     await user.click(consentCheckbox);
@@ -149,5 +153,28 @@ describe("Component Integration: Public Attendee Registration & Verification Flo
     expect(
       screen.getByLabelText(/Nome completo/i).getAttribute("aria-invalid"),
     ).toBe("true");
+  });
+
+  it("INT-REG-03: Nome da Marca / Empresa field visibility depends on user type", async () => {
+    const user = userEvent.setup();
+    render(<InscricaoPage />);
+
+    // Default profile is 'lojista' (Marca/Atacado) -> field is visible
+    expect(screen.getByLabelText(/Nome da Marca \/ Empresa/i)).toBeDefined();
+
+    // Switch to Lojista / Revendedor -> field is visible
+    const revendedorBtn = screen.getByRole("button", { name: /Lojista \/ Revendedor/i });
+    await user.click(revendedorBtn);
+    expect(screen.getByLabelText(/Nome da Marca \/ Empresa/i)).toBeDefined();
+
+    // Switch to Influenciador -> field disappears completely
+    const influencerBtn = screen.getByRole("button", { name: /Influenciador/i });
+    await user.click(influencerBtn);
+    expect(screen.queryByLabelText(/Nome da Marca \/ Empresa/i)).toBeNull();
+
+    // Switch to Visitante / Consumidor Final -> field disappears completely
+    const visitanteBtn = screen.getByRole("button", { name: /Visitante \/ Consumidor Final/i });
+    await user.click(visitanteBtn);
+    expect(screen.queryByLabelText(/Nome da Marca \/ Empresa/i)).toBeNull();
   });
 });

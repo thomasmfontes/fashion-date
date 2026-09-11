@@ -8,6 +8,7 @@ export interface ParticipantRecord {
   lucky_number: string;
   name: string;
   store: string;
+  city?: string;
   phone: string;
   instagram: string;
   status: string;
@@ -155,6 +156,7 @@ export function createMockD1Database(): MockD1Database {
       .replace(/\bnr_sorte\b/gi, "lucky_number")
       .replace(/\bnm_participante\b/gi, "name")
       .replace(/\bnm_loja\b/gi, "store")
+      .replace(/\bnm_cidade\b/gi, "city")
       .replace(/\bnr_whatsapp\b/gi, "phone")
       .replace(/\bnm_instagram\b/gi, "instagram")
       .replace(/\bst_participante\b/gi, "status")
@@ -406,6 +408,7 @@ export function createMockD1Database(): MockD1Database {
       let lucky_number: string = "";
       let name: string = "";
       let store: string = "";
+      let city: string = "";
       let phone: string = "";
       let instagram: string = "";
 
@@ -418,6 +421,7 @@ export function createMockD1Database(): MockD1Database {
         });
         name = bindObj.name || "";
         store = bindObj.store || "";
+        city = bindObj.city || "";
         phone = bindObj.phone || "";
         instagram = bindObj.instagram || "";
         lucky_number = bindObj.lucky_number || "";
@@ -445,6 +449,7 @@ export function createMockD1Database(): MockD1Database {
         lucky_number,
         name,
         store,
+        city,
         phone,
         instagram,
         status: "active",
@@ -468,13 +473,26 @@ export function createMockD1Database(): MockD1Database {
       return { results: [newDraw], success: true };
     }
 
-    // UPDATE participants SET name=?, store=?, phone=?, instagram=? WHERE id=?
-    if (trimmed.startsWith("UPDATE participants SET name=?") || trimmed.startsWith("UPDATE participants SET name = ?")) {
-      const [name, store, phone, instagram, id] = bindings as [string, string, string, string, number];
+    // UPDATE participants SET ... WHERE id=?
+    if (trimmed.startsWith("UPDATE participants SET")) {
+      let name = "";
+      let store = "";
+      let city = "";
+      let phone = "";
+      let instagram = "";
+      let id = 0;
+
+      if (trimmed.includes("city=?") || trimmed.includes("city = ?")) {
+        [name, store, city, phone, instagram, id] = bindings as [string, string, string, string, string, number];
+      } else {
+        [name, store, phone, instagram, id] = bindings as [string, string, string, string, number];
+      }
+
       const p = inMemStore.participants.find((item) => item.id === Number(id));
       if (p) {
         p.name = name;
         p.store = store;
+        if (city) p.city = city;
         p.phone = phone;
         p.instagram = instagram;
         return { results: [p], success: true };

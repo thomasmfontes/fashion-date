@@ -15,6 +15,7 @@ describe("Business Flow: Lucky Number Allocation & Uniqueness", () => {
       body: JSON.stringify({
         name: "Aline Ferreira",
         store: "Loja Flor",
+        city: "São Paulo - SP",
         phone: "11988880001",
         instagram: "@flor",
         consent: true,
@@ -52,6 +53,7 @@ describe("Business Flow: Lucky Number Allocation & Uniqueness", () => {
         body: JSON.stringify({
           name: `Participante ${i}`,
           store: `Loja ${i}`,
+          city: "São Paulo - SP",
           phone,
           instagram: `@loja_${i}`,
           consent: true,
@@ -102,6 +104,7 @@ describe("Business Flow: Lucky Number Allocation & Uniqueness", () => {
       body: JSON.stringify({
         name: "Juliana Costa",
         store: "Costa Boutique",
+        city: "São Paulo - SP",
         phone: "11987654399",
         instagram: "@costa",
         consent: true,
@@ -145,6 +148,7 @@ describe("Business Flow: Lucky Number Allocation & Uniqueness", () => {
       body: JSON.stringify({
         name: "Tatiana Lima",
         store: "Tatiana Fashion",
+        city: "São Paulo - SP",
         phone: "11987654388",
         instagram: "@tatiana",
         consent: true,

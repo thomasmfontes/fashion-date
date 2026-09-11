@@ -1,4 +1,5 @@
-import type { Participant } from "@/types/participant.types";
+import type { Participant, UserType } from "@/types/participant.types";
+import { USER_TYPE_LABELS } from "@/types/participant.types";
 
 export function exportParticipantsToCSV(
   participants: Participant[],
@@ -7,7 +8,9 @@ export function exportParticipantsToCSV(
   const headers = [
     "Número da Sorte",
     "Nome",
+    "Perfil",
     "Loja",
+    "Cidade",
     "WhatsApp",
     "Instagram",
     "Data de Inscrição",
@@ -24,7 +27,9 @@ export function exportParticipantsToCSV(
     return [
       `"${ticketsStr.replace(/"/g, '""')}"`,
       `"${p.name.replace(/"/g, '""')}"`,
+      `"${USER_TYPE_LABELS[p.userType as UserType] || p.userType || ""}"`,
       `"${p.store.replace(/"/g, '""')}"`,
+      `"${(p.city || "").replace(/"/g, '""')}"`,
       `"${p.phone}"`,
       `"${p.instagram.replace(/"/g, '""')}"`,
       `"${new Date(p.createdAt).toLocaleString("pt-BR")}"`,
@@ -46,6 +51,7 @@ export function exportWinnersToCSV(
     "Ganhador",
     "Perfil",
     "Loja",
+    "Cidade",
     "WhatsApp",
     "Instagram",
     "Data da Apuração",
@@ -69,8 +75,9 @@ export function exportWinnersToCSV(
       `"${prizeTitle.replace(/"/g, '""')}"`,
       `"${item.luckyNumber}"`,
       `"${item.name.replace(/"/g, '""')}"`,
-      `"${userType}"`,
+      `"${USER_TYPE_LABELS[userType as UserType] || userType}"`,
       `"${item.store.replace(/"/g, '""')}"`,
+      `"${(item.city || "").replace(/"/g, '""')}"`,
       `"${item.phone}"`,
       `"${item.instagram.replace(/"/g, '""')}"`,
       `"${new Date(wonDate).toLocaleString("pt-BR")}"`,

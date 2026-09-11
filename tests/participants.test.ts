@@ -15,6 +15,7 @@ describe("Business Flow: Participant Registration & Public Lookup", () => {
         body: JSON.stringify({
           name: "Renata Castanheira",
           store: "Boutique Crente Chic",
+          city: "São Paulo - SP",
           phone: "(11) 98765-4321",
           instagram: "@renatacastanheira",
           consent: true,
@@ -29,6 +30,7 @@ describe("Business Flow: Participant Registration & Public Lookup", () => {
       expect(data.participant).toBeDefined();
       expect(data.participant.name).toBe("Renata Castanheira");
       expect(data.participant.store).toBe("Boutique Crente Chic");
+      expect(data.participant.city).toBe("São Paulo - SP");
       expect(data.participant.phone).toBe("11987654321");
       expect(data.participant.instagram).toBe("@renatacastanheira");
       expect(data.participant.luckyNumber).toMatch(/^\d{4}$/);
@@ -73,6 +75,7 @@ describe("Business Flow: Participant Registration & Public Lookup", () => {
         body: JSON.stringify({
           name: "Maria Santos",
           store: "Loja Prime",
+          city: "São Paulo - SP",
           phone: "11999998888",
           instagram: "@mariaprime",
           consent: true,
@@ -89,6 +92,7 @@ describe("Business Flow: Participant Registration & Public Lookup", () => {
         body: JSON.stringify({
           name: "Maria Santos Alterado",
           store: "Outra Loja",
+          city: "Campinas - SP",
           phone: "(11) 99999-8888",
           instagram: "@maria_outro",
           consent: true,
@@ -113,6 +117,7 @@ describe("Business Flow: Participant Registration & Public Lookup", () => {
         body: JSON.stringify({
           name: "Fernanda Lima",
           store: "Loja Fe",
+          city: "São Paulo - SP",
           phone: "11988887777",
           instagram: "@fe",
           consent: true,
@@ -153,6 +158,7 @@ describe("Business Flow: Participant Registration & Public Lookup", () => {
         body: JSON.stringify({
           name: "Carla Silveira",
           store: "Silveira Modas",
+          city: "São Paulo - SP",
           phone: "11977776666",
           instagram: "@carlasilveira",
           consent: true,

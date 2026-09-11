@@ -59,7 +59,7 @@ export function ProfileTab({ participant, avatarUrl, onLogout }: ProfileTabProps
     ? formatInstagram(participant.instagram)
     : "Não informado";
   const userType = (participant?.userType?.toLowerCase() || "lojista") as UserType;
-  const userTypeLabel = USER_TYPE_LABELS[userType] || "Lojista";
+  const userTypeLabel = USER_TYPE_LABELS[userType] || USER_TYPE_LABELS.lojista;
   const userTypeIcon = USER_TYPE_ICONS[userType] || "storefront";
   const storeName = participant?.store && participant.store !== "—" ? participant.store : "Participante Individual";
   const registrationDate = participant?.createdAt ? formatDate(participant.createdAt) : "Registrado";
@@ -286,6 +286,29 @@ export function ProfileTab({ participant, avatarUrl, onLogout }: ProfileTabProps
               </div>
               <strong style={{ fontSize: "13px", color: "#332225" }}>
                 {storeName}
+              </strong>
+            </div>
+
+            {/* Cidade */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "12px 14px",
+                border: "1px solid #ebdcc5",
+                borderRadius: "10px",
+                background: "#fdfaf6",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: "18px", color: "#9a741a" }}>
+                  location_on
+                </span>
+                <span style={{ fontSize: "12.5px", color: "#786568", fontWeight: 600 }}>Cidade</span>
+              </div>
+              <strong style={{ fontSize: "13px", color: "#332225" }}>
+                {participant?.city || "Não informada"}
               </strong>
             </div>
 
