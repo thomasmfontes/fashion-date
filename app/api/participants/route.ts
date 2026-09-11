@@ -370,105 +370,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Auto-gerar bilhetes para todos os sorteios elegíveis do evento
-    const newPid = Number(inserted.id_participante || inserted.id);
-    const createdTickets: Array<{
-      drawId: string;
-      drawTitle: string;
-      prizeTitle: string;
-      ticketNumber: string;
-      enteredAt: string;
-    }> = [];
-
-    try {
-      const openDraws = await db
-        .prepare(
-          "SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo FROM t_draw_definitions WHERE st_sorteio IN ('open', 'ready')"
-        )
-        .all<Record<string, unknown>>();
-
-      for (const draw of openDraws.results) {
-        const drawId = String(draw.id_sorteio);
-        let targetTypes: string[] = [];
-        if (Array.isArray(draw.target_user_types)) {
-          targetTypes = draw.target_user_types.map((t) => String(t).toLowerCase());
-        } else if (typeof draw.target_user_types === "string") {
-          try {
-            const parsed = JSON.parse(draw.target_user_types);
-            if (Array.isArray(parsed)) targetTypes = parsed.map((t) => String(t).toLowerCase());
-          } catch {
-            /* ignore */
-          }
-        }
-
-        if (targetTypes.length === 0 || targetTypes.includes(userType)) {
-          const hasLimit = Boolean(draw.tem_limite && draw.nr_limite_maximo && Number(draw.nr_limite_maximo) > 0);
-          const maxNumber = hasLimit ? Number(draw.nr_limite_maximo) : 9999;
-          let generated = "";
-
-          for (let attempt = 0; attempt < 30; attempt++) {
-            const randomVal = crypto.getRandomValues(new Uint32Array(1))[0];
-            const randomNum = hasLimit
-              ? (randomVal % maxNumber) + 1
-              : (randomVal % 9999) + 1;
-            const candidate = String(randomNum).padStart(4, "0");
-            const check = await db
-              .prepare("SELECT id_ticket FROM t_draw_tickets WHERE id_sorteio = ? AND nr_bilhete = ?")
-              .bind(drawId, candidate)
-              .first();
-            const checkLegacy = await db
-              .prepare("SELECT id FROM participants WHERE lucky_number = ?")
-              .bind(candidate)
-              .first()
-              .catch(() => null);
-
-            if (!check && !checkLegacy) {
-              generated = candidate;
-              break;
-            }
-          }
-
-          if (!generated) {
-            await db
-              .prepare("DELETE FROM t_participants WHERE id_participante = ?")
-              .bind(newPid)
-              .run()
-              .catch(() => {});
-
-            return Response.json(
-              {
-                error:
-                  "Alta demanda de cadastros. Não foi possível gerar um número único agora. Tente novamente em alguns instantes.",
-              },
-              { status: 503 },
-            );
-          }
-
-          await db
-            .prepare("INSERT INTO t_draw_tickets (id_participante, id_sorteio, nr_bilhete) VALUES (?, ?, ?)")
-            .bind(newPid, drawId, generated)
-            .run()
-            .catch(() => {});
-
-          createdTickets.push({
-            drawId,
-            drawTitle: String(draw.nm_titulo || drawId),
-            prizeTitle: String(draw.nm_premio || "Prêmio"),
-            ticketNumber: generated,
-            enteredAt: new Date().toISOString(),
-          });
-        }
-      }
-    } catch {
-      // Continue gracefully
-    }
-
     // Notifica em tempo real o painel administrativo (<50ms)
     broadcastParticipantUpdate("registered").catch(() => {});
 
     return Response.json(
       {
-        participant: row({ ...inserted, tickets: createdTickets }),
+        participant: row({ ...inserted, tickets: [] }),
         duplicate: false,
       },
       { status: 201 },

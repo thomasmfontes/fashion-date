@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GET, POST } from "@/app/api/participants/route";
+import { POST as claimTicket } from "@/app/api/participants/tickets/route";
 import { resetInMemStore, inMemStore } from "@/tests/mocks/cloudflare-workers";
 
 describe("Business Flow: Participant Registration & Public Lookup", () => {
@@ -8,7 +9,7 @@ describe("Business Flow: Participant Registration & Public Lookup", () => {
   });
 
   describe("POST /api/participants (Registration)", () => {
-    it("REG-01: successfully registers a new participant with 201 and 4-digit lucky number", async () => {
+    it("REG-01: successfully registers a new participant with 201 and no auto-generated tickets", async () => {
       const request = new Request("http://localhost/api/participants", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,7 +34,8 @@ describe("Business Flow: Participant Registration & Public Lookup", () => {
       expect(data.participant.city).toBe("São Paulo - SP");
       expect(data.participant.phone).toBe("11987654321");
       expect(data.participant.instagram).toBe("@renatacastanheira");
-      expect(data.participant.luckyNumber).toMatch(/^\d{4}$/);
+      expect(data.participant.luckyNumber).toBe("");
+      expect(data.participant.tickets).toEqual([]);
       expect(data.participant.status).toBe("active");
     });
 
@@ -164,7 +166,18 @@ describe("Business Flow: Participant Registration & Public Lookup", () => {
           consent: true,
         }),
       });
-      await POST(seedReq);
+      const res = await POST(seedReq);
+      const data = await res.json();
+      await claimTicket(
+        new Request("http://localhost/api/participants/tickets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            participantId: data.participant.id,
+            drawId: "draw-default",
+          }),
+        }),
+      );
     });
 
     it("LOOKUP-01: finds participant by valid 11-digit phone number", async () => {

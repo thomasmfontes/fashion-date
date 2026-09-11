@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { POST } from "@/app/api/participants/route";
+import { POST as registerParticipant } from "@/app/api/participants/route";
+import { POST as claimTicket } from "@/app/api/participants/tickets/route";
 import { resetInMemStore, inMemStore } from "@/tests/mocks/cloudflare-workers";
 import { formatLuckyNumber } from "@/utils/formatters";
 
@@ -8,24 +9,47 @@ describe("Business Flow: Lucky Number Allocation & Uniqueness", () => {
     resetInMemStore();
   });
 
-  it("LUCK-01: generates a 4-digit string format between '0001' and '9999'", async () => {
-    const request = new Request("http://localhost/api/participants", {
+  async function registerAndClaim(participantData: {
+    name: string;
+    store: string;
+    city?: string;
+    phone: string;
+    instagram: string;
+    consent: boolean;
+  }, drawId = "draw-default") {
+    const regReq = new Request("http://localhost/api/participants", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(participantData),
+    });
+    const regRes = await registerParticipant(regReq);
+    const regData = await regRes.json();
+
+    const claimReq = new Request("http://localhost/api/participants/tickets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: "Aline Ferreira",
-        store: "Loja Flor",
-        city: "São Paulo - SP",
-        phone: "11988880001",
-        instagram: "@flor",
-        consent: true,
+        participantId: regData.participant?.id,
+        drawId,
       }),
     });
+    return claimTicket(claimReq);
+  }
 
-    const res = await POST(request);
+  it("LUCK-01: generates a 4-digit string format between '0001' and '9999' upon claiming draw number", async () => {
+    const res = await registerAndClaim({
+      name: "Aline Ferreira",
+      store: "Loja Flor",
+      city: "São Paulo - SP",
+      phone: "11988880001",
+      instagram: "@flor",
+      consent: true,
+    });
+
     expect(res.status).toBe(201);
     const data = await res.json();
-    const luckyStr = data.participant.luckyNumber;
+    expect(data.ok).toBe(true);
+    const luckyStr = data.ticket.ticketNumber;
 
     expect(typeof luckyStr).toBe("string");
     expect(luckyStr).toMatch(/^\d{4}$/);
@@ -42,129 +66,92 @@ describe("Business Flow: Lucky Number Allocation & Uniqueness", () => {
     expect(formatLuckyNumber("9999")).toBe("9999");
   });
 
-  it("LUCK-03: allocates distinct numbers across sequential registrations", async () => {
+  it("LUCK-03: allocates distinct numbers across sequential claims", async () => {
     const allocatedNumbers = new Set<string>();
 
     for (let i = 1; i <= 10; i++) {
       const phone = `1198888${String(i).padStart(4, "0")}`;
-      const req = new Request("http://localhost/api/participants", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: `Participante ${i}`,
-          store: `Loja ${i}`,
-          city: "São Paulo - SP",
-          phone,
-          instagram: `@loja_${i}`,
-          consent: true,
-        }),
+      const res = await registerAndClaim({
+        name: `Participante ${i}`,
+        store: `Loja ${i}`,
+        city: "São Paulo - SP",
+        phone,
+        instagram: `@loja_${i}`,
+        consent: true,
       });
 
-      const res = await POST(req);
       expect(res.status).toBe(201);
       const data = await res.json();
-      allocatedNumbers.add(data.participant.luckyNumber);
+      allocatedNumbers.add(data.ticket.ticketNumber);
     }
 
     expect(allocatedNumbers.size).toBe(10);
   });
 
   it("LUCK-04: collision retry loop finds an unused number when initial pick is occupied", async () => {
-    // Seed participant with lucky_number = '0777'
-    inMemStore.participants.push({
-      id: 99,
-      lucky_number: "0777",
-      name: "Pre-existing",
-      store: "Store",
-      phone: "11900000000",
-      instagram: "@seed",
-      status: "active",
-      created_at: new Date().toISOString(),
-      won_at: null,
+    // Seed existing ticket with nr_bilhete = '2500'
+    inMemStore.drawTickets.push({
+      id_ticket: 99,
+      id_participante: 99,
+      id_sorteio: "draw-default",
+      nr_bilhete: "2500",
+      dt_inscricao: new Date().toISOString(),
     });
 
-    // Mock getRandomValues to return 776 (+1 = 777) on first call, and 888 (+1 = 889) on second call
     let callCount = 0;
-    vi.spyOn(crypto, "getRandomValues").mockImplementation((arr) => {
-      if (arr && "length" in arr) {
-        const u32 = arr as unknown as Uint32Array;
-        if (callCount === 0) {
-          callCount++;
-          u32[0] = 776; // 776 % 9999 + 1 = 777 ("0777" which collides)
-        } else {
-          u32[0] = 888; // 888 % 9999 + 1 = 889 ("0889" which is free)
-        }
+    vi.spyOn(Math, "random").mockImplementation(() => {
+      if (callCount === 0) {
+        callCount++;
+        return (2500 - 1000) / 9000; // generates "2500" which collides
       }
-      return arr;
+      return (3500 - 1000) / 9000; // generates "3500" which is free
     });
 
-    const request = new Request("http://localhost/api/participants", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: "Juliana Costa",
-        store: "Costa Boutique",
-        city: "São Paulo - SP",
-        phone: "11987654399",
-        instagram: "@costa",
-        consent: true,
-      }),
+    const res = await registerAndClaim({
+      name: "Juliana Costa",
+      store: "Costa Boutique",
+      city: "São Paulo - SP",
+      phone: "11987654399",
+      instagram: "@costa",
+      consent: true,
     });
 
-    const res = await POST(request);
     expect(res.status).toBe(201);
     const data = await res.json();
-    expect(data.participant.luckyNumber).toBe("0889");
+    expect(data.ticket.ticketNumber).toBe("3500");
 
     vi.restoreAllMocks();
   });
 
-  it("LUCK-05 (Remediated - Safe Collision Exhaustion): returns controlled 503 and never persists duplicate when retries exhaust", async () => {
-    // Seed participant with lucky_number = '0555'
-    inMemStore.participants.push({
-      id: 98,
-      lucky_number: "0555",
-      name: "Pre-existing",
-      store: "Store",
-      phone: "11900000001",
-      instagram: "@seed2",
-      status: "active",
-      created_at: new Date().toISOString(),
-      won_at: null,
+  it("LUCK-05 (Safe Collision Exhaustion): returns controlled 503 when retries exhaust", async () => {
+    // Seed existing ticket with nr_bilhete = '2500'
+    inMemStore.drawTickets.push({
+      id_ticket: 98,
+      id_participante: 98,
+      id_sorteio: "draw-default",
+      nr_bilhete: "2500",
+      dt_inscricao: new Date().toISOString(),
     });
 
-    // Force RNG to always return 554 (+1 = 555), causing 20 continuous collisions
-    vi.spyOn(crypto, "getRandomValues").mockImplementation((arr) => {
-      if (arr && "length" in arr) {
-        const u32 = arr as unknown as Uint32Array;
-        u32[0] = 554; // produces "0555" continuously
-      }
-      return arr;
+    // Force RNG to always return 2500, causing 30 continuous collisions
+    vi.spyOn(Math, "random").mockImplementation(() => (2500 - 1000) / 9000);
+
+    const res = await registerAndClaim({
+      name: "Tatiana Lima",
+      store: "Tatiana Fashion",
+      city: "São Paulo - SP",
+      phone: "11987654388",
+      instagram: "@tatiana",
+      consent: true,
     });
 
-    const request = new Request("http://localhost/api/participants", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: "Tatiana Lima",
-        store: "Tatiana Fashion",
-        city: "São Paulo - SP",
-        phone: "11987654388",
-        instagram: "@tatiana",
-        consent: true,
-      }),
-    });
-
-    // Remediated behavior: loop exhausts without picking a candidate,
-    // returns a controlled 503 Service Unavailable without attempting duplicate insert.
-    const res = await POST(request);
     expect(res.status).toBe(503);
     const data = await res.json();
-    expect(data.error).toContain("Não foi possível gerar um número único");
+    expect(data.error).toContain("Alta concorrência na emissão de bilhetes");
 
-    // Proves database was not corrupted with duplicate lucky number
-    expect(inMemStore.participants.length).toBe(1);
-    expect(inMemStore.participants[0].name).toBe("Pre-existing");
+    // Proves duplicate ticket was never created
+    expect(inMemStore.drawTickets.length).toBe(1);
+    expect(inMemStore.drawTickets[0].id_participante).toBe(98);
 
     vi.restoreAllMocks();
   });

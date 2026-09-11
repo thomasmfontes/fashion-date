@@ -14,6 +14,7 @@ export interface ParticipantRecord {
   status: string;
   created_at: string;
   won_at?: string | null;
+  user_type?: string;
 }
 
 export interface DrawRecord {
@@ -232,11 +233,19 @@ export function createMockD1Database(): MockD1Database {
     }
 
     // SELECT ... FROM participants WHERE phone=?
-    if (trimmed.includes("FROM participants WHERE phone=?") || trimmed.includes("FROM participants WHERE phone = ?")) {
+    if (trimmed.includes("FROM participants WHERE phone") || trimmed.includes("FROM t_participants WHERE nr_whatsapp")) {
       const phone = String(bindings[0]);
       const p = inMemStore.participants.find((item) => item.phone === phone);
       return {
-        results: p ? [p] : [],
+        results: p ? [{
+          ...p,
+          id_participante: p.id,
+          nm_participante: p.name,
+          nm_loja: p.store,
+          nr_whatsapp: p.phone,
+          nm_instagram: p.instagram,
+          user_type: p.user_type || "lojista",
+        }] : [],
         success: true,
       };
     }
@@ -314,12 +323,24 @@ export function createMockD1Database(): MockD1Database {
       return { results: withTickets, success: true };
     }
 
-    // SELECT id FROM participants WHERE id=? or SELECT * FROM participants WHERE id=?
-    if (trimmed.startsWith("SELECT id FROM participants WHERE id=?") || trimmed.startsWith("SELECT * FROM participants WHERE id=?") || trimmed.startsWith("SELECT id FROM participants WHERE id = ?")) {
+    // SELECT id FROM participants WHERE id=? or SELECT * FROM participants WHERE id=? or t_participants
+    if (
+      trimmed.startsWith("SELECT") &&
+      (trimmed.includes("FROM participants WHERE id") ||
+       trimmed.includes("FROM t_participants WHERE id_participante"))
+    ) {
       const id = Number(bindings[0]);
       const p = inMemStore.participants.find((item) => item.id === id);
       return {
-        results: p ? [p] : [],
+        results: p ? [{
+          ...p,
+          id_participante: p.id,
+          nm_participante: p.name,
+          nm_loja: p.store,
+          nr_whatsapp: p.phone,
+          nm_instagram: p.instagram,
+          user_type: p.user_type || "lojista",
+        }] : [],
         success: true,
       };
     }
@@ -343,6 +364,12 @@ export function createMockD1Database(): MockD1Database {
 
     // SELECT ... FROM t_draw_definitions
     if (trimmed.includes("FROM t_draw_definitions") || trimmed.includes("FROM `t_draw_definitions`")) {
+      const idMatch = trimmed.includes("WHERE id_sorteio = ?") || trimmed.includes("WHERE id_sorteio=?");
+      if (idMatch && bindings.length > 0) {
+        const dId = String(bindings[0]);
+        const found = inMemStore.drawDefinitions.find((d) => d.id_sorteio === dId || d.id === dId);
+        return { results: found ? [found] : [], success: true };
+      }
       return { results: [...inMemStore.drawDefinitions], success: true };
     }
 
@@ -500,8 +527,11 @@ export function createMockD1Database(): MockD1Database {
       return { results: [], success: true };
     }
 
-    // DELETE FROM participants WHERE id=?
-    if (trimmed.startsWith("DELETE FROM participants WHERE id=?") || trimmed.startsWith("DELETE FROM participants WHERE id = ?")) {
+    // DELETE FROM participants WHERE id=? or t_participants
+    if (
+      trimmed.includes("DELETE FROM participants WHERE id") ||
+      trimmed.includes("DELETE FROM t_participants WHERE id_participante")
+    ) {
       const id = Number(bindings[0]);
       const initialLen = inMemStore.participants.length;
       inMemStore.participants = inMemStore.participants.filter((p) => p.id !== id);
