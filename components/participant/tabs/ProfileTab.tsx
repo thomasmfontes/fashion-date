@@ -6,6 +6,9 @@ import { USER_TYPE_LABELS, USER_TYPE_ICONS } from "@/types/participant.types";
 import { PrivacyPolicyModal } from "@/components/public/PrivacyPolicyModal";
 import { TermsOfUseModal } from "@/components/public/TermsOfUseModal";
 import { SecurityPrivacyCard } from "@/components/public/SecurityPrivacyCard";
+import { PwaProfileCard } from "@/components/pwa/PwaProfileCard";
+import { PwaInstallModal } from "@/components/pwa/PwaInstallModal";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
 import { formatName, formatPhone, formatInstagram, formatDate } from "@/utils/formatters";
 
 interface ProfileTabProps {
@@ -21,6 +24,16 @@ export function ProfileTab({ participant, avatarUrl, onLogout }: ProfileTabProps
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
+  const {
+    isStandalone,
+    isIos,
+    isAndroid,
+    canPromptNative,
+    isModalOpen: isPwaModalOpen,
+    promptInstall,
+    openGuide,
+    closeGuide,
+  } = usePwaInstall();
 
   async function handleDeleteAccount() {
     if (!participant) return;
@@ -343,11 +356,28 @@ export function ProfileTab({ participant, avatarUrl, onLogout }: ProfileTabProps
           onOpenPrivacy={() => setIsPrivacyOpen(true)}
           onDeleteAccount={() => setIsDeleteModalOpen(true)}
         />
+
+        {/* Painel 3: Aplicativo & Atalho (PWA) */}
+        <PwaProfileCard
+          isStandalone={isStandalone}
+          isIos={isIos}
+          isAndroid={isAndroid}
+          canPromptNative={canPromptNative}
+          onPromptNative={promptInstall}
+          onOpenGuide={openGuide}
+        />
       </div>
 
       {/* Modais Oficiais */}
       <PrivacyPolicyModal isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} />
       <TermsOfUseModal isOpen={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
+      <PwaInstallModal
+        isOpen={isPwaModalOpen}
+        onClose={closeGuide}
+        defaultPlatform={isIos ? "ios" : "android"}
+        canPromptNative={canPromptNative}
+        onPromptNative={promptInstall}
+      />
 
       {/* Modal de Confirmação para Exclusão de Conta (LGPD) */}
       {isDeleteModalOpen && (

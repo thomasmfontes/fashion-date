@@ -223,6 +223,7 @@ export function useParticipants(
         (p) =>
           p.name.toLowerCase().includes(q) ||
           p.store.toLowerCase().includes(q) ||
+          Boolean(p.city && p.city.toLowerCase().includes(q)) ||
           p.instagram.toLowerCase().includes(q) ||
           p.phone.includes(q) ||
           p.luckyNumber.includes(q) ||

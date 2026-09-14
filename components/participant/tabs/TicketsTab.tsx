@@ -5,6 +5,9 @@ import type { SavedParticipant } from "@/types/participant.types";
 import type { DrawItem } from "@/types/drawCollection.types";
 import type { ParticipantTicket } from "@/types/participant.types";
 import { TicketConfirmedModal } from "../TicketConfirmedModal";
+import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
+import { PwaInstallModal } from "@/components/pwa/PwaInstallModal";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
 import { useSoundFx } from "@/hooks/useSoundFx";
 
 interface TicketsTabProps {
@@ -35,6 +38,18 @@ export function TicketsTab({
     draw: DrawItem;
     ticket: ParticipantTicket;
   } | null>(null);
+
+  const {
+    isStandalone,
+    isIos,
+    isAndroid,
+    canPromptNative,
+    isDismissed,
+    isModalOpen: isPwaModalOpen,
+    promptInstall,
+    dismissBanner,
+    closeGuide,
+  } = usePwaInstall();
 
   const rollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cardLockedRef = useRef<boolean[]>([false, false, false, false]);
@@ -452,6 +467,14 @@ export function TicketsTab({
         </div>
       </header>
 
+      {/* Banner Inteligente PWA para Instalação no Celular */}
+      <PwaInstallBanner
+        isStandalone={isStandalone}
+        isDismissed={isDismissed}
+        onInstallClick={promptInstall}
+        onDismiss={dismissBanner}
+      />
+
       {/* Painel Principal */}
       <div className="stitch-panel-card">
         <div className="stitch-controls-header">
@@ -664,6 +687,15 @@ export function TicketsTab({
           onClose={handleCloseConfirmedModal}
         />
       )}
+
+      {/* Modal Haute Couture com Guia Passo a Passo de Instalação */}
+      <PwaInstallModal
+        isOpen={isPwaModalOpen}
+        onClose={closeGuide}
+        defaultPlatform={isIos ? "ios" : "android"}
+        canPromptNative={canPromptNative}
+        onPromptNative={promptInstall}
+      />
     </>
   );
 }

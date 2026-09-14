@@ -85,6 +85,7 @@ export function WinnersTable({
         (item) =>
           item.name.toLowerCase().includes(q) ||
           item.store.toLowerCase().includes(q) ||
+          Boolean(item.city && item.city.toLowerCase().includes(q)) ||
           item.drawTitle.toLowerCase().includes(q) ||
           item.prizeTitle.toLowerCase().includes(q) ||
           item.luckyNumber.includes(q) ||
@@ -238,7 +239,7 @@ export function WinnersTable({
             <span className="material-symbols-outlined">search</span>
             <input
               aria-label="Buscar sorteios e ganhadores"
-              placeholder="Buscar por sorteio, prêmio, ganhador, loja ou número..."
+              placeholder="Buscar por sorteio, prêmio, ganhador, loja, cidade ou número..."
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -339,7 +340,7 @@ export function WinnersTable({
                   <tr>
                     <th>Sorteio</th>
                     <th>Ganhador</th>
-                    <th>Loja</th>
+                    <th>Loja / Cidade</th>
                     <th>Contato</th>
                     <th>Data da apuração</th>
                   </tr>
@@ -372,16 +373,7 @@ export function WinnersTable({
                         </button>
                       </td>
                       <td className="stitch-name">
-                        <div
-                          style={{
-                            fontWeight: 600,
-                            fontSize: "14px",
-                            color: "#201416",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {item.name}
-                        </div>
+                        <div>{item.name}</div>
                         {item.userType && (
                           <span
                             style={{
@@ -394,8 +386,29 @@ export function WinnersTable({
                           </span>
                         )}
                       </td>
-                      <td style={{ fontSize: "13px", color: "#4b5563" }}>
-                        {item.store}
+                      <td>
+                        {item.store && item.store !== "—" ? (
+                          <div>
+                            <div style={{ fontWeight: 600, color: "#201416" }}>{item.store}</div>
+                            {item.city && item.city !== "—" && (
+                              <div style={{ display: "inline-flex", alignItems: "center", gap: "3px", fontSize: "11.5px", color: "#786568", marginTop: "2px" }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: "13px", color: "#9a741a" }}>
+                                  location_on
+                                </span>
+                                <span>{item.city}</span>
+                              </div>
+                            )}
+                          </div>
+                        ) : item.city && item.city !== "—" ? (
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: "#372729", fontWeight: 500, fontSize: "13px" }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#9a741a" }}>
+                              location_on
+                            </span>
+                            <span>{item.city}</span>
+                          </div>
+                        ) : (
+                          <span style={{ color: "#9ca3af", fontSize: "13px" }}>—</span>
+                        )}
                       </td>
                       <td>
                         <div className="stitch-contacts">
@@ -431,9 +444,7 @@ export function WinnersTable({
                           )}
                         </div>
                       </td>
-                      <td
-                        style={{ fontSize: "13px", color: "#6b7280", whiteSpace: "nowrap" }}
-                      >
+                      <td>
                         {formatDate(item.wonAt)}
                       </td>
                     </tr>
@@ -450,7 +461,9 @@ export function WinnersTable({
                     <div className="pcm-user">
                       <h3 className="pcm-name">{item.name}</h3>
                       {item.userType && (
-                        <span className="pcm-tag">{item.userType}</span>
+                        <span className="pcm-tag">
+                          {USER_TYPE_LABELS[item.userType as UserType] || item.userType}
+                        </span>
                       )}
                     </div>
 
@@ -466,10 +479,30 @@ export function WinnersTable({
                   </div>
 
                   <div className="pcm-meta">
-                    <div className="pcm-store">
-                      <span className="material-symbols-outlined">storefront</span>
-                      <span>{item.store || "—"}</span>
-                    </div>
+                    {item.store && item.store !== "—" ? (
+                      <>
+                        <div className="pcm-store">
+                          <span className="material-symbols-outlined">storefront</span>
+                          <span>{item.store}</span>
+                        </div>
+                        {item.city && item.city !== "—" && (
+                          <div className="pcm-city" style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#786568" }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#9a741a" }}>location_on</span>
+                            <span>{item.city}</span>
+                          </div>
+                        )}
+                      </>
+                    ) : item.city && item.city !== "—" ? (
+                      <div className="pcm-city" style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#372729", fontWeight: 500 }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#9a741a" }}>location_on</span>
+                        <span>{item.city}</span>
+                      </div>
+                    ) : (
+                      <div className="pcm-store">
+                        <span className="material-symbols-outlined">storefront</span>
+                        <span style={{ color: "#9ca3af" }}>—</span>
+                      </div>
+                    )}
 
                     <div className="pcm-date">
                       <span className="material-symbols-outlined">schedule</span>

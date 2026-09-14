@@ -4394,6 +4394,77 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
   border-color: rgba(231, 194, 117, 0.8) !important;
 }
 
+/* =========================================================
+   PWA Smart Install Banner
+   ========================================================= */
+.stitch-pwa-banner {
+  padding: 14px 18px !important;
+  margin-bottom: 20px !important;
+  background: linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%) !important;
+  border: 1.5px solid #ebdcc5 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(83, 0, 23, 0.04) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  flex-wrap: wrap !important;
+  position: relative !important;
+}
+
+.stitch-pwa-banner-content {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-width: 240px !important;
+  flex: 1 1 auto !important;
+}
+
+.stitch-pwa-banner-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-shrink: 0 !important;
+}
+
+.stitch-pwa-banner-dismiss {
+  background: none !important;
+  border: none !important;
+  color: #a39294 !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  display: grid !important;
+  place-items: center !important;
+  transition: color 0.2s ease, background 0.2s ease !important;
+  flex-shrink: 0 !important;
+}
+
+.stitch-pwa-banner-dismiss:hover {
+  color: #530017 !important;
+  background: rgba(83, 0, 23, 0.06) !important;
+}
+
+@media (max-width: 640px) {
+  .stitch-pwa-banner {
+    padding: 14px 16px !important;
+    gap: 14px !important;
+  }
+
+  .stitch-pwa-banner-actions {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .stitch-pwa-banner-dismiss {
+    margin-left: auto !important;
+  }
+}
+
+
 
 
 

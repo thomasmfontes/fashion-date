@@ -93,7 +93,7 @@ export function ParticipantsTable({
             <tr>
               <th>Nº da sorte</th>
               <th>Participante</th>
-              <th>Loja</th>
+              <th>Loja / Cidade</th>
               <th>Contato</th>
               <th>Data de inscrição</th>
               <th className="stitch-actions-col">Ações</th>
@@ -162,11 +162,27 @@ export function ParticipantsTable({
                   )}
                 </td>
                 <td>
-                  <div>{item.store}</div>
-                  {item.city && (
-                    <div style={{ fontSize: "11px", color: "#8c787a", marginTop: "2px" }}>
-                      {item.city}
+                  {item.store && item.store !== "—" ? (
+                    <div>
+                      <div style={{ fontWeight: 600, color: "#201416" }}>{item.store}</div>
+                      {item.city && item.city !== "—" && (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: "3px", fontSize: "11.5px", color: "#786568", marginTop: "2px" }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: "13px", color: "#9a741a" }}>
+                            location_on
+                          </span>
+                          <span>{item.city}</span>
+                        </div>
+                      )}
                     </div>
+                  ) : item.city && item.city !== "—" ? (
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: "#372729", fontWeight: 500, fontSize: "13px" }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#9a741a" }}>
+                        location_on
+                      </span>
+                      <span>{item.city}</span>
+                    </div>
+                  ) : (
+                    <span style={{ color: "#9ca3af", fontSize: "13px" }}>—</span>
                   )}
                 </td>
                 <td>
@@ -268,15 +284,28 @@ export function ParticipantsTable({
             </div>
 
             <div className="pcm-meta">
-              <div className="pcm-store">
-                <span className="material-symbols-outlined">storefront</span>
-                <span>{item.store || "—"}</span>
-              </div>
-
-              {item.city && (
-                <div className="pcm-city" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#786568" }}>
+              {item.store && item.store !== "—" ? (
+                <>
+                  <div className="pcm-store">
+                    <span className="material-symbols-outlined">storefront</span>
+                    <span>{item.store}</span>
+                  </div>
+                  {item.city && item.city !== "—" && (
+                    <div className="pcm-city" style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#786568" }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#9a741a" }}>location_on</span>
+                      <span>{item.city}</span>
+                    </div>
+                  )}
+                </>
+              ) : item.city && item.city !== "—" ? (
+                <div className="pcm-city" style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#372729", fontWeight: 500 }}>
                   <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#9a741a" }}>location_on</span>
                   <span>{item.city}</span>
+                </div>
+              ) : (
+                <div className="pcm-store">
+                  <span className="material-symbols-outlined">storefront</span>
+                  <span style={{ color: "#9ca3af" }}>—</span>
                 </div>
               )}
 

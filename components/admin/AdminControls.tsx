@@ -65,7 +65,7 @@ export function AdminControls({
           <span className="material-symbols-outlined">search</span>
           <input
             aria-label="Buscar participantes"
-            placeholder="Buscar por nome, loja, telefone ou número da sorte..."
+            placeholder="Buscar por nome, loja, cidade, telefone ou número..."
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
           />

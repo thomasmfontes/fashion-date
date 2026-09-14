@@ -30,7 +30,11 @@ export function WinnerDetailsModal({
     >
       <p style={{ color: "#6b585b", fontSize: "13.5px", margin: "-12px 0 18px", lineHeight: 1.4 }}>
         Ganhador: <strong style={{ color: "#2e1f22" }}>{winner.name}</strong>
-        {winner.store && winner.store !== "—" ? ` (${winner.store})` : ""}
+        {winner.store && winner.store !== "—"
+          ? ` (${winner.store}${winner.city && winner.city !== "—" ? ` • ${winner.city}` : ""})`
+          : winner.city && winner.city !== "—"
+            ? ` (${winner.city})`
+            : ""}
       </p>
 
       {/* Card do Sorteio no padrão exato do sistema */}
