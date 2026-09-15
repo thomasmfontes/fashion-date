@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { SavedParticipant, UserType } from "@/types/participant.types";
 import { USER_TYPE_LABELS, USER_TYPE_ICONS } from "@/types/participant.types";
 import { PrivacyPolicyModal } from "@/components/public/PrivacyPolicyModal";
@@ -8,22 +8,206 @@ import { TermsOfUseModal } from "@/components/public/TermsOfUseModal";
 import { SecurityPrivacyCard } from "@/components/public/SecurityPrivacyCard";
 import { PwaProfileCard } from "@/components/pwa/PwaProfileCard";
 import { PwaInstallModal } from "@/components/pwa/PwaInstallModal";
+import { Modal } from "@/components/ui/Modal";
+import { Toast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/useToast";
+import { useSavedParticipant } from "@/hooks/useSavedParticipant";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatName, formatPhone, formatInstagram, formatDate } from "@/utils/formatters";
+
+/**
+ * Processa a imagem do participante com corte centralizado 1:1 e compressão
+ * otimizada (256x256 WebP/JPEG de ~20KB) no próprio navegador.
+ */
+function processImageFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const size = 256;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Não foi possível inicializar o processador de imagem."));
+          return;
+        }
+
+        const minDim = Math.min(img.width, img.height);
+        const startX = (img.width - minDim) / 2;
+        const startY = (img.height - minDim) / 2;
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, size, size);
+
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error("Erro ao carregar a imagem selecionada."));
+      img.src = reader.result as string;
+    };
+    reader.onerror = () => reject(new Error("Erro ao ler o arquivo de foto."));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Tenta fazer upload para o bucket 'avatars' no Supabase Storage.
+ * Caso o bucket ou permissões não estejam disponíveis, usa o próprio data URL otimizado como fallback.
+ */
+async function uploadAvatarOrFallback(dataUrl: string, userId?: string): Promise<string> {
+  const supabase = getSupabaseBrowserClient();
+  if (supabase && userId) {
+    try {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const fileName = `${userId}/avatar-${Date.now()}.jpg`;
+      const { data, error } = await supabase.storage
+        .from("avatars")
+        .upload(fileName, blob, {
+          contentType: "image/jpeg",
+          upsert: true,
+        });
+
+      if (!error && data?.path) {
+        const { data: publicUrlData } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(data.path);
+        if (publicUrlData?.publicUrl) {
+          return publicUrlData.publicUrl;
+        }
+      }
+    } catch {
+      // Fallback gracioso para data URL
+    }
+  }
+  return dataUrl;
+}
 
 interface ProfileTabProps {
   participant: SavedParticipant | null;
   avatarUrl?: string | null;
   onLogout: () => void;
+  onUpdateAvatar?: (url: string | null) => void;
 }
 
-export function ProfileTab({ participant, avatarUrl, onLogout }: ProfileTabProps) {
+export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }: ProfileTabProps) {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
+
+  // Photo management state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { saveParticipant } = useSavedParticipant();
+  const { toast, showToast, dismissToast } = useToast();
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(avatarUrl || participant?.avatarUrl || null);
+  const [isModalPreviewOpen, setIsModalPreviewOpen] = useState(false);
+  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
+  const [isSavingPhoto, setIsSavingPhoto] = useState(false);
+
+  useEffect(() => {
+    setCurrentAvatarUrl(avatarUrl || participant?.avatarUrl || null);
+  }, [avatarUrl, participant?.avatarUrl]);
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showToast("Selecione um arquivo de imagem válido (JPG, PNG, WebP).", "error");
+      return;
+    }
+
+    try {
+      const cropped = await processImageFile(file);
+      setPreviewDataUrl(cropped);
+      setIsModalPreviewOpen(true);
+    } catch (err) {
+      console.error(err);
+      showToast("Não foi possível carregar a imagem. Tente outra foto.", "error");
+    }
+  }
+
+  async function confirmSavePhoto() {
+    if (!previewDataUrl) return;
+    setIsSavingPhoto(true);
+
+    try {
+      const finalAvatarUrl = await uploadAvatarOrFallback(previewDataUrl, participant?.authUserId);
+
+      // 1. Atualiza metadados no Supabase Auth
+      const supabase = getSupabaseBrowserClient();
+      if (supabase) {
+        await supabase.auth.updateUser({
+          data: { avatar_url: finalAvatarUrl },
+        }).catch((err) => {
+          console.warn("Supabase auth updateUser avatar warning:", err);
+        });
+      }
+
+      // 2. Atualiza participante em cache local
+      if (participant) {
+        saveParticipant({
+          ...participant,
+          avatarUrl: finalAvatarUrl,
+        });
+      }
+
+      // 3. Atualiza estado local e pai
+      setCurrentAvatarUrl(finalAvatarUrl);
+      setAvatarError(false);
+      onUpdateAvatar?.(finalAvatarUrl);
+
+      setIsModalPreviewOpen(false);
+      setPreviewDataUrl(null);
+      showToast("Foto de perfil atualizada com sucesso!", "success");
+    } catch (err) {
+      console.error("Erro ao salvar foto de perfil:", err);
+      showToast("Erro ao salvar a foto de perfil. Tente novamente.", "error");
+    } finally {
+      setIsSavingPhoto(false);
+    }
+  }
+
+  async function handleRemovePhoto() {
+    if (isSavingPhoto) return;
+    setIsSavingPhoto(true);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      if (supabase) {
+        await supabase.auth.updateUser({
+          data: { avatar_url: "" },
+        }).catch(() => {});
+      }
+
+      if (participant) {
+        saveParticipant({
+          ...participant,
+          avatarUrl: null,
+        });
+      }
+
+      setCurrentAvatarUrl(null);
+      setAvatarError(false);
+      onUpdateAvatar?.(null);
+
+      showToast("Foto de perfil removida.", "info");
+    } catch {
+      showToast("Erro ao remover foto de perfil.", "error");
+    } finally {
+      setIsSavingPhoto(false);
+    }
+  }
+
   const {
     isStandalone,
     isIos,
@@ -64,7 +248,7 @@ export function ProfileTab({ participant, avatarUrl, onLogout }: ProfileTabProps
     }
   }
 
-  const resolvedAvatar = !avatarError ? (avatarUrl || participant?.avatarUrl || null) : null;
+  const resolvedAvatar = !avatarError ? (currentAvatarUrl || null) : null;
 
   const displayName = participant?.name ? formatName(participant.name) : "Participante";
   const formattedPhone = participant?.phone ? formatPhone(participant.phone) : "Não informado";
@@ -102,47 +286,45 @@ export function ProfileTab({ participant, avatarUrl, onLogout }: ProfileTabProps
           boxShadow: "0 4px 20px rgba(67, 0, 20, 0.03)",
           display: "flex",
           alignItems: "center",
-          gap: "18px",
+          gap: "20px",
+          flexWrap: "wrap",
         }}
       >
-        <div
-          className="stitch-avatar"
-          style={{
-            width: "56px",
-            height: "56px",
-            borderRadius: "12px",
-            background: "rgba(83, 0, 23, 0.08)",
-            border: "1px solid rgba(199, 154, 54, 0.35)",
-            color: "#530017",
-            display: "grid",
-            placeItems: "center",
-            fontSize: "24px",
-            fontWeight: 700,
-            fontFamily: "var(--font-fashion, serif)",
-            flexShrink: 0,
-            overflow: "hidden",
-            position: "relative",
-          }}
-        >
-          {resolvedAvatar ? (
-            <img
-              src={resolvedAvatar}
-              alt={displayName}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                borderRadius: "12px",
-              }}
-              referrerPolicy="no-referrer"
-              onError={() => setAvatarError(true)}
-            />
-          ) : (
-            displayName.charAt(0)
-          )}
+        {/* Avatar com Badge Interativo */}
+        <div className="stitch-avatar-profile-wrapper">
+          <div className="stitch-avatar stitch-avatar-profile">
+            {resolvedAvatar ? (
+              <img
+                src={resolvedAvatar}
+                alt={displayName}
+                referrerPolicy="no-referrer"
+                onError={() => setAvatarError(true)}
+              />
+            ) : (
+              displayName.charAt(0)
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="stitch-avatar-camera-badge"
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="Alterar foto de perfil"
+            title="Alterar foto"
+          >
+            <span className="material-symbols-outlined">photo_camera</span>
+          </button>
         </div>
 
-        <div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png, image/jpeg, image/webp, image/heic, image/gif"
+          style={{ display: "none" }}
+          onChange={handleFileSelected}
+        />
+
+        <div style={{ flex: 1, minWidth: "240px" }}>
           <h2
             style={{
               margin: "0 0 4px",
@@ -491,6 +673,68 @@ export function ProfileTab({ participant, avatarUrl, onLogout }: ProfileTabProps
           </div>
         </div>
       )}
+
+      {/* Modal de Prévia e Confirmação da Foto de Perfil */}
+      <Modal
+        isOpen={isModalPreviewOpen}
+        onClose={() => {
+          if (!isSavingPhoto) {
+            setIsModalPreviewOpen(false);
+            setPreviewDataUrl(null);
+          }
+        }}
+        title="Nova Foto de Perfil"
+      >
+        <div className="avatar-preview-modal-body">
+          <div className="avatar-preview-crop-frame">
+            {previewDataUrl && (
+              <img src={previewDataUrl} alt="Prévia da nova foto de perfil" />
+            )}
+          </div>
+          <p className="avatar-preview-hint">
+            Essa foto será exibida no seu perfil e nas credenciais dos sorteios do evento.
+          </p>
+        </div>
+
+        <footer className="edit-modal-footer">
+          {resolvedAvatar && (
+            <button
+              type="button"
+              className="stitch-button outline"
+              onClick={async () => {
+                await handleRemovePhoto();
+                setIsModalPreviewOpen(false);
+                setPreviewDataUrl(null);
+              }}
+              disabled={isSavingPhoto}
+              style={{ marginRight: "auto", color: "#991b1b", borderColor: "#f1cfd4" }}
+            >
+              Remover Foto Atual
+            </button>
+          )}
+          <button
+            type="button"
+            className="stitch-button outline"
+            onClick={() => {
+              setIsModalPreviewOpen(false);
+              setPreviewDataUrl(null);
+            }}
+            disabled={isSavingPhoto}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="stitch-button filled"
+            onClick={confirmSavePhoto}
+            disabled={isSavingPhoto}
+          >
+            {isSavingPhoto ? "Salvando..." : "Salvar Foto"}
+          </button>
+        </footer>
+      </Modal>
+
+      <Toast message={toast} onDismiss={dismissToast} />
     </>
   );
 }

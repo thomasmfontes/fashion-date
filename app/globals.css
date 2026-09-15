@@ -59,7 +59,8 @@ html{background:var(--cream)}body{margin:0;color:var(--ink);background:var(--cre
 .draw-page.is-running .draw-number{animation:numberFocus .14s linear infinite}
 .draw-page.is-running .draw-line span{animation:drawLine 1s ease-in-out infinite}
 .draw-page.is-running .primary-button{opacity:.6}
-.draw-page .winner-panel{position:relative;overflow:visible!important;width:100%;max-width:960px;margin:clamp(16px,2.5vh,32px) auto 0;padding:clamp(28px,4vh,48px) clamp(20px,4vw,44px);border:1.5px solid rgba(231,194,117,.88);border-radius:16px;background:linear-gradient(145deg,#fff 0%,#fdfbf7 55%,#f6efe2 100%);box-shadow:0 35px 100px rgba(10,0,3,.35),inset 0 0 0 8px rgba(91,9,32,.035);color:#430014;display:flex;flex-direction:column;align-items:center;text-align:center;animation:winnerReveal .65s cubic-bezier(.2,.8,.2,1) both}
+.draw-page .winner-stage{width:100%!important;max-width:1080px!important;margin:0 auto!important;flex:1!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;padding:clamp(12px,2vh,28px) 0!important}
+.draw-page .winner-panel{position:relative;overflow:visible!important;width:100%;max-width:960px;margin:auto!important;padding:clamp(24px,3.5vh,44px) clamp(20px,4vw,44px);border:1.5px solid rgba(231,194,117,.88);border-radius:16px;background:linear-gradient(145deg,#fff 0%,#fdfbf7 55%,#f6efe2 100%);box-shadow:0 35px 100px rgba(10,0,3,.35),inset 0 0 0 8px rgba(91,9,32,.035);color:#430014;display:flex;flex-direction:column;align-items:center;text-align:center;animation:winnerReveal .65s cubic-bezier(.2,.8,.2,1) both}
 .draw-page .winner-panel::before,.draw-page .winner-panel::after{content:"";position:absolute;width:38px;height:38px;border-color:#ae8136}
 .draw-page .winner-panel::before{top:14px;left:14px;border-top:1px solid;border-left:1px solid}
 .draw-page .winner-panel::after{right:14px;bottom:14px;border-right:1px solid;border-bottom:1px solid}
@@ -110,6 +111,104 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
 .stitch-admin-user{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #ede4da;border-radius:10px;background:#fcfaf7}
 .stitch-avatar{display:grid;place-items:center;width:36px;height:36px;border-radius:8px;background:rgba(83,0,23,.09);color:#530017}
 .stitch-avatar span{font-size:20px}
+
+/* =========================================================
+   PROFILE AVATAR EDIT & PREVIEW — Haute Couture
+   ========================================================= */
+.stitch-avatar-profile-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.stitch-avatar.stitch-avatar-profile {
+  width: 64px !important;
+  height: 64px !important;
+  border-radius: 16px !important;
+  background: rgba(83, 0, 23, 0.08) !important;
+  border: 1.5px solid rgba(199, 154, 54, 0.45) !important;
+  color: #530017 !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  font-family: var(--font-fashion, serif) !important;
+  overflow: hidden !important;
+  position: relative !important;
+  box-shadow: 0 4px 14px rgba(83, 0, 23, 0.08) !important;
+}
+
+.stitch-avatar.stitch-avatar-profile img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 14px !important;
+}
+
+.stitch-avatar-camera-badge {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #530017;
+  border: 2px solid #ffffff;
+  color: #f7eedf;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 3px 8px rgba(83, 0, 23, 0.28);
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stitch-avatar-camera-badge:hover {
+  transform: scale(1.1);
+  background: #730020;
+  box-shadow: 0 4px 12px rgba(83, 0, 23, 0.38);
+}
+
+.stitch-avatar-camera-badge span {
+  font-size: 14px !important;
+  color: #f7eedf !important;
+}
+
+/* Modal de Pré-visualização de Foto de Perfil */
+.avatar-preview-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 20px;
+  gap: 16px;
+  text-align: center;
+}
+
+.avatar-preview-crop-frame {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 3px solid #9a741a;
+  box-shadow: 0 10px 30px rgba(83, 0, 23, 0.15), 0 0 0 6px rgba(154, 116, 26, 0.12);
+  overflow: hidden;
+  background: #faf6ef;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.avatar-preview-crop-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-preview-hint {
+  font-size: 13px;
+  color: #6e595c;
+  margin: 0;
+  line-height: 1.45;
+  max-width: 320px;
+}
 .stitch-user-info strong{display:block;color:#332225;font-size:12.5px;line-height:1.2}
 .stitch-user-info span{color:#8c787a;font-size:10.5px}
 .stitch-logout-btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 14px;border:1px solid #e2d6ca;border-radius:8px;background:#fff;color:#7a6568;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .18s ease}
@@ -1011,7 +1110,7 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
   }
 }
 
-.delete-modal>p{margin:0;color:#6d5c5e;font:16px/1.6 Georgia,serif}.delete-modal>p strong{color:#530017}.stitch-button.danger-filled{border:1px solid #8e2738;background:#8e2738;color:#fff}.stitch-button.danger-filled:hover{background:#6f142c}.app-toast{position:fixed;z-index:12000;right:24px;bottom:24px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;width:min(390px,calc(100vw - 32px));padding:15px 16px;border:1px solid #d4c7bd;background:#fff;color:#3b2d2f;box-shadow:0 22px 65px rgba(31,5,12,.2);animation:toastIn .25s ease both}.app-toast.success{border-left:4px solid #4d8a5e}.app-toast.error{border-left:4px solid #a83a45}.app-toast>span{color:#4d8a5e}.app-toast.error>span{color:#a83a45}.app-toast p{margin:0;font-size:13px;line-height:1.4}.app-toast button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:#78686a}.app-toast button span{font-size:18px}@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@media(max-width:580px){.app-toast{right:16px;bottom:16px}.delete-modal>footer{grid-template-columns:1fr}}
+.delete-modal>p{margin:0;color:#6d5c5e;font:16px/1.6 Georgia,serif}.delete-modal>p strong{color:#530017}.stitch-button.danger-filled{border:1px solid #8e2738;background:#8e2738;color:#fff}.stitch-button.danger-filled:hover{background:#6f142c}@media(max-width:580px){.delete-modal>footer{grid-template-columns:1fr}}
 .stitch-header-info{display:flex!important;align-items:center!important;flex:1 1 auto!important;min-width:0!important}
 .stitch-header-pill{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 10px;border-radius:20px;background:#fbf7f0;border:1px solid #e5d8c8;color:#430014;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
 .stitch-header-pill .material-symbols-outlined{font-size:18px;color:#9a741a}
@@ -2681,27 +2780,30 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
 }
 
 /* =========================================================
-   APP TOAST NOTIFICATION COMPONENT
+   APP TOAST NOTIFICATION COMPONENT — Haute Couture
    ========================================================= */
 .app-toast {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: 28px;
+  right: 28px;
   z-index: 9999;
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 280px;
-  max-width: 440px;
-  padding: 13px 18px;
-  border-radius: 12px;
-  background: #ffffff;
-  border: 1.5px solid #e7ded4;
-  border-left: 5px solid #2b7a42;
-  box-shadow: 0 12px 32px rgba(67, 0, 20, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
-  color: #2e1d20;
-  font-family: Arial, Helvetica, sans-serif;
-  animation: toastSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  gap: 14px;
+  min-width: 290px;
+  max-width: 460px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #fffefb 0%, #faf5ec 100%);
+  border: 1.5px solid rgba(154, 116, 26, 0.25);
+  box-shadow:
+    0 20px 56px rgba(83, 0, 23, 0.10),
+    0 6px 16px rgba(83, 0, 23, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(154, 116, 26, 0.06);
+  color: #430014;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  animation: toastSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .app-toast.is-exiting {
@@ -2711,7 +2813,7 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
 @keyframes toastSlideUp {
   from {
     opacity: 0;
-    transform: translateY(16px) scale(0.96);
+    transform: translateY(18px) scale(0.95);
   }
   to {
     opacity: 1;
@@ -2726,55 +2828,106 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
   }
   to {
     opacity: 0;
-    transform: translateY(16px) scale(0.96);
+    transform: translateY(18px) scale(0.95);
   }
 }
 
-.app-toast.error {
-  border-left-color: #991b1b;
-}
-
+/* Icon badge — refined circle with marsala accent */
 .app-toast > .material-symbols-outlined {
-  font-size: 22px;
-  color: #2b7a42;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(83, 0, 23, 0.07);
+  border: 1.5px solid rgba(83, 0, 23, 0.12);
+  font-size: 18px;
+  color: #530017;
   flex-shrink: 0;
 }
 
+.app-toast.success > .material-symbols-outlined {
+  background: rgba(154, 116, 26, 0.10);
+  border-color: rgba(154, 116, 26, 0.22);
+  color: #855e09;
+}
+
 .app-toast.error > .material-symbols-outlined {
+  background: rgba(153, 27, 27, 0.08);
+  border-color: rgba(153, 27, 27, 0.18);
   color: #991b1b;
 }
 
+/* Text — serif-inflected, warm marsala */
 .app-toast p {
   margin: 0;
   flex: 1;
   font-size: 13.5px;
-  font-weight: 500;
-  line-height: 1.4;
-  color: #3b000f;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #430014;
+  letter-spacing: 0.01em;
+  font-family: Georgia, "Bodoni Moda", serif;
 }
 
+/* Close button — subtle, warm */
 .app-toast button {
   display: grid;
   place-items: center;
   width: 26px;
   height: 26px;
-  border-radius: 6px;
+  border-radius: 50%;
   background: transparent;
-  border: none;
-  color: #8c7679;
+  border: 1px solid transparent;
+  color: rgba(83, 0, 23, 0.35);
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
 }
 
 .app-toast button:hover {
-  background: #fbf7f0;
-  color: #3b000f;
+  background: rgba(83, 0, 23, 0.06);
+  border-color: rgba(83, 0, 23, 0.12);
+  color: #530017;
 }
 
 .app-toast button .material-symbols-outlined {
-  font-size: 18px;
+  font-size: 16px;
+}
+
+@media (max-width: 580px) {
+  .app-toast {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    min-width: 0;
+    width: calc(100vw - 32px);
+    max-width: 400px;
+    bottom: 20px;
+  }
+
+  @keyframes toastSlideUp {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(18px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+  }
+
+  @keyframes toastSlideDown {
+    from {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-50%) translateY(18px) scale(0.95);
+    }
+  }
 }
 
 /* =========================================================

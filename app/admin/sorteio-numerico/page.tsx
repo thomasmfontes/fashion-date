@@ -149,63 +149,66 @@ export default function NumericDrawPage() {
       </header>
 
       {winner ? (
-        <section className="winner-panel numeric-winner-panel" aria-live="polite">
-          <div className="winner-trophy-badge">
-            <span className="material-symbols-outlined">workspace_premium</span>
-            <span>Número Contemplado</span>
-          </div>
+        <section className="draw-stage winner-stage">
+          <div className="winner-panel numeric-winner-panel" aria-live="polite">
+            <div className="winner-trophy-badge">
+              <span className="material-symbols-outlined">workspace_premium</span>
+              <span>Número Contemplado</span>
+            </div>
 
-          <div className="draw-slots-wrap winner-slots-wrap">
-            {winner.number.split("").map((digit, idx) => (
-              <div key={idx} className="draw-slot-digit is-locked">
-                <span className="slot-sheen" />
-                <span className="slot-num">{digit}</span>
+            <div className="draw-slots-wrap winner-slots-wrap">
+              {winner.number.split("").map((digit, idx) => (
+                <div key={idx} className="draw-slot-digit is-locked">
+                  <span className="slot-sheen" />
+                  <span className="slot-num">{digit}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="winner-card-body">
+              <div className="winner-prize-banner">
+                <span className="winner-prize-kicker">Ganhador do Sorteio</span>
+                <h2 className="winner-prize-title">{winner.prizeTitle}</h2>
               </div>
-            ))}
-          </div>
 
-          <div className="winner-card-body">
-            <div className="winner-prize-banner">
-              <span className="winner-prize-kicker">Parabéns ao Ganhador(a)</span>
-              <h3 className="winner-prize-title">{winner.prizeTitle}</h3>
-            </div>
+              <div className="numeric-winner-number-callout">
+                <span className="winner-number-kicker">Número Sorteado</span>
+                <strong className="winner-number-val">#{winner.number}</strong>
+              </div>
 
-            <div className="winner-meta">
-              <span className="winner-pill winner-pill-type">
-                <span className="material-symbols-outlined">schedule</span>
-                <span>Sorteado às {winner.drawnAt}</span>
-              </span>
+              <div className="winner-meta">
+                <span className="winner-pill winner-pill-type">
+                  <span className="material-symbols-outlined">verified</span>
+                  <span>Sorteio #{winner.number}</span>
+                </span>
+                <span className="winner-pill winner-pill-store">
+                  <span className="material-symbols-outlined">schedule</span>
+                  <span>{new Date(winner.drawnAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                </span>
+              </div>
 
-              <span className="winner-pill winner-pill-store">
-                <span className="material-symbols-outlined">tag</span>
-                <span>Intervalo: {String(config.min).padStart(3, "0")} a {String(config.max).padStart(3, "0")}</span>
-              </span>
-            </div>
-
-            <div className="winner-actions">
-              <button
-                className="winner-btn-primary"
-                type="button"
-                onClick={() => {
-                  resetDraw();
-                  showToast("Pronto para o próximo sorteio!");
-                }}
-              >
-                <span className="material-symbols-outlined">casino</span>
-                <span>Próximo Sorteio</span>
-              </button>
-              <button
-                className="winner-btn-secondary"
-                type="button"
-                onClick={() => setIsConfigOpen(true)}
-              >
-                <span className="material-symbols-outlined">tune</span>
-                <span>Trocar Prêmio / Intervalo</span>
-              </button>
-              <a className="winner-btn-secondary" href="/admin/vencedores">
-                <span className="material-symbols-outlined">workspace_premium</span>
-                <span>Painel de Vencedores</span>
-              </a>
+              <div className="winner-actions">
+                <button
+                  className="winner-btn-primary"
+                  type="button"
+                  onClick={resetDraw}
+                >
+                  <span className="material-symbols-outlined">refresh</span>
+                  <span>Novo Sorteio</span>
+                </button>
+                <button
+                  className="winner-btn-secondary"
+                  type="button"
+                  onClick={() => setIsConfigOpen(true)}
+                >
+                  <span className="material-symbols-outlined">tune</span>
+                  <span>Trocar Prêmio / Intervalo</span>
+                </button>
+                <a className="winner-btn-secondary" href="/admin/vencedores">
+                  <span className="material-symbols-outlined">workspace_premium</span>
+                  <span>Painel de Vencedores</span>
+                </a>
+              </div>
             </div>
           </div>
         </section>
@@ -254,7 +257,7 @@ export default function NumericDrawPage() {
               onClick={triggerDraw}
               disabled={isRunning || remainingCount === 0}
             >
-              <span className="material-symbols-outlined">casino</span>
+              <span className="material-symbols-outlined">tune</span>
               {isRunning
                 ? "Sorteando..."
                 : remainingCount === 0
@@ -287,6 +290,7 @@ export default function NumericDrawPage() {
         config={config}
         onSaveConfig={(newConf) => {
           updateConfig(newConf);
+          resetDraw();
           showToast("Configurações atualizadas!");
         }}
         history={history}

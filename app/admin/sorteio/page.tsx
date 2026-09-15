@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, useRef, type CSSProperties } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { useSlotMachine } from "@/hooks/useSlotMachine";
@@ -120,7 +120,17 @@ export default function UnifiedDrawPage() {
     }
   }
 
+  // Ao alterar a rodada/acervo, retorna direto para a tela da roleta limpa
+  const prevActiveDrawIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevActiveDrawIdRef.current !== null && prevActiveDrawIdRef.current !== activeDrawId) {
+      slotMachine.resetDraw();
+    }
+    prevActiveDrawIdRef.current = activeDrawId;
+  }, [activeDrawId, slotMachine]);
+
   function handleSelectFromScreen(drawId: string) {
+    slotMachine.resetDraw();
     selectActiveDraw(drawId);
     setIsDrawerOpen(false);
     const target = draws.find((d) => d.id === drawId);
@@ -362,93 +372,95 @@ export default function UnifiedDrawPage() {
 
       {/* Palco do Sorteio / Anúncio do Vencedor */}
       {slotMachine.winner ? (
-        <section className="winner-panel" aria-live="polite">
-          <div className="winner-trophy-badge">
-            <span className="material-symbols-outlined">workspace_premium</span>
-            <span>Número Contemplado</span>
-          </div>
-
-          <div className="draw-slots-wrap winner-slots-wrap">
-            {formatLuckyNumber(slotMachine.winner.luckyNumber)
-              .split("")
-              .map((digit, idx) => (
-                <div key={idx} className="draw-slot-digit is-locked">
-                  <span className="slot-sheen" />
-                  <span className="slot-num">{digit}</span>
-                </div>
-              ))}
-          </div>
-
-          <div className="winner-card-body">
-            <div className="winner-prize-banner">
-              <span className="winner-prize-kicker">Ganhador do Sorteio</span>
+        <section className="draw-stage winner-stage">
+          <div className="winner-panel" aria-live="polite">
+            <div className="winner-trophy-badge">
+              <span className="material-symbols-outlined">workspace_premium</span>
+              <span>Número Contemplado</span>
             </div>
 
-            <h2 className="winner-name">{slotMachine.winner.name}</h2>
-
-            <div className="winner-meta">
-              <span className="winner-pill winner-pill-type">
-                <span className="material-symbols-outlined">{USER_TYPE_ICONS[winnerType]}</span>
-                <span>{USER_TYPE_LABELS[winnerType]}</span>
-              </span>
-
-              <span className="winner-pill winner-pill-store">
-                <span className="material-symbols-outlined">storefront</span>
-                <span>{slotMachine.winner.store}</span>
-              </span>
-
-              {slotMachine.winner.instagram && (
-                <a
-                  className="winner-pill winner-pill-instagram"
-                  href={buildInstagramUrl(slotMachine.winner.instagram)}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <img
-                    className="winner-social-icon"
-                    src="https://cdn.simpleicons.org/instagram/e1306c"
-                    alt="Instagram"
-                    width={16}
-                    height={16}
-                    style={{ width: 16, height: 16, minWidth: 16, minHeight: 16, maxWidth: 16, maxHeight: 16, display: "inline-block", verticalAlign: "middle" }}
-                  />
-                  <span>@{cleanInstagramHandle(slotMachine.winner.instagram)}</span>
-                </a>
-              )}
-
-              {slotMachine.winner.phone && (
-                <a
-                  className="winner-pill winner-pill-whatsapp"
-                  href={`https://wa.me/55${slotMachine.winner.phone.replace(/\D/g, "")}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <img
-                    className="winner-social-icon"
-                    src="https://cdn.simpleicons.org/whatsapp/25d366"
-                    alt="WhatsApp"
-                    width={16}
-                    height={16}
-                    style={{ width: 16, height: 16, minWidth: 16, minHeight: 16, maxWidth: 16, maxHeight: 16, display: "inline-block", verticalAlign: "middle" }}
-                  />
-                  <span>WhatsApp</span>
-                </a>
-              )}
+            <div className="draw-slots-wrap winner-slots-wrap">
+              {formatLuckyNumber(slotMachine.winner.luckyNumber)
+                .split("")
+                .map((digit, idx) => (
+                  <div key={idx} className="draw-slot-digit is-locked">
+                    <span className="slot-sheen" />
+                    <span className="slot-num">{digit}</span>
+                  </div>
+                ))}
             </div>
 
-            <div className="winner-actions">
-              <button
-                className="winner-btn-primary"
-                type="button"
-                onClick={slotMachine.resetDraw}
-              >
-                <span className="material-symbols-outlined">casino</span>
-                <span>Sortear Novamente</span>
-              </button>
-              <a className="winner-btn-secondary" href="/admin/vencedores">
-                <span className="material-symbols-outlined">workspace_premium</span>
-                <span>Painel de Vencedores</span>
-              </a>
+            <div className="winner-card-body">
+              <div className="winner-prize-banner">
+                <span className="winner-prize-kicker">Ganhador do Sorteio</span>
+              </div>
+
+              <h2 className="winner-name">{slotMachine.winner.name}</h2>
+
+              <div className="winner-meta">
+                <span className="winner-pill winner-pill-type">
+                  <span className="material-symbols-outlined">{USER_TYPE_ICONS[winnerType]}</span>
+                  <span>{USER_TYPE_LABELS[winnerType]}</span>
+                </span>
+
+                <span className="winner-pill winner-pill-store">
+                  <span className="material-symbols-outlined">storefront</span>
+                  <span>{slotMachine.winner.store}</span>
+                </span>
+
+                {slotMachine.winner.instagram && (
+                  <a
+                    className="winner-pill winner-pill-instagram"
+                    href={buildInstagramUrl(slotMachine.winner.instagram)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <img
+                      className="winner-social-icon"
+                      src="https://cdn.simpleicons.org/instagram/e1306c"
+                      alt="Instagram"
+                      width={16}
+                      height={16}
+                      style={{ width: 16, height: 16, minWidth: 16, minHeight: 16, maxWidth: 16, maxHeight: 16, display: "inline-block", verticalAlign: "middle" }}
+                    />
+                    <span>@{cleanInstagramHandle(slotMachine.winner.instagram)}</span>
+                  </a>
+                )}
+
+                {slotMachine.winner.phone && (
+                  <a
+                    className="winner-pill winner-pill-whatsapp"
+                    href={`https://wa.me/55${slotMachine.winner.phone.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <img
+                      className="winner-social-icon"
+                      src="https://cdn.simpleicons.org/whatsapp/25d366"
+                      alt="WhatsApp"
+                      width={16}
+                      height={16}
+                      style={{ width: 16, height: 16, minWidth: 16, minHeight: 16, maxWidth: 16, maxHeight: 16, display: "inline-block", verticalAlign: "middle" }}
+                    />
+                    <span>WhatsApp</span>
+                  </a>
+                )}
+              </div>
+
+              <div className="winner-actions">
+                <button
+                  className="winner-btn-primary"
+                  type="button"
+                  onClick={slotMachine.resetDraw}
+                >
+                  <span className="material-symbols-outlined">refresh</span>
+                  <span>Sortear Novamente</span>
+                </button>
+                <a className="winner-btn-secondary" href="/admin/vencedores">
+                  <span className="material-symbols-outlined">workspace_premium</span>
+                  <span>Painel de Vencedores</span>
+                </a>
+              </div>
             </div>
           </div>
         </section>

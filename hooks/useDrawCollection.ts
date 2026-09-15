@@ -61,6 +61,30 @@ export function useDrawCollection(adminKey?: string) {
     };
   }, []);
 
+  // Sync active draw changes across tabs
+  useEffect(() => {
+    function handleStorage(e: StorageEvent) {
+      if (e.key === STORAGE_KEY_ACTIVE_ID && e.newValue) {
+        setActiveDrawId(e.newValue);
+      }
+      if (e.key === STORAGE_KEY_COLLECTION && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setDraws(parsed);
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
+
   // Set active draw
   const selectActiveDraw = useCallback(
     (drawId: string) => {

@@ -217,12 +217,14 @@ export function useSlotMachine(adminKey: string) {
   }, [adminKey, isRunning, playTick, playLock, playVictory, delay, cancelTimers]);
 
   const resetDraw = useCallback(() => {
+    cancelTimers();
+    setIsRunning(false);
     setWinner(null);
     setError(null);
     setDigits(["0", "0", "0", "0"]);
     lockedRef.current = [false, false, false, false];
     setLockedDigits([false, false, false, false]);
-  }, []);
+  }, [cancelTimers]);
 
   const slotStates: SlotDigitState[] = digits.map((digit, idx) => ({
     digit,

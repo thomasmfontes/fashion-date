@@ -24,6 +24,7 @@ export default function HomePage() {
   const { clearParticipant } = useSavedParticipant();
 
   const [celebrating, setCelebrating] = useState(false);
+  const [customAvatar, setCustomAvatar] = useState<string | null | undefined>(undefined);
 
   // Confetti celebration after registration
   useEffect(() => {
@@ -60,12 +61,14 @@ export default function HomePage() {
   }
 
   const avatarUrl =
-    participant?.avatarUrl ||
-    user?.user_metadata?.avatar_url ||
-    user?.user_metadata?.picture ||
-    (user?.email
-      ? `https://unavatar.io/${encodeURIComponent(user.email.toLowerCase().trim())}?fallback=false`
-      : null);
+    customAvatar !== undefined
+      ? customAvatar
+      : (participant?.avatarUrl ||
+         user?.user_metadata?.avatar_url ||
+         user?.user_metadata?.picture ||
+         (user?.email
+           ? `https://unavatar.io/${encodeURIComponent(user.email.toLowerCase().trim())}?fallback=false`
+           : null));
 
   return (
     <>
@@ -101,6 +104,7 @@ export default function HomePage() {
         getTicket={getTicket}
         enterDraw={enterDraw}
         onLogout={handleLogout}
+        onUpdateAvatar={(newUrl) => setCustomAvatar(newUrl)}
       />
     </>
   );

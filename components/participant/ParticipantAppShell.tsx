@@ -20,6 +20,7 @@ interface ParticipantAppShellProps {
   getTicket: (drawId: string) => ParticipantTicket | undefined;
   enterDraw: (draw: DrawItem) => Promise<unknown>;
   onLogout: () => void;
+  onUpdateAvatar?: (url: string | null) => void;
 }
 
 export function ParticipantAppShell({
@@ -31,12 +32,26 @@ export function ParticipantAppShell({
   getTicket,
   enterDraw,
   onLogout,
+  onUpdateAvatar,
 }: ParticipantAppShellProps) {
   const [currentTab, setCurrentTab] = useState<ParticipantTab>("tickets");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(
+    avatarUrl || participant?.avatarUrl || null,
+  );
 
-  const resolvedAvatar = !avatarError ? (avatarUrl || participant?.avatarUrl || null) : null;
+  useEffect(() => {
+    setCurrentAvatarUrl(avatarUrl || participant?.avatarUrl || null);
+  }, [avatarUrl, participant?.avatarUrl]);
+
+  function handleAvatarUpdated(newUrl: string | null) {
+    setCurrentAvatarUrl(newUrl);
+    setAvatarError(false);
+    onUpdateAvatar?.(newUrl);
+  }
+
+  const resolvedAvatar = !avatarError ? currentAvatarUrl : null;
   const userType: UserType = participant?.userType || "lojista";
   const userTypeLabel = USER_TYPE_LABELS[userType] || USER_TYPE_LABELS.lojista;
 
@@ -365,6 +380,7 @@ export function ParticipantAppShell({
             participant={participant}
             avatarUrl={resolvedAvatar}
             onLogout={onLogout}
+            onUpdateAvatar={handleAvatarUpdated}
           />
         )}
       </section>
