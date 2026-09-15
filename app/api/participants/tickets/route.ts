@@ -180,7 +180,7 @@ export async function POST(request: Request) {
 
     // 2. Localiza o sorteio
     const draw = await db
-      .prepare("SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, st_sorteio FROM t_draw_definitions WHERE id_sorteio = ?")
+      .prepare("SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, st_sorteio, COALESCE(permite_gerar_numero, true) AS permite_gerar_numero FROM t_draw_definitions WHERE id_sorteio = ?")
       .bind(drawId)
       .first<{
         id_sorteio: string;
@@ -190,12 +190,20 @@ export async function POST(request: Request) {
         tem_limite: boolean;
         nr_limite_maximo: number | null;
         st_sorteio: string;
+        permite_gerar_numero?: boolean;
       }>();
 
     if (!draw) {
       return Response.json(
         { error: "Sorteio não encontrado." },
         { status: 404 },
+      );
+    }
+
+    if (draw.permite_gerar_numero === false) {
+      return Response.json(
+        { error: "A geração de números da sorte pelo aplicativo está desativada para este sorteio." },
+        { status: 400 },
       );
     }
 

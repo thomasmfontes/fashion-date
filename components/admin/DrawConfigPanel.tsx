@@ -165,6 +165,13 @@ export function DrawConfigPanel({
                         </span>
                       )}
 
+                      {draw.allowTicketGeneration === false && (
+                        <span className="stitch-draw-tag physical" title="Geração de números pelo aplicativo desativada">
+                          <span className="material-symbols-outlined">smartphone</span>
+                          <span>Sem Geração no App</span>
+                        </span>
+                      )}
+
                       <div className="stitch-audience-tags">
                         {isAllTypes ? (
                           <span className="stitch-draw-tag audience all">

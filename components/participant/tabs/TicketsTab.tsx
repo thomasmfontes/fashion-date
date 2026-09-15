@@ -67,7 +67,7 @@ export function TicketsTab({
 
   const handleClaimDraw = useCallback(
     async (draw: DrawItem) => {
-      if (animatingDrawId) return;
+      if (animatingDrawId || draw.allowTicketGeneration === false) return;
 
       setAnimatingDrawId(draw.id);
       setCardDigits(["0", "0", "0", "0"]);
@@ -180,6 +180,7 @@ export function TicketsTab({
 
   function renderDrawCard(draw: DrawItem) {
     const isThisCardAnimating = animatingDrawId === draw.id;
+    const isPhysical = draw.allowTicketGeneration === false;
 
     return (
       <article
@@ -209,11 +210,19 @@ export function TicketsTab({
                 borderRadius: "999px",
                 background: isThisCardAnimating
                   ? "linear-gradient(135deg, #530017 0%, #720023 100%)"
+                  : isPhysical
+                  ? "#fdf2f4"
                   : "rgba(154, 116, 26, 0.08)",
                 border: isThisCardAnimating
                   ? "1px solid #c79a36"
+                  : isPhysical
+                  ? "1px solid rgba(83, 0, 23, 0.2)"
                   : "1px solid rgba(154, 116, 26, 0.22)",
-                color: isThisCardAnimating ? "#fff2cc" : "#855e09",
+                color: isThisCardAnimating
+                  ? "#fff2cc"
+                  : isPhysical
+                  ? "#530017"
+                  : "#855e09",
                 fontSize: "10px",
                 fontWeight: 700,
                 textTransform: "uppercase",
@@ -222,16 +231,22 @@ export function TicketsTab({
                 transition: "all 0.25s ease",
               }}
             >
-              <span
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  background: isThisCardAnimating ? "#ffd54f" : "#c79a36",
-                  boxShadow: isThisCardAnimating ? "0 0 6px #ffd54f" : "none",
-                }}
-              />
-              {isThisCardAnimating ? "Sorteando..." : "Disponível"}
+              {isPhysical && !isThisCardAnimating ? (
+                <span className="material-symbols-outlined" style={{ fontSize: "13px", color: "#9a741a" }}>
+                  stars
+                </span>
+              ) : (
+                <span
+                  style={{
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: isThisCardAnimating ? "#ffd54f" : "#c79a36",
+                    boxShadow: isThisCardAnimating ? "0 0 6px #ffd54f" : "none",
+                  }}
+                />
+              )}
+              {isThisCardAnimating ? "Sorteando..." : isPhysical ? "Presencial" : "Disponível"}
             </span>
           </div>
 
@@ -410,6 +425,44 @@ export function TicketsTab({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          ) : isPhysical ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                background: "#fdfaf6",
+                border: "1px solid #ebdcc5",
+                boxSizing: "border-box",
+              }}
+            >
+              <div
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  background: "rgba(83, 0, 23, 0.08)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: "18px", color: "#530017" }}>
+                  stars
+                </span>
+              </div>
+              <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+                <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#530017", lineHeight: 1.3 }}>
+                  Sorteio Presencial
+                </div>
+                <div style={{ fontSize: "10.5px", color: "#786568", lineHeight: 1.3, marginTop: "2px" }}>
+                  A participação ocorre no evento, sem necessidade de gerar número pelo app.
+                </div>
               </div>
             </div>
           ) : (

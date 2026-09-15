@@ -181,6 +181,17 @@
   color: #855e09 !important;
 }
 
+.stitch-draw-tag.physical {
+  background: #fdf6ec !important;
+  border-color: #ecd5b1 !important;
+  color: #8c570b !important;
+}
+
+.stitch-draw-tag.physical .material-symbols-outlined {
+  font-size: 14px !important;
+  color: #9a741a !important;
+}
+
 /* Pills de Público Participante */
 .stitch-audience-tags {
   display: flex !important;

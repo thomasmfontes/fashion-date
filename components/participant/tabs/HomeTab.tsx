@@ -24,6 +24,10 @@ export function HomeTab({
     ? formatName(participant.name.trim().split(" ")[0])
     : "Participante";
 
+  const hasUngeneratedDigitalDraws = eligibleDraws.some(
+    (d) => d.allowTicketGeneration !== false && !tickets.some((t) => t.drawId === d.id)
+  );
+
   return (
     <>
       {/* 1. Cabeçalho Padronizado Stitch */}
@@ -222,10 +226,14 @@ export function HomeTab({
                     </span>
                     <div>
                       <strong style={{ display: "block", color: "#530017", fontSize: "13.5px" }}>
-                        Existem novos sorteios disponíveis para você participar!
+                        {hasUngeneratedDigitalDraws
+                          ? "Existem novos sorteios disponíveis para você participar!"
+                          : "Existem outros sorteios do evento disponíveis!"}
                       </strong>
                       <span style={{ fontSize: "12.5px", color: "#6d5b5d" }}>
-                        Garanta seu número da sorte antes que as inscrições sejam encerradas.
+                        {hasUngeneratedDigitalDraws
+                          ? "Garanta seu número da sorte antes que as inscrições sejam encerradas."
+                          : "Confira os detalhes e prêmios dos sorteios do evento."}
                       </span>
                     </div>
                   </div>
@@ -236,9 +244,9 @@ export function HomeTab({
                     onClick={() => onNavigate("tickets")}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: "17px" }}>
-                      confirmation_number
+                      {hasUngeneratedDigitalDraws ? "confirmation_number" : "visibility"}
                     </span>
-                    <span>Garantir Número</span>
+                    <span>{hasUngeneratedDigitalDraws ? "Garantir Número" : "Ver Sorteios"}</span>
                   </button>
                 </div>
               )}

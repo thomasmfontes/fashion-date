@@ -6,7 +6,7 @@ export async function GET() {
     const db = await initialize();
     const result = await db
       .prepare(
-        "SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, st_sorteio, dt_sorteio, dt_criacao FROM t_draw_definitions ORDER BY dt_criacao ASC",
+        "SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, st_sorteio, dt_sorteio, dt_criacao, COALESCE(permite_gerar_numero, true) AS allow_ticket_generation FROM t_draw_definitions ORDER BY dt_criacao ASC",
       )
       .all<Record<string, unknown>>();
 
@@ -40,6 +40,7 @@ export async function GET() {
         hasNumberLimit: Boolean(r.tem_limite),
         maxNumber: r.nr_limite_maximo ? Number(r.nr_limite_maximo) : undefined,
         drawDate,
+        allowTicketGeneration: r.allow_ticket_generation !== false && r.permite_gerar_numero !== false,
         status,
         order: index + 1,
         createdAt: r.dt_criacao instanceof Date ? r.dt_criacao.toISOString() : String(r.dt_criacao),

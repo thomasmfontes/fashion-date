@@ -37,6 +37,9 @@ export function CreateEditDrawModal({
   const [drawDate, setDrawDate] = useState<string>(
     initialData?.drawDate ? initialData.drawDate.slice(0, 10) : ""
   );
+  const [allowTicketGeneration, setAllowTicketGeneration] = useState<boolean>(
+    initialData ? initialData.allowTicketGeneration !== false : true
+  );
 
   // Animation states for smooth sliding enter & exit
   const [shouldRender, setShouldRender] = useState(false);
@@ -82,6 +85,7 @@ export function CreateEditDrawModal({
         );
         setMaxNumber(initialData.maxNumber ? String(initialData.maxNumber) : "");
         setDrawDate(initialData.drawDate ? initialData.drawDate.slice(0, 10) : "");
+        setAllowTicketGeneration(initialData.allowTicketGeneration !== false);
       } else {
         // Quando for novo sorteio, nenhum campo vem pré-selecionado
         setTitle("");
@@ -90,6 +94,7 @@ export function CreateEditDrawModal({
         setHasNumberLimit(null);
         setMaxNumber("");
         setDrawDate("");
+        setAllowTicketGeneration(true);
       }
     }
   }, [initialData, isOpen]);
@@ -176,6 +181,7 @@ export function CreateEditDrawModal({
       hasNumberLimit: Boolean(hasNumberLimit),
       maxNumber: hasNumberLimit && maxNumber ? parseInt(maxNumber, 10) : null,
       drawDate: drawDate || null,
+      allowTicketGeneration,
     });
     handleSmoothClose();
   }
@@ -214,7 +220,7 @@ export function CreateEditDrawModal({
         <header className="draw-drawer-header">
           <div className="draw-drawer-header-left">
             <span className="edit-ticket-badge">
-              {publicsLabel}{badgeLimitText}
+              {publicsLabel}{badgeLimitText}{!allowTicketGeneration ? " · Sem geração no app" : ""}
             </span>
             <h2>{isEditing ? "Editar Sorteio" : "Novo Sorteio"}</h2>
             <p>Configure os parâmetros desta rodada de sorteio</p>
@@ -384,6 +390,76 @@ export function CreateEditDrawModal({
                   </small>
                 </div>
               )}
+            </div>
+
+            {/* Toggle Simples: Permitir geração de número pelo app */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "16px",
+                padding: "16px 18px",
+                borderRadius: "10px",
+                background: "#fdfaf6",
+                border: "1px solid #ebdcc5",
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span
+                    className="material-symbols-outlined"
+                    style={{ fontSize: "19px", color: allowTicketGeneration ? "#530017" : "#8c7a7d" }}
+                  >
+                    smartphone
+                  </span>
+                  <label
+                    htmlFor="toggle-allow-ticket-generation"
+                    style={{ fontSize: "12px", color: "#453235", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", cursor: "pointer", margin: 0 }}
+                  >
+                    Gerar número da sorte pelo app
+                  </label>
+                </div>
+                <p style={{ margin: "5px 0 0", fontSize: "12px", color: "#6d5b5d", lineHeight: 1.4 }}>
+                  Permite que os participantes gerem seu número da sorte pelo aplicativo.
+                </p>
+              </div>
+
+              <button
+                id="toggle-allow-ticket-generation"
+                type="button"
+                role="switch"
+                aria-checked={allowTicketGeneration}
+                onClick={() => setAllowTicketGeneration(!allowTicketGeneration)}
+                style={{
+                  position: "relative",
+                  width: "48px",
+                  height: "26px",
+                  borderRadius: "999px",
+                  background: allowTicketGeneration ? "#530017" : "#d8cec6",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                  flexShrink: 0,
+                  transition: "background 0.2s ease",
+                  outline: "none",
+                }}
+                title={allowTicketGeneration ? "Clique para desativar" : "Clique para ativar"}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "3px",
+                    left: allowTicketGeneration ? "25px" : "3px",
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    background: "#ffffff",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                    transition: "left 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                  }}
+                />
+              </button>
             </div>
           </div>
 
