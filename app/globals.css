@@ -4294,6 +4294,19 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
   box-shadow: 0 10px 26px rgba(154, 116, 26, 0.12);
 }
 
+.stitch-draw-card-luxury.is-expired,
+.stitch-draw-card-luxury.is-expired:hover {
+  background: #f6f5f2 !important;
+  border: 1.5px solid #dedbd4 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03) !important;
+  opacity: 0.58 !important;
+  filter: grayscale(0.5) !important;
+  transform: none !important;
+  cursor: default !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
 .live-winning-ticket {
   position: relative !important;
   width: min(100%, 460px) !important;

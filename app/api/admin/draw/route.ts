@@ -5,6 +5,7 @@ import {
   row,
 } from "../../_lib/db";
 import { broadcastWinnerAnnouncement } from "@/lib/supabase/server";
+import { parseBlockedRanges } from "@/utils/blockedNumbers";
 
 export async function POST(request: Request) {
   if (!adminAllowed(request)) {
@@ -43,6 +44,11 @@ export async function POST(request: Request) {
 
     // 1. Try selecting from t_draw_tickets if drawIdTarget is provided
     if (drawIdTarget) {
+      const drawDef = await transaction
+        .prepare("SELECT blocked_ranges FROM t_draw_definitions WHERE id_sorteio = ?")
+        .bind(drawIdTarget)
+        .first<{ blocked_ranges?: string | null }>();
+
       let ticketFilter = "WHERE t.id_sorteio = ?";
       if (maxNumber) {
         ticketFilter += ` AND t.nr_bilhete ~ '^[0-9]+$' AND CAST(t.nr_bilhete AS INTEGER) <= ${maxNumber}`;
@@ -50,6 +56,13 @@ export async function POST(request: Request) {
       if (targetTypes.length > 0) {
         const typesStr = targetTypes.map((t) => `'${t}'`).join(",");
         ticketFilter += ` AND LOWER(COALESCE(p.user_type, 'lojista')) IN (${typesStr})`;
+      }
+
+      if (drawDef?.blocked_ranges) {
+        const blockedRanges = parseBlockedRanges(drawDef.blocked_ranges);
+        for (const range of blockedRanges) {
+          ticketFilter += ` AND NOT (t.nr_bilhete ~ '^[0-9]+$' AND CAST(t.nr_bilhete AS INTEGER) >= ${range.start} AND CAST(t.nr_bilhete AS INTEGER) <= ${range.end})`;
+        }
       }
 
       // Exclude previous winners of this specific draw
@@ -303,6 +316,11 @@ export async function GET(request: Request) {
 
   try {
     if (drawId) {
+      const drawDef = await db
+        .prepare("SELECT blocked_ranges FROM t_draw_definitions WHERE id_sorteio = ?")
+        .bind(drawId)
+        .first<{ blocked_ranges?: string | null }>();
+
       let ticketFilter = "WHERE t.id_sorteio = ?";
       if (maxNumber) {
         ticketFilter += ` AND t.nr_bilhete ~ '^[0-9]+$' AND CAST(t.nr_bilhete AS INTEGER) <= ${maxNumber}`;
@@ -311,6 +329,14 @@ export async function GET(request: Request) {
         const typesStr = targetTypes.map((t) => `'${t}'`).join(",");
         ticketFilter += ` AND LOWER(COALESCE(p.user_type, 'lojista')) IN (${typesStr})`;
       }
+
+      if (drawDef?.blocked_ranges) {
+        const blockedRanges = parseBlockedRanges(drawDef.blocked_ranges);
+        for (const range of blockedRanges) {
+          ticketFilter += ` AND NOT (t.nr_bilhete ~ '^[0-9]+$' AND CAST(t.nr_bilhete AS INTEGER) >= ${range.start} AND CAST(t.nr_bilhete AS INTEGER) <= ${range.end})`;
+        }
+      }
+
       ticketFilter += ` AND t.id_participante NOT IN (SELECT id_participante FROM t_draw_winners WHERE id_sorteio = '${drawId}')`;
 
       const res = await db

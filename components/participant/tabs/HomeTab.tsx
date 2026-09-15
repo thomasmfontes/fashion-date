@@ -126,14 +126,20 @@ export function HomeTab({
                     const aWin = Boolean(a.isWinner);
                     const bWin = Boolean(b.isWinner);
                     if (aWin !== bWin) return aWin ? -1 : 1;
-                    const aExp = Boolean(a.isExpired);
-                    const bExp = Boolean(b.isExpired);
+                    const aExp = !aWin && (Boolean(a.isExpired) || a.drawStatus === "completed" || a.drawStatus === "finished" || Boolean(a.drawDate && !isNaN(new Date(`${a.drawDate.slice(0, 10)}T23:59:59`).getTime()) && Date.now() > new Date(`${a.drawDate.slice(0, 10)}T23:59:59`).getTime()));
+                    const bExp = !bWin && (Boolean(b.isExpired) || b.drawStatus === "completed" || b.drawStatus === "finished" || Boolean(b.drawDate && !isNaN(new Date(`${b.drawDate.slice(0, 10)}T23:59:59`).getTime()) && Date.now() > new Date(`${b.drawDate.slice(0, 10)}T23:59:59`).getTime()));
                     if (aExp !== bExp) return aExp ? 1 : -1;
                     return 0;
                   })
                   .map((t) => {
                     const isTicketWinner = Boolean(t.isWinner);
-                    const isTicketExpired = Boolean(t.isExpired) && !isTicketWinner;
+                    const isTicketDatePassed = Boolean(
+                      t.drawDate &&
+                      !isNaN(new Date(`${t.drawDate.slice(0, 10)}T23:59:59`).getTime()) &&
+                      Date.now() > new Date(`${t.drawDate.slice(0, 10)}T23:59:59`).getTime()
+                    );
+                    const isTicketCompleted = t.drawStatus === "completed" || t.drawStatus === "finished";
+                    const isTicketExpired = !isTicketWinner && (Boolean(t.isExpired) || isTicketCompleted || isTicketDatePassed);
 
                     return (
                       <article

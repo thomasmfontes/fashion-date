@@ -87,11 +87,15 @@ export async function getParticipantTickets(
         : (t.drawDate ? String(t.drawDate).slice(0, 10) : null);
 
       let isExpired = false;
-      if (!isWinner && drawDate) {
-        const targetTime = new Date(`${drawDate}T23:59:59`).getTime();
-        // Expira apenas 1 dia após a data definida do evento (24h de tolerância após o fim do dia)
-        if (!isNaN(targetTime) && now > (targetTime + 24 * 60 * 60 * 1000)) {
+      if (!isWinner) {
+        if (drawStatus === "completed" || drawStatus === "finished") {
           isExpired = true;
+        } else if (drawDate) {
+          const targetTime = new Date(`${drawDate}T23:59:59`).getTime();
+          // Expira a partir do dia seguinte ao sorteio (após 23:59:59 do dia do evento)
+          if (!isNaN(targetTime) && now > targetTime) {
+            isExpired = true;
+          }
         }
       }
 

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import "./draw-config.css";
 import type { DrawItem, CreateDrawDTO } from "@/types/drawCollection.types";
 import type { UserType } from "@/types/participant.types";
 import { USER_TYPE_LABELS, USER_TYPE_ICONS } from "@/types/participant.types";
+import { parseBlockedRanges, countUniqueBlockedNumbers } from "@/utils/blockedNumbers";
 
 interface CreateEditDrawModalProps {
   isOpen: boolean;
@@ -39,6 +40,9 @@ export function CreateEditDrawModal({
   );
   const [allowTicketGeneration, setAllowTicketGeneration] = useState<boolean>(
     initialData ? initialData.allowTicketGeneration !== false : true
+  );
+  const [blockedNumberRanges, setBlockedNumberRanges] = useState<string>(
+    initialData?.blockedNumberRanges || ""
   );
 
   // Animation states for smooth sliding enter & exit
@@ -86,6 +90,7 @@ export function CreateEditDrawModal({
         setMaxNumber(initialData.maxNumber ? String(initialData.maxNumber) : "");
         setDrawDate(initialData.drawDate ? initialData.drawDate.slice(0, 10) : "");
         setAllowTicketGeneration(initialData.allowTicketGeneration !== false);
+        setBlockedNumberRanges(initialData.blockedNumberRanges || "");
       } else {
         // Quando for novo sorteio, nenhum campo vem pré-selecionado
         setTitle("");
@@ -95,6 +100,7 @@ export function CreateEditDrawModal({
         setMaxNumber("");
         setDrawDate("");
         setAllowTicketGeneration(true);
+        setBlockedNumberRanges("");
       }
     }
   }, [initialData, isOpen]);
@@ -130,6 +136,19 @@ export function CreateEditDrawModal({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [shouldRender, handleSmoothClose]);
+
+  const parsedBlockedList = useMemo(
+    () => parseBlockedRanges(blockedNumberRanges),
+    [blockedNumberRanges]
+  );
+  const totalBlockedCount = useMemo(
+    () =>
+      countUniqueBlockedNumbers(
+        parsedBlockedList,
+        hasNumberLimit && maxNumber ? parseInt(maxNumber, 10) : undefined
+      ),
+    [parsedBlockedList, hasNumberLimit, maxNumber]
+  );
 
   if (!shouldRender) return null;
 
@@ -182,6 +201,7 @@ export function CreateEditDrawModal({
       maxNumber: hasNumberLimit && maxNumber ? parseInt(maxNumber, 10) : null,
       drawDate: drawDate || null,
       allowTicketGeneration,
+      blockedNumberRanges: blockedNumberRanges.trim() || null,
     });
     handleSmoothClose();
   }
@@ -388,6 +408,97 @@ export function CreateEditDrawModal({
                       ? `Concorrem apenas os números da sorte de 0001 até ${String(maxNumber).padStart(4, "0")}.`
                       : "Informe até qual número da sorte concorrerá nesta rodada."}
                   </small>
+                </div>
+              )}
+
+              {/* Campo: Números Bloqueados (Apenas se geração pelo app estiver ativa) */}
+              {allowTicketGeneration && (
+                <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "1px dashed #ebdcc5" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                    <label
+                      htmlFor="modal-draw-blocked-ranges"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        color: "#453235",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        margin: 0,
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: "16px", color: "#9a741a" }}>
+                        block
+                      </span>
+                      Números Bloqueados (Opcional)
+                    </label>
+
+                    {totalBlockedCount > 0 && (
+                      <span
+                        style={{
+                          fontSize: "11.5px",
+                          fontWeight: 700,
+                          color: "#991b1b",
+                          letterSpacing: "0.02em",
+                        }}
+                      >
+                        Total: {totalBlockedCount}
+                      </span>
+                    )}
+                  </div>
+
+                  <input
+                    id="modal-draw-blocked-ranges"
+                    type="text"
+                    value={blockedNumberRanges}
+                    onChange={(e) => setBlockedNumberRanges(e.target.value)}
+                    placeholder="Ex: 0445-0455, 0120"
+                    style={{
+                      width: "100%",
+                      height: "38px",
+                      padding: "0 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #ebdcc5",
+                      background: "#ffffff",
+                      fontSize: "12.5px",
+                      color: "#332225",
+                      boxSizing: "border-box",
+                      outline: "none",
+                    }}
+                  />
+                  <small style={{ display: "block", fontSize: "11px", color: "#786568", marginTop: "4px", lineHeight: 1.35 }}>
+                    Números ou intervalos que <strong>não serão gerados</strong> para nenhum participante (separados por vírgula).
+                  </small>
+
+                  {/* Preview em tempo real das faixas interpretadas sem parênteses */}
+                  {parsedBlockedList.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "10px" }}>
+                      {parsedBlockedList.map((r, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            padding: "3px 8px",
+                            borderRadius: "6px",
+                            background: "#fef2f2",
+                            border: "1px solid #fca5a5",
+                            color: "#991b1b",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: "13px" }}>
+                            do_not_disturb_on
+                          </span>
+                          <span>{r.label}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

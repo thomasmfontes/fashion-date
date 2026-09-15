@@ -36,11 +36,14 @@ export async function POST(request: Request) {
     const allowTicketGeneration = payload.allowTicketGeneration !== undefined
       ? Boolean(payload.allowTicketGeneration)
       : true;
+    const blockedNumberRanges = payload.blockedNumberRanges !== undefined
+      ? (payload.blockedNumberRanges ? String(payload.blockedNumberRanges).trim() : null)
+      : null;
 
     await db
       .prepare(
-        `INSERT INTO t_draw_definitions (id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, dt_sorteio, permite_gerar_numero, st_sorteio)
-         VALUES (?, ?, ?, ?::jsonb, ?, ?, ?, ?, 'ready')`,
+        `INSERT INTO t_draw_definitions (id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, dt_sorteio, permite_gerar_numero, blocked_ranges, st_sorteio)
+         VALUES (?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?, 'ready')`,
       )
       .bind(
         drawId,
@@ -51,6 +54,7 @@ export async function POST(request: Request) {
         maxNumber,
         drawDate,
         allowTicketGeneration,
+        blockedNumberRanges,
       )
       .run();
 
@@ -65,6 +69,7 @@ export async function POST(request: Request) {
         maxNumber,
         drawDate,
         allowTicketGeneration,
+        blockedNumberRanges,
         status: "ready",
         order: 1,
         createdAt: new Date().toISOString(),
@@ -97,7 +102,7 @@ export async function PATCH(request: Request) {
 
     const db = await initialize();
     const existing = await db
-      .prepare("SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, dt_sorteio, st_sorteio, COALESCE(permite_gerar_numero, true) AS permite_gerar_numero FROM t_draw_definitions WHERE id_sorteio = ?")
+      .prepare("SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, dt_sorteio, st_sorteio, COALESCE(permite_gerar_numero, true) AS permite_gerar_numero, blocked_ranges FROM t_draw_definitions WHERE id_sorteio = ?")
       .bind(drawId)
       .first<{
         id_sorteio: string;
@@ -109,6 +114,7 @@ export async function PATCH(request: Request) {
         dt_sorteio: string | Date | null;
         st_sorteio: string;
         permite_gerar_numero?: boolean;
+        blocked_ranges?: string | null;
       }>();
 
     if (!existing) {
@@ -126,12 +132,15 @@ export async function PATCH(request: Request) {
     const allowTicketGeneration = payload.allowTicketGeneration !== undefined
       ? Boolean(payload.allowTicketGeneration)
       : (existing.permite_gerar_numero !== false);
+    const blockedNumberRanges = payload.blockedNumberRanges !== undefined
+      ? (payload.blockedNumberRanges ? String(payload.blockedNumberRanges).trim() : null)
+      : (existing.blocked_ranges ? String(existing.blocked_ranges) : null);
     const status = payload.status !== undefined ? payload.status : existing.st_sorteio;
 
     await db
       .prepare(
         `UPDATE t_draw_definitions 
-         SET nm_titulo = ?, nm_premio = ?, target_user_types = ?::jsonb, tem_limite = ?, nr_limite_maximo = ?, dt_sorteio = ?, permite_gerar_numero = ?, st_sorteio = ?
+         SET nm_titulo = ?, nm_premio = ?, target_user_types = ?::jsonb, tem_limite = ?, nr_limite_maximo = ?, dt_sorteio = ?, permite_gerar_numero = ?, blocked_ranges = ?, st_sorteio = ?
          WHERE id_sorteio = ?`,
       )
       .bind(
@@ -142,6 +151,7 @@ export async function PATCH(request: Request) {
         maxNumber,
         drawDate,
         allowTicketGeneration,
+        blockedNumberRanges,
         status,
         drawId,
       )
@@ -158,6 +168,7 @@ export async function PATCH(request: Request) {
         maxNumber,
         drawDate,
         allowTicketGeneration,
+        blockedNumberRanges,
         status,
       },
     });

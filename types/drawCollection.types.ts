@@ -11,6 +11,7 @@ export interface DrawItem {
   maxNumber?: number | null; // Limite superior dos números da sorte
   drawDate?: string | null; // Data prevista do sorteio / evento
   allowTicketGeneration?: boolean; // Se false, modalidade pulseira física (não permite gerar número no app)
+  blockedNumberRanges?: string | null; // Faixas/números excluídos (ex: "0445-0455, 0120")
   status: DrawStatus;
   winnerSummary?: {
     winnerName?: string;
@@ -31,6 +32,7 @@ export interface CreateDrawDTO {
   maxNumber?: number | null;
   drawDate?: string | null;
   allowTicketGeneration?: boolean;
+  blockedNumberRanges?: string | null;
 }
 
 export interface UpdateDrawDTO extends Partial<CreateDrawDTO> {

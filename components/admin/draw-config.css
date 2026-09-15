@@ -62,14 +62,19 @@
 
 /* Lado Esquerdo */
 .stitch-draw-item-left {
-  display: flex !important;
-  align-items: center !important;
-  gap: 16px !important;
+  display: grid !important;
+  grid-template-columns: auto 1fr !important;
+  grid-template-rows: auto auto !important;
+  column-gap: 16px !important;
+  row-gap: 6px !important;
   flex: 1 1 auto !important;
   min-width: 0 !important;
+  align-items: center !important;
 }
 
 .draw-badge-box {
+  grid-column: 1 !important;
+  grid-row: 1 / span 2 !important;
   width: 42px !important;
   min-width: 42px !important;
   height: 42px !important;
@@ -80,24 +85,20 @@
   display: grid !important;
   place-items: center !important;
   flex-shrink: 0 !important;
+  align-self: center !important;
 }
 
 .draw-badge-box .material-symbols-outlined {
   font-size: 22px !important;
 }
 
-.stitch-draw-info {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 6px !important;
-  min-width: 0 !important;
-  text-align: left !important;
-}
-
 .stitch-draw-title-row {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
   display: flex !important;
   align-items: center !important;
   gap: 10px !important;
+  min-width: 0 !important;
 }
 
 .stitch-draw-title {
@@ -107,13 +108,19 @@
   font-size: 17.5px !important;
   font-weight: 700 !important;
   letter-spacing: -0.01em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 .stitch-draw-meta-row {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
   flex-wrap: wrap !important;
+  min-width: 0 !important;
 }
 
 /* Metatags de Prêmio e Limite */
@@ -129,6 +136,19 @@
   border: 1px solid #ebdcc5 !important;
   background: #fdfaf6 !important;
   color: #530017 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.stitch-draw-tag > span:not(.material-symbols-outlined) {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+.stitch-draw-tag .material-symbols-outlined {
+  flex-shrink: 0 !important;
 }
 
 .stitch-draw-tag.prize {
@@ -352,13 +372,64 @@
 @media (max-width: 768px) {
   .stitch-draw-item {
     flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 14px !important;
-    padding: 16px !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    padding: 14px 14px 12px !important;
   }
 
   .stitch-draw-item-left {
+    display: grid !important;
+    grid-template-columns: auto 1fr !important;
+    grid-template-rows: auto auto !important;
+    column-gap: 10px !important;
+    row-gap: 8px !important;
     width: 100% !important;
+    align-items: center !important;
+  }
+
+  .draw-badge-box {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    align-self: center !important;
+  }
+
+  .draw-badge-box .material-symbols-outlined {
+    font-size: 18px !important;
+  }
+
+  .stitch-draw-title-row {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    align-self: center !important;
+  }
+
+  .stitch-draw-title {
+    font-size: 16px !important;
+  }
+
+  .stitch-draw-meta-row {
+    grid-column: 1 / span 2 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    gap: 6px !important;
+  }
+
+  .stitch-draw-tag {
+    padding: 3px 8px !important;
+    font-size: 11px !important;
+    gap: 4px !important;
+  }
+
+  .stitch-draw-tag .material-symbols-outlined {
+    font-size: 13px !important;
+  }
+
+  .stitch-audience-tags {
+    max-width: 100% !important;
   }
 
   .stitch-draw-item-right {

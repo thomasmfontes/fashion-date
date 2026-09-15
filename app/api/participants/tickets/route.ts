@@ -1,6 +1,7 @@
 import { initialize } from "@/app/api/_lib/db";
 import { broadcastParticipantUpdate } from "@/lib/supabase/server";
 import type { UserType } from "@/types/participant.types";
+import { parseBlockedRanges, isNumberBlocked, countUniqueBlockedNumbers } from "@/utils/blockedNumbers";
 
 export async function GET(request: Request) {
   try {
@@ -92,11 +93,15 @@ export async function GET(request: Request) {
         : (r.draw_date ? String(r.draw_date).slice(0, 10) : null);
 
       let isExpired = false;
-      if (!isWinner && drawDate) {
-        const targetTime = new Date(`${drawDate}T23:59:59`).getTime();
-        // Expira apenas 1 dia após a data definida do sorteio
-        if (!isNaN(targetTime) && now > (targetTime + 24 * 60 * 60 * 1000)) {
+      if (!isWinner) {
+        if (drawStatus === "completed" || drawStatus === "finished") {
           isExpired = true;
+        } else if (drawDate) {
+          const targetTime = new Date(`${drawDate}T23:59:59`).getTime();
+          // Expira a partir do dia seguinte ao sorteio (após 23:59:59 do dia do evento)
+          if (!isNaN(targetTime) && now > targetTime) {
+            isExpired = true;
+          }
         }
       }
 
@@ -180,7 +185,7 @@ export async function POST(request: Request) {
 
     // 2. Localiza o sorteio
     const draw = await db
-      .prepare("SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, st_sorteio, COALESCE(permite_gerar_numero, true) AS permite_gerar_numero FROM t_draw_definitions WHERE id_sorteio = ?")
+      .prepare("SELECT id_sorteio, nm_titulo, nm_premio, target_user_types, tem_limite, nr_limite_maximo, st_sorteio, COALESCE(permite_gerar_numero, true) AS permite_gerar_numero, blocked_ranges FROM t_draw_definitions WHERE id_sorteio = ?")
       .bind(drawId)
       .first<{
         id_sorteio: string;
@@ -191,6 +196,7 @@ export async function POST(request: Request) {
         nr_limite_maximo: number | null;
         st_sorteio: string;
         permite_gerar_numero?: boolean;
+        blocked_ranges?: string | null;
       }>();
 
     if (!draw) {
@@ -256,19 +262,34 @@ export async function POST(request: Request) {
     }
 
     // 5. Gera um número exclusivo dentro das regras do sorteio
+    const blockedRanges = parseBlockedRanges(draw.blocked_ranges);
     let generatedTicketNumber = "";
     const hasLimit = Boolean(draw.tem_limite && draw.nr_limite_maximo && draw.nr_limite_maximo > 0);
     const maxNumber = hasLimit ? Number(draw.nr_limite_maximo) : 9999;
+    const totalPossible = hasLimit ? maxNumber : 9000;
+    const totalBlocked = countUniqueBlockedNumbers(blockedRanges, hasLimit ? maxNumber : 9999);
 
-    for (let attempt = 0; attempt < 30; attempt++) {
-      let candidate = "";
+    if (totalBlocked >= totalPossible) {
+      return Response.json(
+        { error: "Todos os números disponíveis para este sorteio estão bloqueados." },
+        { status: 400 },
+      );
+    }
+
+    for (let attempt = 0; attempt < 50; attempt++) {
+      let randomNum = 0;
       if (hasLimit) {
-        const randomNum = Math.floor(Math.random() * maxNumber) + 1;
-        candidate = String(randomNum).padStart(4, "0");
+        randomNum = Math.floor(Math.random() * maxNumber) + 1;
       } else {
-        const randomNum = Math.floor(Math.random() * 9000) + 1000;
-        candidate = String(randomNum).padStart(4, "0");
+        randomNum = Math.floor(Math.random() * 9000) + 1000;
       }
+
+      // Se o número estiver em alguma faixa bloqueada, descarta imediatamente
+      if (isNumberBlocked(randomNum, blockedRanges)) {
+        continue;
+      }
+
+      const candidate = String(randomNum).padStart(4, "0");
 
       const check = await db
         .prepare("SELECT id_ticket FROM t_draw_tickets WHERE id_sorteio = ? AND nr_bilhete = ?")

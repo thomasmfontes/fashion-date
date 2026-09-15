@@ -181,11 +181,26 @@ export function TicketsTab({
   function renderDrawCard(draw: DrawItem) {
     const isThisCardAnimating = animatingDrawId === draw.id;
     const isPhysical = draw.allowTicketGeneration === false;
+    const isSameTitleAndPrize = Boolean(
+      draw.prizeTitle &&
+      draw.title &&
+      draw.prizeTitle.trim().toLowerCase() === draw.title.trim().toLowerCase()
+    );
+
+    const isDrawFinished = draw.status === "completed" || (draw.status as string) === "finished";
+    let isDrawDatePassed = false;
+    if (draw.drawDate) {
+      const targetTime = new Date(`${draw.drawDate.slice(0, 10)}T23:59:59`).getTime();
+      if (!isNaN(targetTime) && Date.now() > targetTime) {
+        isDrawDatePassed = true;
+      }
+    }
+    const isDrawExpired = isDrawFinished || isDrawDatePassed;
 
     return (
       <article
         key={draw.id}
-        className="stitch-draw-card-luxury"
+        className={`stitch-draw-card-luxury${isDrawExpired ? " is-expired" : ""}`}
         style={{
           boxSizing: "border-box",
           maxWidth: "100%",
@@ -196,58 +211,71 @@ export function TicketsTab({
                 boxShadow: "0 12px 35px rgba(83, 0, 23, 0.14), 0 0 20px rgba(199, 154, 54, 0.2)",
                 transition: "all 0.3s ease",
               }
+            : isDrawExpired
+            ? {
+                opacity: 0.58,
+                filter: "grayscale(0.5)",
+                pointerEvents: "none",
+                cursor: "default",
+              }
             : {}),
         }}
       >
         <div>
           <div style={{ marginBottom: "12px" }}>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-                padding: "4px 10px",
-                borderRadius: "999px",
-                background: isThisCardAnimating
-                  ? "linear-gradient(135deg, #530017 0%, #720023 100%)"
-                  : isPhysical
-                  ? "#fdf2f4"
-                  : "rgba(154, 116, 26, 0.08)",
-                border: isThisCardAnimating
-                  ? "1px solid #c79a36"
-                  : isPhysical
-                  ? "1px solid rgba(83, 0, 23, 0.2)"
-                  : "1px solid rgba(154, 116, 26, 0.22)",
-                color: isThisCardAnimating
-                  ? "#fff2cc"
-                  : isPhysical
-                  ? "#530017"
-                  : "#855e09",
-                fontSize: "10px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                boxShadow: isThisCardAnimating ? "0 2px 8px rgba(83,0,23,0.3)" : "none",
-                transition: "all 0.25s ease",
-              }}
-            >
-              {isPhysical && !isThisCardAnimating ? (
-                <span className="material-symbols-outlined" style={{ fontSize: "13px", color: "#9a741a" }}>
-                  stars
-                </span>
-              ) : (
-                <span
-                  style={{
-                    width: "6px",
-                    height: "6px",
-                    borderRadius: "50%",
-                    background: isThisCardAnimating ? "#ffd54f" : "#c79a36",
-                    boxShadow: isThisCardAnimating ? "0 0 6px #ffd54f" : "none",
-                  }}
-                />
-              )}
-              {isThisCardAnimating ? "Sorteando..." : isPhysical ? "Presencial" : "Disponível"}
-            </span>
+            {isDrawExpired ? (
+              <span className="stitch-status expired" style={{ padding: "3px 10px", fontSize: "10px" }}>
+                <i /> Encerrado
+              </span>
+            ) : (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: "4px 10px",
+                  borderRadius: "999px",
+                  background: isThisCardAnimating
+                    ? "linear-gradient(135deg, #530017 0%, #720023 100%)"
+                    : isPhysical
+                    ? "#fdf2f4"
+                    : "rgba(154, 116, 26, 0.08)",
+                  border: isThisCardAnimating
+                    ? "1px solid #c79a36"
+                    : isPhysical
+                    ? "1px solid rgba(83, 0, 23, 0.2)"
+                    : "1px solid rgba(154, 116, 26, 0.22)",
+                  color: isThisCardAnimating
+                    ? "#fff2cc"
+                    : isPhysical
+                    ? "#530017"
+                    : "#855e09",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  boxShadow: isThisCardAnimating ? "0 2px 8px rgba(83,0,23,0.3)" : "none",
+                  transition: "all 0.25s ease",
+                }}
+              >
+                {isPhysical && !isThisCardAnimating ? (
+                  <span className="material-symbols-outlined" style={{ fontSize: "13px", color: "#530017" }}>
+                    event_available
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      width: "6px",
+                      height: "6px",
+                      borderRadius: "50%",
+                      background: isThisCardAnimating ? "#ffd54f" : "#c79a36",
+                      boxShadow: isThisCardAnimating ? "0 0 6px #ffd54f" : "none",
+                    }}
+                  />
+                )}
+                {isThisCardAnimating ? "Sorteando..." : isPhysical ? "Presencial" : "Disponível"}
+              </span>
+            )}
           </div>
 
           <h4
@@ -271,11 +299,40 @@ export function TicketsTab({
               Prêmio: <strong style={{ color: "#530017", fontWeight: 600 }}>{draw.prizeTitle || draw.title}</strong>
             </span>
           </div>
+
+          {draw.drawDate && (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11.5px", color: "#8a7578", marginTop: "4px" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: "14px", color: "#9a741a", flexShrink: 0 }}>
+                calendar_today
+              </span>
+              <span>Data: <strong>{new Date(draw.drawDate.slice(0, 10) + "T12:00:00").toLocaleDateString("pt-BR")}</strong></span>
+            </div>
+          )}
         </div>
 
         <div>
-          <div className="stitch-ticket-perforation" />
-          {isThisCardAnimating ? (
+          {!isPhysical && !isDrawExpired && <div className="stitch-ticket-perforation" />}
+          {isDrawExpired ? (
+            <div
+              style={{
+                padding: "12px 14px",
+                borderRadius: "8px",
+                background: "#f3ede5",
+                border: "1px solid #ded6c9",
+                textAlign: "center",
+                fontSize: "11px",
+                fontWeight: 700,
+                color: "#8c827a",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+                boxSizing: "border-box",
+                width: "100%",
+                marginTop: isPhysical ? "14px" : "0",
+              }}
+            >
+              Sorteio Encerrado
+            </div>
+          ) : isThisCardAnimating ? (
             <div
               style={{
                 maxWidth: "100%",
@@ -432,36 +489,24 @@ export function TicketsTab({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
-                padding: "10px 12px",
-                borderRadius: "8px",
-                background: "#fdfaf6",
-                border: "1px solid #ebdcc5",
+                gap: "12px",
+                padding: "12px 14px",
+                borderRadius: "10px",
+                background: "rgba(83, 0, 23, 0.04)",
+                border: "1px solid rgba(83, 0, 23, 0.12)",
                 boxSizing: "border-box",
+                marginTop: "16px",
               }}
             >
-              <div
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "8px",
-                  background: "rgba(83, 0, 23, 0.08)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: "18px", color: "#530017" }}>
-                  stars
-                </span>
-              </div>
+              <span className="material-symbols-outlined" style={{ fontSize: "22px", color: "#9a741a", flexShrink: 0 }}>
+                live_tv
+              </span>
               <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
                 <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#530017", lineHeight: 1.3 }}>
-                  Sorteio Presencial
+                  Participação Presencial
                 </div>
-                <div style={{ fontSize: "10.5px", color: "#786568", lineHeight: 1.3, marginTop: "2px" }}>
-                  A participação ocorre no evento, sem necessidade de gerar número pelo app.
+                <div style={{ fontSize: "10.5px", color: "#6b585a", lineHeight: 1.35, marginTop: "2px" }}>
+                  Sorteio realizado no evento. Acompanhe a chamada ao vivo no telão.
                 </div>
               </div>
             </div>
@@ -490,6 +535,18 @@ export function TicketsTab({
     );
   }
 
+  // Helper robusto para identificar bilhete expirado ou finalizado
+  function isTicketFinishedOrPassed(t: (typeof visibleTickets)[0]): boolean {
+    if (t.isWinner) return false;
+    if (t.isExpired) return true;
+    if (t.drawStatus === "completed" || t.drawStatus === "finished") return true;
+    if (t.drawDate) {
+      const targetTime = new Date(`${t.drawDate.slice(0, 10)}T23:59:59`).getTime();
+      if (!isNaN(targetTime) && Date.now() > targetTime) return true;
+    }
+    return false;
+  }
+
   return (
     <>
       {/* Cabeçalho Limpo e Direto */}
@@ -498,11 +555,11 @@ export function TicketsTab({
           <h1>Meus Números da Sorte</h1>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginTop: "4px" }}>
             <span className="stitch-status open" role="status" aria-live="polite">
-              <i /> {visibleTickets.filter((t) => !t.isExpired).length} {visibleTickets.filter((t) => !t.isExpired).length === 1 ? "Número Ativo" : "Números Ativos"}
+              <i /> {visibleTickets.filter((t) => !isTicketFinishedOrPassed(t)).length} {visibleTickets.filter((t) => !isTicketFinishedOrPassed(t)).length === 1 ? "Número Ativo" : "Números Ativos"}
             </span>
-            {visibleTickets.some((t) => t.isExpired && !t.isWinner) && (
+            {visibleTickets.some((t) => isTicketFinishedOrPassed(t)) && (
               <span className="stitch-status expired" role="status">
-                <i /> {visibleTickets.filter((t) => t.isExpired && !t.isWinner).length} Encerrado(s)
+                <i /> {visibleTickets.filter((t) => isTicketFinishedOrPassed(t)).length} Encerrado(s)
               </span>
             )}
           </div>
@@ -550,14 +607,14 @@ export function TicketsTab({
                     const aWin = Boolean(a.isWinner);
                     const bWin = Boolean(b.isWinner);
                     if (aWin !== bWin) return aWin ? -1 : 1;
-                    const aExp = Boolean(a.isExpired);
-                    const bExp = Boolean(b.isExpired);
+                    const aExp = isTicketFinishedOrPassed(a);
+                    const bExp = isTicketFinishedOrPassed(b);
                     if (aExp !== bExp) return aExp ? 1 : -1;
                     return 0;
                   })
                   .map((t) => {
                     const isTicketWinner = Boolean(t.isWinner);
-                    const isTicketExpired = Boolean(t.isExpired) && !isTicketWinner;
+                    const isTicketExpired = isTicketFinishedOrPassed(t);
 
                     return (
                       <article

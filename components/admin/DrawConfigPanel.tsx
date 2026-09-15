@@ -8,6 +8,7 @@ import { useDrawCollection } from "@/hooks/useDrawCollection";
 import { CreateEditDrawModal } from "@/components/admin/CreateEditDrawModal";
 import { DeleteDrawModal } from "@/components/admin/DeleteDrawModal";
 import { DrawTransitionLink } from "@/components/admin/DrawTransitionLink";
+import { parseBlockedRanges, countUniqueBlockedNumbers } from "@/utils/blockedNumbers";
 
 interface DrawConfigPanelProps {
   adminKey?: string;
@@ -128,6 +129,11 @@ export function DrawConfigPanel({
             const isActive = draw.id === activeDrawId;
             const targetTypes = draw.targetUserTypes || ["lojista", "influencer", "visitante", "vip"];
             const isAllTypes = targetTypes.length >= 4;
+            const isSameTitleAndPrize = Boolean(
+              draw.prizeTitle &&
+              draw.title &&
+              draw.prizeTitle.trim().toLowerCase() === draw.title.trim().toLowerCase()
+            );
 
             return (
               <div
@@ -140,51 +146,78 @@ export function DrawConfigPanel({
                     <span className="material-symbols-outlined">tune</span>
                   </div>
 
-                  <div className="stitch-draw-info">
-                    <div className="stitch-draw-title-row">
-                      <h3 className="stitch-draw-title">{draw.title}</h3>
-                    </div>
+                  <div className="stitch-draw-title-row">
+                    <h3 className="stitch-draw-title">{draw.title}</h3>
+                  </div>
 
-                    <div className="stitch-draw-meta-row">
-                      <span className="stitch-draw-tag prize">
+                  <div className="stitch-draw-meta-row">
+                    {draw.prizeTitle && (
+                      <span className="stitch-draw-tag prize" title={`Prêmio: ${draw.prizeTitle}`}>
                         <span className="material-symbols-outlined">workspace_premium</span>
                         <span>Prêmio: <strong>{draw.prizeTitle}</strong></span>
                       </span>
+                    )}
 
-                      {draw.hasNumberLimit && draw.maxNumber && (
-                        <span className="stitch-draw-tag limit" title={`Sorteia apenas números até ${draw.maxNumber}`}>
-                          <span className="material-symbols-outlined">tag</span>
-                          <span>Até Nº <strong>{String(draw.maxNumber).padStart(4, "0")}</strong></span>
-                        </span>
-                      )}
+                    {draw.hasNumberLimit && draw.maxNumber && (
+                      <span className="stitch-draw-tag limit" title={`Sorteia apenas números até ${draw.maxNumber}`}>
+                        <span className="material-symbols-outlined">tag</span>
+                        <span>Até Nº <strong>{String(draw.maxNumber).padStart(4, "0")}</strong></span>
+                      </span>
+                    )}
 
-                      {draw.drawDate && (
-                        <span className="stitch-draw-tag date" title="Data programada para o sorteio">
-                          <span className="material-symbols-outlined">calendar_today</span>
-                          <span>Data: <strong>{new Date(draw.drawDate.slice(0, 10) + "T12:00:00").toLocaleDateString("pt-BR")}</strong></span>
-                        </span>
-                      )}
+                    {draw.drawDate && (
+                      <span className="stitch-draw-tag date" title="Data programada para o sorteio">
+                        <span className="material-symbols-outlined">calendar_today</span>
+                        <span>Data: <strong>{new Date(draw.drawDate.slice(0, 10) + "T12:00:00").toLocaleDateString("pt-BR")}</strong></span>
+                      </span>
+                    )}
 
-                      {draw.allowTicketGeneration === false && (
-                        <span className="stitch-draw-tag physical" title="Geração de números pelo aplicativo desativada">
-                          <span className="material-symbols-outlined">smartphone</span>
-                          <span>Sem Geração no App</span>
-                        </span>
-                      )}
+                    {draw.allowTicketGeneration === false && (
+                      <span className="stitch-draw-tag physical" title="Geração de números pelo aplicativo desativada">
+                        <span className="material-symbols-outlined">smartphone</span>
+                        <span>Sem Geração no App</span>
+                      </span>
+                    )}
 
-                      <div className="stitch-audience-tags">
-                        {isAllTypes ? (
-                          <span className="stitch-draw-tag audience all">
-                            <span className="material-symbols-outlined">groups</span>
-                            <span>Todos os Participantes</span>
+                    {draw.allowTicketGeneration !== false && (() => {
+                      const blockedRanges = parseBlockedRanges(draw.blockedNumberRanges);
+                      const blockedCountVal = countUniqueBlockedNumbers(
+                        blockedRanges,
+                        draw.hasNumberLimit && draw.maxNumber ? draw.maxNumber : undefined
+                      );
+                      return blockedCountVal > 0 ? (
+                        <span
+                          className="stitch-draw-tag"
+                          style={{
+                            background: "#fef2f2",
+                            borderColor: "#fca5a5",
+                            color: "#991b1b",
+                          }}
+                          title={`Números bloqueados (${blockedCountVal}): ${draw.blockedNumberRanges}`}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: "14px", color: "#991b1b" }}>
+                            block
                           </span>
-                        ) : (
-                          <span className="stitch-draw-tag audience">
-                            <span className="material-symbols-outlined">group</span>
-                            <span>Público: <strong>{targetTypes.map((type) => USER_TYPE_LABELS[type] || type).join(", ")}</strong></span>
-                          </span>
-                        )}
-                      </div>
+                          <span><strong>{blockedCountVal}</strong> {blockedCountVal === 1 ? "Bloqueado" : "Bloqueados"}</span>
+                        </span>
+                      ) : null;
+                    })()}
+
+                    <div className="stitch-audience-tags">
+                      {isAllTypes ? (
+                        <span className="stitch-draw-tag audience all">
+                          <span className="material-symbols-outlined">groups</span>
+                          <span>Todos os Participantes</span>
+                        </span>
+                      ) : (
+                        <span
+                          className="stitch-draw-tag audience"
+                          title={`Público: ${targetTypes.map((type: string) => (USER_TYPE_LABELS as Record<string, string>)[type] || type).join(", ")}`}
+                        >
+                          <span className="material-symbols-outlined">group</span>
+                          <span>Público: <strong>{targetTypes.map((type: string) => (USER_TYPE_LABELS as Record<string, string>)[type] || type).join(", ")}</strong></span>
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
