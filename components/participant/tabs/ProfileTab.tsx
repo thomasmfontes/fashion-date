@@ -8,52 +8,13 @@ import { TermsOfUseModal } from "@/components/public/TermsOfUseModal";
 import { SecurityPrivacyCard } from "@/components/public/SecurityPrivacyCard";
 import { PwaProfileCard } from "@/components/pwa/PwaProfileCard";
 import { PwaInstallModal } from "@/components/pwa/PwaInstallModal";
-import { Modal } from "@/components/ui/Modal";
+import { AvatarCropperModal } from "@/components/participant/AvatarCropperModal";
 import { Toast } from "@/components/ui/toast";
 import { useToast } from "@/hooks/useToast";
 import { useSavedParticipant } from "@/hooks/useSavedParticipant";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatName, formatPhone, formatInstagram, formatDate } from "@/utils/formatters";
-
-/**
- * Processa a imagem do participante com corte centralizado 1:1 e compressão
- * otimizada (256x256 WebP/JPEG de ~20KB) no próprio navegador.
- */
-function processImageFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const size = 256;
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          reject(new Error("Não foi possível inicializar o processador de imagem."));
-          return;
-        }
-
-        const minDim = Math.min(img.width, img.height);
-        const startX = (img.width - minDim) / 2;
-        const startY = (img.height - minDim) / 2;
-
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, size, size);
-
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
-        resolve(dataUrl);
-      };
-      img.onerror = () => reject(new Error("Erro ao carregar a imagem selecionada."));
-      img.src = reader.result as string;
-    };
-    reader.onerror = () => reject(new Error("Erro ao ler o arquivo de foto."));
-    reader.readAsDataURL(file);
-  });
-}
 
 /**
  * Tenta fazer upload para o bucket 'avatars' no Supabase Storage.
@@ -116,7 +77,7 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
     setCurrentAvatarUrl(avatarUrl || participant?.avatarUrl || null);
   }, [avatarUrl, participant?.avatarUrl]);
 
-  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -126,22 +87,25 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
       return;
     }
 
-    try {
-      const cropped = await processImageFile(file);
-      setPreviewDataUrl(cropped);
-      setIsModalPreviewOpen(true);
-    } catch (err) {
-      console.error(err);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setPreviewDataUrl(reader.result);
+        setIsModalPreviewOpen(true);
+      }
+    };
+    reader.onerror = () => {
       showToast("Não foi possível carregar a imagem. Tente outra foto.", "error");
-    }
+    };
+    reader.readAsDataURL(file);
   }
 
-  async function confirmSavePhoto() {
-    if (!previewDataUrl) return;
+  async function confirmSavePhoto(croppedDataUrl: string) {
+    if (!croppedDataUrl) return;
     setIsSavingPhoto(true);
 
     try {
-      const finalAvatarUrl = await uploadAvatarOrFallback(previewDataUrl, participant?.authUserId);
+      const finalAvatarUrl = await uploadAvatarOrFallback(croppedDataUrl, participant?.authUserId);
 
       // 1. Atualiza metadados no Supabase Auth
       const supabase = getSupabaseBrowserClient();
@@ -674,65 +638,29 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
         </div>
       )}
 
-      {/* Modal de Prévia e Confirmação da Foto de Perfil */}
-      <Modal
+      {/* Modal Interativo de Recorte, Zoom e Enquadramento da Foto */}
+      <AvatarCropperModal
         isOpen={isModalPreviewOpen}
+        imageSrc={previewDataUrl}
         onClose={() => {
           if (!isSavingPhoto) {
             setIsModalPreviewOpen(false);
             setPreviewDataUrl(null);
           }
         }}
-        title="Nova Foto de Perfil"
-      >
-        <div className="avatar-preview-modal-body">
-          <div className="avatar-preview-crop-frame">
-            {previewDataUrl && (
-              <img src={previewDataUrl} alt="Prévia da nova foto de perfil" />
-            )}
-          </div>
-          <p className="avatar-preview-hint">
-            Essa foto será exibida no seu perfil e nas credenciais dos sorteios do evento.
-          </p>
-        </div>
-
-        <footer className="edit-modal-footer">
-          {resolvedAvatar && (
-            <button
-              type="button"
-              className="stitch-button outline"
-              onClick={async () => {
+        onSave={confirmSavePhoto}
+        onRemoveCurrentPhoto={
+          resolvedAvatar
+            ? async () => {
                 await handleRemovePhoto();
                 setIsModalPreviewOpen(false);
                 setPreviewDataUrl(null);
-              }}
-              disabled={isSavingPhoto}
-              style={{ marginRight: "auto", color: "#991b1b", borderColor: "#f1cfd4" }}
-            >
-              Remover Foto Atual
-            </button>
-          )}
-          <button
-            type="button"
-            className="stitch-button outline"
-            onClick={() => {
-              setIsModalPreviewOpen(false);
-              setPreviewDataUrl(null);
-            }}
-            disabled={isSavingPhoto}
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            className="stitch-button filled"
-            onClick={confirmSavePhoto}
-            disabled={isSavingPhoto}
-          >
-            {isSavingPhoto ? "Salvando..." : "Salvar Foto"}
-          </button>
-        </footer>
-      </Modal>
+              }
+            : undefined
+        }
+        hasCurrentPhoto={Boolean(resolvedAvatar)}
+        isSaving={isSavingPhoto}
+      />
 
       <Toast message={toast} onDismiss={dismissToast} />
     </>

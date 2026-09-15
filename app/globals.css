@@ -173,41 +173,300 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
   color: #f7eedf !important;
 }
 
-/* Modal de Pré-visualização de Foto de Perfil */
-.avatar-preview-modal-body {
+/* =========================================================
+   AVATAR CROPPER MODAL (HAUTE COUTURE)
+   ========================================================= */
+.cropper-modal-backdrop {
+  z-index: 100000 !important;
+  background: rgba(26, 5, 12, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.cropper-modal-container {
+  max-width: 440px !important;
+  width: min(92vw, 440px) !important;
+  border-radius: 20px !important;
+  padding: 24px 24px 20px !important;
+  background: linear-gradient(145deg, #ffffff 0%, #fdfbf7 100%) !important;
+  border: 1.5px solid #ebdcc5 !important;
+  box-shadow: 0 24px 64px rgba(83, 0, 23, 0.22), 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+  box-sizing: border-box !important;
+}
+
+.cropper-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.cropper-modal-kicker {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9a741a;
+  margin-bottom: 3px;
+}
+
+.cropper-modal-title {
+  margin: 0;
+  font-family: var(--font-fashion, serif);
+  font-size: 22px;
+  font-weight: 600;
+  color: #3b000f;
+  line-height: 1.25;
+}
+
+.cropper-modal-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px 20px;
-  gap: 16px;
-  text-align: center;
+  gap: 14px;
+  width: 100%;
 }
 
-.avatar-preview-crop-frame {
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  border: 3px solid #9a741a;
-  box-shadow: 0 10px 30px rgba(83, 0, 23, 0.15), 0 0 0 6px rgba(154, 116, 26, 0.12);
+.cropper-canvas-wrapper {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 8px 24px rgba(83, 0, 23, 0.12), inset 0 0 0 1px rgba(154, 116, 26, 0.2);
+  background: #1e080e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.cropper-canvas {
+  display: block;
+  cursor: grab;
+  width: 260px;
+  height: 260px;
+}
+
+.cropper-canvas:active {
+  cursor: grabbing;
+}
+
+.cropper-drag-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(30, 8, 14, 0.72);
+  backdrop-filter: blur(4px);
+  color: #fdfaf6;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  pointer-events: none;
+  border: 1px solid rgba(199, 154, 54, 0.35);
+  white-space: nowrap;
+}
+
+.cropper-drag-hint span {
+  font-size: 13px !important;
+  color: #e5cc8a;
+}
+
+/* Controls Bar */
+.cropper-controls-bar {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 14px;
   background: #faf6ef;
+  border-radius: 12px;
+  border: 1px solid #ebdcc5;
+  box-sizing: border-box;
+}
+
+.cropper-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.cropper-tool-btn {
   display: grid;
   place-items: center;
-  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e0d2c2;
+  color: #530017;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
 }
 
-.avatar-preview-crop-frame img {
+.cropper-tool-btn:hover:not(:disabled) {
+  background: #530017;
+  color: #ffffff;
+  border-color: #530017;
+}
+
+.cropper-tool-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cropper-tool-btn span {
+  font-size: 18px !important;
+  color: inherit;
+}
+
+/* Custom Range Slider */
+.cropper-zoom-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: #ebdcc5;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.cropper-zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #530017;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(83, 0, 23, 0.35);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.cropper-zoom-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  background: #730020;
+}
+
+.cropper-zoom-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #530017;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(83, 0, 23, 0.35);
+  cursor: pointer;
+}
+
+.cropper-aux-tools {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.cropper-tool-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid #ebdcc5;
+  color: #530017;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cropper-tool-pill:hover:not(:disabled) {
+  background: #fdf2f3;
+  border-color: #530017;
+}
+
+.cropper-tool-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cropper-tool-pill span {
+  font-size: 15px !important;
+  color: #9a741a;
+}
+
+/* Footer layout */
+.cropper-modal-footer {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #f1ece4;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
-.avatar-preview-hint {
-  font-size: 13px;
-  color: #6e595c;
-  margin: 0;
-  line-height: 1.45;
-  max-width: 320px;
+.cropper-primary-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.cropper-cancel-btn {
+  min-height: 44px !important;
+  border-color: #ebdcc5 !important;
+  color: #530017 !important;
+}
+
+.cropper-save-btn {
+  min-height: 44px !important;
+  background: #530017 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  box-shadow: 0 4px 14px rgba(83, 0, 23, 0.25) !important;
+}
+
+.cropper-save-btn:hover {
+  background: #6e001f !important;
+}
+
+.cropper-remove-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #991b1b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 0 2px;
+  transition: opacity 0.15s ease;
+  width: 100%;
+}
+
+.cropper-remove-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.cropper-remove-link span {
+  font-size: 16px !important;
 }
 .stitch-user-info strong{display:block;color:#332225;font-size:12.5px;line-height:1.2}
 .stitch-user-info span{color:#8c787a;font-size:10.5px}
