@@ -65,13 +65,10 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
 
-  const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
-
-  useLockBodyScroll(isDeleteModalOpen || isPhotoMenuOpen);
+  useLockBodyScroll(isDeleteModalOpen);
 
   // Photo management state
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { saveParticipant } = useSavedParticipant();
   const { toast, showToast, dismissToast } = useToast();
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(avatarUrl || participant?.avatarUrl || null);
@@ -88,8 +85,7 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
     e.target.value = "";
     if (!file) return;
 
-    const isImage = file.type.startsWith("image/") || /\.(jpe?g|png|webp|heic|heif|gif)$/i.test(file.name);
-    if (!isImage) {
+    if (!file.type.startsWith("image/")) {
       showToast("Selecione um arquivo de imagem válido (JPG, PNG, WebP).", "error");
       return;
     }
@@ -279,7 +275,7 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
           <button
             type="button"
             className="stitch-avatar-camera-badge"
-            onClick={() => setIsPhotoMenuOpen(true)}
+            onClick={() => fileInputRef.current?.click()}
             aria-label="Alterar foto de perfil"
             title="Alterar foto"
           >
@@ -287,19 +283,10 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
           </button>
         </div>
 
-        {/* Inputs de arquivo ocultos: Câmera direta e Galeria */}
         <input
-          ref={cameraInputRef}
+          ref={fileInputRef}
           type="file"
-          accept="image/*"
-          capture="user"
-          style={{ display: "none" }}
-          onChange={handleFileSelected}
-        />
-        <input
-          ref={galleryInputRef}
-          type="file"
-          accept="image/*"
+          accept="image/*;capture=camera"
           style={{ display: "none" }}
           onChange={handleFileSelected}
         />
@@ -648,169 +635,6 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
                 }}
               >
                 {isDeleting ? "Excluindo..." : "Sim, Excluir"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Escolha: Câmera ou Galeria */}
-      {isPhotoMenuOpen && (
-        <div
-          className="edit-modal-backdrop"
-          onClick={() => setIsPhotoMenuOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(35, 12, 18, 0.45)",
-            backdropFilter: "blur(4px)",
-            zIndex: 9998,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "16px",
-          }}
-        >
-          <div
-            className="stitch-panel-card"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              maxWidth: "360px",
-              width: "100%",
-              padding: "24px 20px 18px",
-              textAlign: "center",
-              border: "1.5px solid #ebdcc5",
-              boxShadow: "0 12px 32px rgba(67, 0, 20, 0.12)",
-              borderRadius: "16px",
-              background: "#ffffff",
-              animation: "modalFadeIn 0.2s ease-out",
-            }}
-          >
-            <div
-              style={{
-                width: "48px",
-                height: "48px",
-                borderRadius: "50%",
-                background: "rgba(83, 0, 23, 0.07)",
-                color: "#530017",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 12px",
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: "24px" }}>
-                photo_camera
-              </span>
-            </div>
-
-            <h3
-              style={{
-                fontFamily: "var(--font-fashion, serif)",
-                fontSize: "19px",
-                color: "#332225",
-                margin: "0 0 6px",
-                fontWeight: 600,
-              }}
-            >
-              Foto de Perfil
-            </h3>
-            <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#786568" }}>
-              Escolha como deseja adicionar ou alterar sua foto:
-            </p>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <button
-                type="button"
-                className="stitch-button filled"
-                onClick={() => {
-                  setIsPhotoMenuOpen(false);
-                  cameraInputRef.current?.click();
-                }}
-                style={{
-                  minHeight: "46px",
-                  justifyContent: "center",
-                  gap: "10px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
-                  photo_camera
-                </span>
-                Tirar Foto
-              </button>
-
-              <button
-                type="button"
-                className="stitch-button outline"
-                onClick={() => {
-                  setIsPhotoMenuOpen(false);
-                  galleryInputRef.current?.click();
-                }}
-                style={{
-                  minHeight: "46px",
-                  justifyContent: "center",
-                  gap: "10px",
-                  fontSize: "14px",
-                  borderColor: "#ebdcc5",
-                  color: "#530017",
-                  fontWeight: 600,
-                  background: "#fdfbf9",
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: "20px", color: "#9a741a" }}>
-                  photo_library
-                </span>
-                Escolher da Galeria
-              </button>
-
-              {resolvedAvatar && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setIsPhotoMenuOpen(false);
-                    await handleRemovePhoto();
-                  }}
-                  disabled={isSavingPhoto}
-                  style={{
-                    minHeight: "40px",
-                    background: "none",
-                    border: "1px dashed #fca5a5",
-                    borderRadius: "10px",
-                    color: "#991b1b",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                    marginTop: "2px",
-                  }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
-                    delete_outline
-                  </span>
-                  Remover foto atual
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setIsPhotoMenuOpen(false)}
-                style={{
-                  minHeight: "38px",
-                  background: "none",
-                  border: "none",
-                  color: "#786568",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                  marginTop: "4px",
-                  padding: "6px",
-                }}
-              >
-                Cancelar
               </button>
             </div>
           </div>
