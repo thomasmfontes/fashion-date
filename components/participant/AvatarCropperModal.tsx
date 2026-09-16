@@ -9,6 +9,7 @@ interface AvatarCropperModalProps {
   onClose: () => void;
   onSave: (croppedDataUrl: string) => Promise<void>;
   onRemoveCurrentPhoto?: () => Promise<void>;
+  onError?: (errorMessage: string) => void;
   hasCurrentPhoto: boolean;
   isSaving: boolean;
 }
@@ -23,6 +24,7 @@ export function AvatarCropperModal({
   onClose,
   onSave,
   onRemoveCurrentPhoto,
+  onError,
   hasCurrentPhoto,
   isSaving,
 }: AvatarCropperModalProps) {
@@ -58,8 +60,13 @@ export function AvatarCropperModal({
       setZoom(1);
       setPan({ x: 0, y: 0 });
     };
+    img.onerror = () => {
+      setImgElement(null);
+      onError?.("Não foi possível carregar a imagem. Tente outro formato.");
+      onClose();
+    };
     img.src = imageSrc;
-  }, [imageSrc, isOpen]);
+  }, [imageSrc, isOpen, onError, onClose]);
 
   // Calcula escala base para que a imagem cubra o círculo
   const getBaseScale = useCallback((img: HTMLImageElement, rot: number) => {

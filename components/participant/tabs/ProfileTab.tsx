@@ -85,17 +85,46 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
     e.target.value = "";
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      showToast("Selecione um arquivo de imagem válido (JPG, PNG, WebP).", "error");
+    // 1. Limite de tamanho de arquivo (máximo 15MB para não sobrecarregar a memória do navegador)
+    const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      showToast("A imagem é muito pesada (máximo 15MB). Escolha uma foto menor.", "error");
       return;
     }
 
+    // 2. Validação de formato (tipo MIME ou extensão como fallback para dispositivos que omitem MIME)
+    const validExtensions = [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".avif"];
+    const fileName = file.name.toLowerCase();
+    const hasValidExtension = validExtensions.some((ext) => fileName.endsWith(ext));
+    const isImageType = file.type ? file.type.startsWith("image/") : hasValidExtension;
+
+    if (!isImageType) {
+      showToast("Selecione um arquivo de imagem válido (JPG, PNG ou WebP).", "error");
+      return;
+    }
+
+    // 3. Leitura e validação de decodificação da imagem antes de abrir o modal
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setPreviewDataUrl(reader.result);
-        setIsModalPreviewOpen(true);
+      if (typeof reader.result !== "string") {
+        showToast("Não foi possível carregar a imagem. Tente outra foto.", "error");
+        return;
       }
+
+      const resultString = reader.result;
+      const testImg = new Image();
+      testImg.onload = () => {
+        if (testImg.naturalWidth < 10 || testImg.naturalHeight < 10) {
+          showToast("A imagem selecionada é muito pequena ou inválida.", "error");
+          return;
+        }
+        setPreviewDataUrl(resultString);
+        setIsModalPreviewOpen(true);
+      };
+      testImg.onerror = () => {
+        showToast("Formato de imagem não suportado pelo navegador ou arquivo corrompido. Tente JPG ou PNG.", "error");
+      };
+      testImg.src = resultString;
     };
     reader.onerror = () => {
       showToast("Não foi possível carregar a imagem. Tente outra foto.", "error");
@@ -662,6 +691,7 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
             : undefined
         }
         hasCurrentPhoto={Boolean(resolvedAvatar)}
+        onError={(msg) => showToast(msg, "error")}
         isSaving={isSavingPhoto}
       />
 
