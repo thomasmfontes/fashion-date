@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 
@@ -12,8 +12,8 @@ interface AvatarCropperModalProps {
   isSaving: boolean;
 }
 
-const VIEWPORT_SIZE = 260; // tamanho do canvas no modal
-const CROP_RADIUS = 105;   // raio do círculo (diâmetro 210px)
+const VIEWPORT_SIZE = 220; // tamanho do canvas no modal (diâmetro 220px)
+const CROP_RADIUS = 110;   // raio do círculo
 const EXPORT_SIZE = 320;   // resolução final do avatar salvo
 
 export function AvatarCropperModal({
@@ -29,9 +29,9 @@ export function AvatarCropperModal({
   const [imgElement, setImgElement] = useState<HTMLImageElement | null>(null);
 
   // Estados de transformação
-  const [zoom, setZoom] = useState(1); // 1x a 3.5x
+  const [zoom, setZoom] = useState(1); // 1x a 3x
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [rotation, setRotation] = useState<0 | 90 | 180 | 270>(0);
+  const rotation = 0;
 
   // Estados de arrasto (drag)
   const isDraggingRef = useRef(false);
@@ -45,7 +45,6 @@ export function AvatarCropperModal({
       setImgElement(null);
       setZoom(1);
       setPan({ x: 0, y: 0 });
-      setRotation(0);
       return;
     }
 
@@ -55,7 +54,6 @@ export function AvatarCropperModal({
       setImgElement(img);
       setZoom(1);
       setPan({ x: 0, y: 0 });
-      setRotation(0);
     };
     img.src = imageSrc;
   }, [imageSrc, isOpen]);
@@ -104,53 +102,16 @@ export function AvatarCropperModal({
     // Limpa
     ctx.clearRect(0, 0, VIEWPORT_SIZE, VIEWPORT_SIZE);
 
-    // 2.1 Desenha a imagem transformada
-    ctx.save();
-    ctx.translate(center + clampedPan.x, center + clampedPan.y);
-    ctx.rotate((rotation * Math.PI) / 180);
-    ctx.scale(currentScale, currentScale);
-    ctx.drawImage(imgElement, -imgElement.width / 2, -imgElement.height / 2);
-    ctx.restore();
-
-    // 2.2 Máscara escura fora do círculo (vignette/guide)
-    ctx.save();
-    ctx.fillStyle = "rgba(30, 8, 14, 0.62)";
-    ctx.beginPath();
-    ctx.rect(0, 0, VIEWPORT_SIZE, VIEWPORT_SIZE);
-    ctx.arc(center, center, CROP_RADIUS, 0, Math.PI * 2, true);
-    ctx.fill();
-    ctx.restore();
-
-    // 2.3 Guia suave de grade/enquadramento (linhas de terços muito sutis)
+    // 2.1 Desenha a imagem recortada em círculo
     ctx.save();
     ctx.beginPath();
     ctx.arc(center, center, CROP_RADIUS, 0, Math.PI * 2);
     ctx.clip();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    // terços horizontais
-    ctx.moveTo(center - CROP_RADIUS, center - CROP_RADIUS * 0.33);
-    ctx.lineTo(center + CROP_RADIUS, center - CROP_RADIUS * 0.33);
-    ctx.moveTo(center - CROP_RADIUS, center + CROP_RADIUS * 0.33);
-    ctx.lineTo(center + CROP_RADIUS, center + CROP_RADIUS * 0.33);
-    // terços verticais
-    ctx.moveTo(center - CROP_RADIUS * 0.33, center - CROP_RADIUS);
-    ctx.lineTo(center - CROP_RADIUS * 0.33, center + CROP_RADIUS);
-    ctx.moveTo(center + CROP_RADIUS * 0.33, center - CROP_RADIUS);
-    ctx.lineTo(center + CROP_RADIUS * 0.33, center + CROP_RADIUS);
-    ctx.stroke();
-    ctx.restore();
 
-    // 2.4 Borda dourada nobre (Haute Couture)
-    ctx.save();
-    ctx.strokeStyle = "#c79a36";
-    ctx.lineWidth = 2.5;
-    ctx.shadowColor = "rgba(83, 0, 23, 0.35)";
-    ctx.shadowBlur = 8;
-    ctx.beginPath();
-    ctx.arc(center, center, CROP_RADIUS, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.translate(center + clampedPan.x, center + clampedPan.y);
+    ctx.rotate((rotation * Math.PI) / 180);
+    ctx.scale(currentScale, currentScale);
+    ctx.drawImage(imgElement, -imgElement.width / 2, -imgElement.height / 2);
     ctx.restore();
   }, [imgElement, zoom, pan, rotation, getBaseScale, clampPan]);
 
@@ -224,7 +185,7 @@ export function AvatarCropperModal({
       const ratio = newDist / pinchDistRef.current;
       pinchDistRef.current = newDist;
 
-      setZoom((prev) => Math.max(1, Math.min(3.5, prev * ratio)));
+      setZoom((prev) => Math.max(1, Math.min(3, prev * ratio)));
     }
   }
 
@@ -235,20 +196,8 @@ export function AvatarCropperModal({
 
   function handleWheel(e: React.WheelEvent<HTMLCanvasElement>) {
     e.preventDefault();
-    const delta = e.deltaY < 0 ? 0.1 : -0.1;
-    setZoom((prev) => Math.max(1, Math.min(3.5, prev + delta)));
-  }
-
-  // Girar 90 graus
-  function handleRotate() {
-    setRotation((prev) => ((prev + 90) % 360) as 0 | 90 | 180 | 270);
-    setPan({ x: 0, y: 0 });
-  }
-
-  // Centralizar
-  function handleReset() {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
+    const delta = e.deltaY < 0 ? 0.08 : -0.08;
+    setZoom((prev) => Math.max(1, Math.min(3, prev + delta)));
   }
 
   // 4. Exportação final em 320x320 com qualidade 0.90
@@ -269,7 +218,6 @@ export function AvatarCropperModal({
 
     expCtx.save();
     expCtx.translate(EXPORT_SIZE / 2, EXPORT_SIZE / 2);
-    // Translação na escala do export
     expCtx.translate(clampedPan.x * exportScale, clampedPan.y * exportScale);
     expCtx.rotate((rotation * Math.PI) / 180);
     expCtx.scale(currentScale * exportScale, currentScale * exportScale);
@@ -296,14 +244,11 @@ export function AvatarCropperModal({
         aria-modal="true"
         aria-labelledby="cropper-modal-title"
       >
-        {/* Cabeçalho Haute Couture */}
+        {/* Cabeçalho Limpo e Elegante */}
         <header className="cropper-modal-header">
-          <div>
-            <span className="cropper-modal-kicker">Alta-Costura · Ajustar Foto</span>
-            <h2 id="cropper-modal-title" className="cropper-modal-title">
-              Enquadrar Foto de Perfil
-            </h2>
-          </div>
+          <h2 id="cropper-modal-title" className="cropper-modal-title">
+            Ajustar Foto
+          </h2>
           <button
             type="button"
             className="edit-modal-close"
@@ -316,7 +261,7 @@ export function AvatarCropperModal({
         </header>
 
         <div className="cropper-modal-content">
-          {/* Viewport Interativo do Canvas */}
+          {/* Círculo do Avatar com enquadramento */}
           <div className="cropper-canvas-wrapper">
             <canvas
               ref={canvasRef}
@@ -333,75 +278,31 @@ export function AvatarCropperModal({
               onWheel={handleWheel}
               style={{ touchAction: "none" }}
             />
-            <div className="cropper-drag-hint">
-              <span className="material-symbols-outlined">pan_tool</span>
-              Arraste para posicionar
-            </div>
           </div>
 
-          {/* Barra de Controles de Zoom e Rotação */}
-          <div className="cropper-controls-bar">
-            <div className="cropper-zoom-controls">
-              <button
-                type="button"
-                className="cropper-tool-btn"
-                onClick={() => setZoom((prev) => Math.max(1, prev - 0.2))}
-                title="Diminuir zoom"
-                disabled={zoom <= 1 || isSaving}
-              >
-                <span className="material-symbols-outlined">zoom_out</span>
-              </button>
+          <p className="cropper-instruction-text">
+            Arraste para posicionar ou use o zoom
+          </p>
 
-              <input
-                type="range"
-                min="1"
-                max="3.5"
-                step="0.05"
-                value={zoom}
-                onChange={(e) => setZoom(parseFloat(e.target.value))}
-                className="cropper-zoom-slider"
-                disabled={isSaving}
-                aria-label="Controle de zoom"
-              />
-
-              <button
-                type="button"
-                className="cropper-tool-btn"
-                onClick={() => setZoom((prev) => Math.min(3.5, prev + 0.2))}
-                title="Aumentar zoom"
-                disabled={zoom >= 3.5 || isSaving}
-              >
-                <span className="material-symbols-outlined">zoom_in</span>
-              </button>
-            </div>
-
-            <div className="cropper-aux-tools">
-              <button
-                type="button"
-                className="cropper-tool-pill"
-                onClick={handleRotate}
-                disabled={isSaving}
-                title="Girar foto em 90 graus"
-              >
-                <span className="material-symbols-outlined">rotate_right</span>
-                Girar
-              </button>
-
-              <button
-                type="button"
-                className="cropper-tool-pill"
-                onClick={handleReset}
-                disabled={isSaving || (zoom === 1 && pan.x === 0 && pan.y === 0)}
-                title="Restaurar tamanho padrão"
-              >
-                <span className="material-symbols-outlined">restart_alt</span>
-                Centralizar
-              </button>
-            </div>
+          {/* Controle de Zoom Minimalista */}
+          <div className="cropper-zoom-controls">
+            <span className="material-symbols-outlined cropper-zoom-icon">zoom_out</span>
+            <input
+              type="range"
+              min="1"
+              max="3"
+              step="0.05"
+              value={zoom}
+              onChange={(e) => setZoom(parseFloat(e.target.value))}
+              className="cropper-zoom-slider"
+              disabled={isSaving}
+              aria-label="Controle de zoom"
+            />
+            <span className="material-symbols-outlined cropper-zoom-icon">zoom_in</span>
           </div>
         </div>
 
-        {/* Rodapé Otimizado e Elegante */}
+        {/* Rodapé Limpo e Objetivo */}
         <footer className="cropper-modal-footer">
           <div className="cropper-primary-actions">
             <button

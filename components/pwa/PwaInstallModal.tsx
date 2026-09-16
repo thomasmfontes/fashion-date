@@ -10,6 +10,101 @@ interface PwaInstallModalProps {
   onPromptNative?: () => Promise<unknown>;
 }
 
+function AppleIcon({ size = 15 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      style={{ flexShrink: 0 }}
+      aria-hidden="true"
+    >
+      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.38c.62-.75 1.04-1.8 1.01-2.85-.9.04-2 .6-2.65 1.35-.58.66-.99 1.72-.94 2.76.99.08 1.96-.51 2.58-1.26z" />
+    </svg>
+  );
+}
+
+function SafariShareIcon() {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "22px",
+        height: "22px",
+        borderRadius: "5px",
+        background: "#edf2f7",
+        border: "1px solid #cbd5e1",
+        verticalAlign: "middle",
+        margin: "0 3px",
+      }}
+    >
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#0284c7"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+        <polyline points="16 6 12 2 8 6" />
+        <line x1="12" y1="2" x2="12" y2="15" />
+      </svg>
+    </span>
+  );
+}
+
+function SafariAddIcon() {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "22px",
+        height: "22px",
+        borderRadius: "5px",
+        background: "#fdf8ee",
+        border: "1px solid #ebdcc5",
+        verticalAlign: "middle",
+        margin: "0 3px",
+      }}
+    >
+      <span className="material-symbols-outlined" style={{ fontSize: "14px", color: "#9a741a" }}>
+        add_box
+      </span>
+    </span>
+  );
+}
+
+function ChromeDotsIcon() {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "22px",
+        height: "22px",
+        borderRadius: "5px",
+        background: "#edf2f7",
+        border: "1px solid #cbd5e1",
+        verticalAlign: "middle",
+        margin: "0 3px",
+      }}
+    >
+      <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#475569" }}>
+        more_vert
+      </span>
+    </span>
+  );
+}
+
 export function PwaInstallModal({
   isOpen,
   onClose,
@@ -58,11 +153,11 @@ export function PwaInstallModal({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Cabeçalho Haute Couture */}
+        {/* Cabeçalho Limpo e Nobre */}
         <div
           style={{
-            padding: "22px 24px 18px",
-            background: "linear-gradient(135deg, #fdfbf7 0%, #f6efe4 100%)",
+            padding: "20px 22px 16px",
+            background: "linear-gradient(135deg, #fdfbf7 0%, #f7f1e7 100%)",
             borderBottom: "1px solid #ebdcc5",
             position: "relative",
           }}
@@ -78,8 +173,8 @@ export function PwaInstallModal({
               background: "rgba(83, 0, 23, 0.06)",
               border: "none",
               borderRadius: "50%",
-              width: "32px",
-              height: "32px",
+              width: "30px",
+              height: "30px",
               display: "grid",
               placeItems: "center",
               cursor: "pointer",
@@ -92,36 +187,10 @@ export function PwaInstallModal({
             </span>
           </button>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-            <span
-              className="material-symbols-outlined"
-              style={{
-                fontSize: "20px",
-                color: "#9a741a",
-                background: "rgba(154, 116, 26, 0.12)",
-                padding: "6px",
-                borderRadius: "8px",
-              }}
-            >
-              install_mobile
-            </span>
-            <span
-              style={{
-                fontSize: "11px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                color: "#9a741a",
-              }}
-            >
-              Fashion Date App
-            </span>
-          </div>
-
           <h3
             style={{
               fontFamily: "var(--font-fashion, serif)",
-              fontSize: "22px",
+              fontSize: "20px",
               fontWeight: 700,
               color: "#530017",
               margin: 0,
@@ -130,8 +199,8 @@ export function PwaInstallModal({
           >
             Adicionar à Tela de Início
           </h3>
-          <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#786568", lineHeight: 1.4 }}>
-            Tenha acesso instantâneo aos seus Números da Sorte e aos sorteios em tempo real.
+          <p style={{ margin: "4px 0 0", fontSize: "12.5px", color: "#786568", lineHeight: 1.4 }}>
+            Acesse seus Números da Sorte com 1 toque no evento.
           </p>
 
           {/* Abas Seletoras de SO */}
@@ -139,11 +208,11 @@ export function PwaInstallModal({
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              gap: "8px",
-              marginTop: "16px",
+              gap: "6px",
+              marginTop: "14px",
               background: "rgba(83, 0, 23, 0.05)",
-              padding: "4px",
-              borderRadius: "10px",
+              padding: "3px",
+              borderRadius: "9px",
             }}
           >
             <button
@@ -151,25 +220,23 @@ export function PwaInstallModal({
               onClick={() => setPlatform("ios")}
               style={{
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "7px",
                 padding: "8px 12px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "8px",
+                gap: "7px",
                 fontSize: "12.5px",
-                fontWeight: 600,
+                fontWeight: platform === "ios" ? 700 : 500,
                 cursor: "pointer",
-                transition: "all 0.2s",
+                transition: "all 0.18s ease",
                 background: platform === "ios" ? "#ffffff" : "transparent",
                 color: platform === "ios" ? "#530017" : "#786568",
-                boxShadow: platform === "ios" ? "0 2px 8px rgba(83, 0, 23, 0.1)" : "none",
+                boxShadow: platform === "ios" ? "0 2px 6px rgba(83, 0, 23, 0.08)" : "none",
               }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
-                phone_iphone
-              </span>
-              iPhone (iOS)
+              <AppleIcon size={15} />
+              <span>iPhone</span>
             </button>
 
             <button
@@ -177,347 +244,252 @@ export function PwaInstallModal({
               onClick={() => setPlatform("android")}
               style={{
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "7px",
                 padding: "8px 12px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "8px",
+                gap: "7px",
                 fontSize: "12.5px",
-                fontWeight: 600,
+                fontWeight: platform === "android" ? 700 : 500,
                 cursor: "pointer",
-                transition: "all 0.2s",
+                transition: "all 0.18s ease",
                 background: platform === "android" ? "#ffffff" : "transparent",
                 color: platform === "android" ? "#530017" : "#786568",
-                boxShadow: platform === "android" ? "0 2px 8px rgba(83, 0, 23, 0.1)" : "none",
+                boxShadow: platform === "android" ? "0 2px 6px rgba(83, 0, 23, 0.08)" : "none",
               }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
                 android
               </span>
-              Android (Chrome)
+              <span>Android</span>
             </button>
           </div>
         </div>
 
-        {/* Conteúdo do Passo a Passo */}
-        <div style={{ padding: "20px 24px", display: "grid", gap: "14px" }}>
+        {/* Conteúdo do Passo a Passo Fluido */}
+        <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: "14px" }}>
           {platform === "ios" ? (
             <>
               {/* Passo 1 iOS */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "14px",
-                  alignItems: "flex-start",
-                  padding: "12px 14px",
-                  borderRadius: "12px",
-                  background: "#fdfaf6",
-                  border: "1px solid #ebdcc5",
-                }}
-              >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                 <div
                   style={{
-                    width: "28px",
-                    height: "28px",
+                    width: "24px",
+                    height: "24px",
                     borderRadius: "50%",
-                    background: "#530017",
-                    color: "#ffffff",
+                    background: "rgba(83, 0, 23, 0.08)",
+                    color: "#530017",
                     fontSize: "12px",
                     fontWeight: 700,
                     display: "grid",
                     placeItems: "center",
                     flexShrink: 0,
+                    marginTop: "1px",
                   }}
                 >
                   1
                 </div>
-                <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45 }}>
-                  Abra o Safari e toque no botão de <strong>Compartilhar</strong> na barra inferior.
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      marginLeft: "6px",
-                      verticalAlign: "middle",
-                      padding: "2px 6px",
-                      borderRadius: "6px",
-                      background: "#edf2f7",
-                      border: "1px solid #cbd5e1",
-                    }}
-                  >
-                    <svg
-                      width="15"
-                      height="15"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#0284c7"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                      <polyline points="16 6 12 2 8 6" />
-                      <line x1="12" y1="2" x2="12" y2="15" />
-                    </svg>
-                  </div>
+                <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45, flex: 1 }}>
+                  Abra o Safari e toque no botão de <strong>Compartilhar</strong>
+                  <SafariShareIcon />
+                  na barra inferior.
                 </div>
               </div>
 
               {/* Passo 2 iOS */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "14px",
-                  alignItems: "flex-start",
-                  padding: "12px 14px",
-                  borderRadius: "12px",
-                  background: "#fdfaf6",
-                  border: "1px solid #ebdcc5",
-                }}
-              >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                 <div
                   style={{
-                    width: "28px",
-                    height: "28px",
+                    width: "24px",
+                    height: "24px",
                     borderRadius: "50%",
-                    background: "#530017",
-                    color: "#ffffff",
+                    background: "rgba(83, 0, 23, 0.08)",
+                    color: "#530017",
                     fontSize: "12px",
                     fontWeight: 700,
                     display: "grid",
                     placeItems: "center",
                     flexShrink: 0,
+                    marginTop: "1px",
                   }}
                 >
                   2
                 </div>
-                <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45 }}>
-                  Role as opções para baixo e toque em{" "}
-                  <strong style={{ color: "#530017" }}>Adicionar à Tela de Início</strong>.
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      marginLeft: "6px",
-                      verticalAlign: "middle",
-                      padding: "2px 6px",
-                      borderRadius: "6px",
-                      background: "#fef3c7",
-                      border: "1px solid #fde68a",
-                    }}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#9a741a" }}>
-                      add_box
-                    </span>
-                  </div>
+                <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45, flex: 1 }}>
+                  Role para baixo e selecione <strong>Adicionar à Tela de Início</strong>
+                  <SafariAddIcon />.
                 </div>
               </div>
 
               {/* Passo 3 iOS */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "14px",
-                  alignItems: "flex-start",
-                  padding: "12px 14px",
-                  borderRadius: "12px",
-                  background: "#fdfaf6",
-                  border: "1px solid #ebdcc5",
-                }}
-              >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                 <div
                   style={{
-                    width: "28px",
-                    height: "28px",
+                    width: "24px",
+                    height: "24px",
                     borderRadius: "50%",
-                    background: "#530017",
-                    color: "#ffffff",
+                    background: "rgba(83, 0, 23, 0.08)",
+                    color: "#530017",
                     fontSize: "12px",
                     fontWeight: 700,
                     display: "grid",
                     placeItems: "center",
                     flexShrink: 0,
+                    marginTop: "1px",
                   }}
                 >
                   3
                 </div>
-                <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45 }}>
-                  No canto superior direito da tela, toque em <strong>Adicionar</strong> para confirmar.
+                <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45, flex: 1 }}>
+                  No canto superior direito, toque em <strong>Adicionar</strong> para confirmar.
                 </div>
               </div>
             </>
           ) : (
             <>
-              {/* Android com suporte a 1 toque */}
+              {/* Opção direta 1 toque (se suportada) */}
               {canPromptNative && onPromptNative && (
                 <div
                   style={{
-                    padding: "14px",
-                    borderRadius: "12px",
-                    background: "rgba(154, 116, 26, 0.08)",
-                    border: "1px solid rgba(199, 154, 54, 0.35)",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    background: "#fdfaf6",
+                    border: "1px solid #ebdcc5",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
                     textAlign: "center",
                   }}
                 >
-                  <p style={{ margin: "0 0 10px", fontSize: "13px", color: "#530017", fontWeight: 600 }}>
-                    Seu aparelho permite instalação direta com 1 toque:
-                  </p>
+                  <span style={{ fontSize: "12px", color: "#665255" }}>
+                    Instalação direta disponível:
+                  </span>
                   <button
                     type="button"
                     className="stitch-button filled"
-                    style={{ width: "100%", justifyContent: "center" }}
+                    style={{
+                      width: "100%",
+                      justifyContent: "center",
+                      minHeight: "38px",
+                      fontSize: "12.5px",
+                      textTransform: "none",
+                      borderRadius: "8px",
+                    }}
                     onClick={async () => {
                       await onPromptNative();
                       onClose();
                     }}
                   >
-                    <span className="material-symbols-outlined">download</span>
-                    <span>Instalar Agora no Celular</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: "17px" }}>
+                      download
+                    </span>
+                    <span>Instalar agora no celular</span>
                   </button>
                 </div>
               )}
 
               {/* Passo 1 Android */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "14px",
-                  alignItems: "flex-start",
-                  padding: "12px 14px",
-                  borderRadius: "12px",
-                  background: "#fdfaf6",
-                  border: "1px solid #ebdcc5",
-                }}
-              >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                 <div
                   style={{
-                    width: "28px",
-                    height: "28px",
+                    width: "24px",
+                    height: "24px",
                     borderRadius: "50%",
-                    background: "#530017",
-                    color: "#ffffff",
+                    background: "rgba(83, 0, 23, 0.08)",
+                    color: "#530017",
                     fontSize: "12px",
                     fontWeight: 700,
                     display: "grid",
                     placeItems: "center",
                     flexShrink: 0,
+                    marginTop: "1px",
                   }}
                 >
                   1
                 </div>
-                <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45 }}>
-                  No Google Chrome, toque no menu de <strong>três pontos</strong> (canto superior direito).
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "2px",
-                      marginLeft: "6px",
-                      verticalAlign: "middle",
-                      padding: "2px 4px",
-                      borderRadius: "6px",
-                      background: "#edf2f7",
-                      border: "1px solid #cbd5e1",
-                    }}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#334155" }}>
-                      more_vert
-                    </span>
-                  </div>
+                <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45, flex: 1 }}>
+                  No Chrome, toque no menu de <strong>três pontos</strong>
+                  <ChromeDotsIcon />
+                  no canto superior.
                 </div>
               </div>
 
               {/* Passo 2 Android */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "14px",
-                  alignItems: "flex-start",
-                  padding: "12px 14px",
-                  borderRadius: "12px",
-                  background: "#fdfaf6",
-                  border: "1px solid #ebdcc5",
-                }}
-              >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                 <div
                   style={{
-                    width: "28px",
-                    height: "28px",
+                    width: "24px",
+                    height: "24px",
                     borderRadius: "50%",
-                    background: "#530017",
-                    color: "#ffffff",
+                    background: "rgba(83, 0, 23, 0.08)",
+                    color: "#530017",
                     fontSize: "12px",
                     fontWeight: 700,
                     display: "grid",
                     placeItems: "center",
                     flexShrink: 0,
+                    marginTop: "1px",
                   }}
                 >
                   2
                 </div>
-                <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45 }}>
-                  Toque em <strong style={{ color: "#530017" }}>Instalar aplicativo</strong> ou{" "}
-                  <strong style={{ color: "#530017" }}>Adicionar à tela inicial</strong>.
+                <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45, flex: 1 }}>
+                  Toque em <strong>Instalar aplicativo</strong> ou <strong>Adicionar à tela inicial</strong>.
                 </div>
               </div>
 
               {/* Passo 3 Android */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "14px",
-                  alignItems: "flex-start",
-                  padding: "12px 14px",
-                  borderRadius: "12px",
-                  background: "#fdfaf6",
-                  border: "1px solid #ebdcc5",
-                }}
-              >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                 <div
                   style={{
-                    width: "28px",
-                    height: "28px",
+                    width: "24px",
+                    height: "24px",
                     borderRadius: "50%",
-                    background: "#530017",
-                    color: "#ffffff",
+                    background: "rgba(83, 0, 23, 0.08)",
+                    color: "#530017",
                     fontSize: "12px",
                     fontWeight: 700,
                     display: "grid",
                     placeItems: "center",
                     flexShrink: 0,
+                    marginTop: "1px",
                   }}
                 >
                   3
                 </div>
-                <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45 }}>
-                  Confirme em <strong>Instalar</strong>. O ícone oficial aparecerá na tela do seu telefone.
+                <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45, flex: 1 }}>
+                  Confirme em <strong>Instalar</strong>. O ícone aparecerá na sua tela.
                 </div>
               </div>
             </>
           )}
         </div>
 
-        {/* Rodapé com Ação */}
+        {/* Rodapé Elegante */}
         <div
           style={{
-            padding: "14px 24px 20px",
+            padding: "12px 22px 18px",
             background: "#ffffff",
             borderTop: "1px solid #ebdcc5",
             display: "flex",
-            justifyContent: "flex-end",
           }}
         >
           <button
             type="button"
             className="stitch-button filled"
-            style={{ width: "100%", justifyContent: "center" }}
+            style={{
+              width: "100%",
+              justifyContent: "center",
+              minHeight: "40px",
+              borderRadius: "9px",
+              textTransform: "none",
+              fontSize: "13px",
+              letterSpacing: "0.01em",
+            }}
             onClick={onClose}
           >
-            <span className="material-symbols-outlined">check_circle</span>
-            <span>Entendi, vou adicionar</span>
+            <span>Entendi, fechar</span>
           </button>
         </div>
       </div>

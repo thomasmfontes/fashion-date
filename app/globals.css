@@ -174,68 +174,59 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
 }
 
 /* =========================================================
-   AVATAR CROPPER MODAL (HAUTE COUTURE)
+   AVATAR CROPPER MODAL (HAUTE COUTURE MINIMAL)
    ========================================================= */
 .cropper-modal-backdrop {
   z-index: 100000 !important;
-  background: rgba(26, 5, 12, 0.75) !important;
-  backdrop-filter: blur(8px) !important;
+  background: rgba(26, 5, 12, 0.65) !important;
+  backdrop-filter: blur(6px) !important;
 }
 
 .cropper-modal-container {
-  max-width: 440px !important;
-  width: min(92vw, 440px) !important;
-  border-radius: 20px !important;
-  padding: 24px 24px 20px !important;
-  background: linear-gradient(145deg, #ffffff 0%, #fdfbf7 100%) !important;
+  max-width: 360px !important;
+  width: min(90vw, 360px) !important;
+  border-radius: 18px !important;
+  padding: 20px 20px 16px !important;
+  background: #ffffff !important;
   border: 1.5px solid #ebdcc5 !important;
-  box-shadow: 0 24px 64px rgba(83, 0, 23, 0.22), 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 20px 48px rgba(83, 0, 23, 0.18), 0 4px 16px rgba(0, 0, 0, 0.04) !important;
   box-sizing: border-box !important;
 }
 
 .cropper-modal-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
-  gap: 12px;
-}
-
-.cropper-modal-kicker {
-  display: block;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #9a741a;
-  margin-bottom: 3px;
+  margin-bottom: 14px;
+  width: 100%;
 }
 
 .cropper-modal-title {
   margin: 0;
   font-family: var(--font-fashion, serif);
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
-  color: #3b000f;
-  line-height: 1.25;
+  color: #530017;
+  line-height: 1.2;
 }
 
 .cropper-modal-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
 }
 
 .cropper-canvas-wrapper {
   position: relative;
-  width: 260px;
-  height: 260px;
-  border-radius: 16px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(83, 0, 23, 0.12), inset 0 0 0 1px rgba(154, 116, 26, 0.2);
-  background: #1e080e;
+  border: 2.5px solid #c79a36;
+  box-shadow: 0 8px 24px rgba(83, 0, 23, 0.12);
+  background: #fdfbf9;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -245,97 +236,44 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
 .cropper-canvas {
   display: block;
   cursor: grab;
-  width: 260px;
-  height: 260px;
+  width: 220px;
+  height: 220px;
 }
 
 .cropper-canvas:active {
   cursor: grabbing;
 }
 
-.cropper-drag-hint {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  background: rgba(30, 8, 14, 0.72);
-  backdrop-filter: blur(4px);
-  color: #fdfaf6;
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  pointer-events: none;
-  border: 1px solid rgba(199, 154, 54, 0.35);
-  white-space: nowrap;
+.cropper-instruction-text {
+  font-size: 11.5px;
+  color: #855e09;
+  font-weight: 500;
+  margin: 0;
+  text-align: center;
 }
 
-.cropper-drag-hint span {
-  font-size: 13px !important;
-  color: #e5cc8a;
-}
-
-/* Controls Bar */
-.cropper-controls-bar {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 10px 14px;
-  background: #faf6ef;
-  border-radius: 12px;
-  border: 1px solid #ebdcc5;
-  box-sizing: border-box;
-}
-
+/* Minimalist Zoom & Rotate Row */
 .cropper-zoom-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
+  padding: 2px 0;
 }
 
-.cropper-tool-btn {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #ffffff;
-  border: 1px solid #e0d2c2;
-  color: #530017;
-  cursor: pointer;
-  padding: 0;
-  flex-shrink: 0;
-  transition: all 0.15s ease;
-}
-
-.cropper-tool-btn:hover:not(:disabled) {
-  background: #530017;
-  color: #ffffff;
-  border-color: #530017;
-}
-
-.cropper-tool-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.cropper-tool-btn span {
+.cropper-zoom-icon {
   font-size: 18px !important;
-  color: inherit;
+  color: #9a741a;
+  user-select: none;
 }
 
-/* Custom Range Slider */
 .cropper-zoom-slider {
   flex: 1;
+  max-width: 180px;
   -webkit-appearance: none;
   appearance: none;
-  height: 6px;
+  height: 5px;
   background: #ebdcc5;
   border-radius: 3px;
   outline: none;
@@ -345,103 +283,87 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
 .cropper-zoom-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: #530017;
   border: 2px solid #ffffff;
-  box-shadow: 0 2px 6px rgba(83, 0, 23, 0.35);
+  box-shadow: 0 2px 6px rgba(83, 0, 23, 0.3);
   cursor: pointer;
   transition: transform 0.12s ease;
 }
 
 .cropper-zoom-slider::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  background: #730020;
+  background: #6e001f;
 }
 
 .cropper-zoom-slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: #530017;
   border: 2px solid #ffffff;
-  box-shadow: 0 2px 6px rgba(83, 0, 23, 0.35);
+  box-shadow: 0 2px 6px rgba(83, 0, 23, 0.3);
   cursor: pointer;
-}
-
-.cropper-aux-tools {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.cropper-tool-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  background: #ffffff;
-  border: 1px solid #ebdcc5;
-  color: #530017;
-  font-size: 11.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.cropper-tool-pill:hover:not(:disabled) {
-  background: #fdf2f3;
-  border-color: #530017;
-}
-
-.cropper-tool-pill:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.cropper-tool-pill span {
-  font-size: 15px !important;
-  color: #9a741a;
 }
 
 /* Footer layout */
 .cropper-modal-footer {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid #f1ece4;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #ebdcc5;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
 }
 
 .cropper-primary-actions {
   display: grid;
-  grid-template-columns: 1fr 1.2fr;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   width: 100%;
 }
 
 .cropper-cancel-btn {
-  min-height: 44px !important;
-  border-color: #ebdcc5 !important;
+  min-height: 40px !important;
+  border: 1px solid #ebdcc5 !important;
+  background: #ffffff !important;
+  color: #63434b !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+  transition: all 0.18s ease !important;
+}
+
+.cropper-cancel-btn:hover:not(:disabled) {
+  border-color: #530017 !important;
   color: #530017 !important;
+  background: #fdfaf6 !important;
 }
 
 .cropper-save-btn {
-  min-height: 44px !important;
+  min-height: 40px !important;
   background: #530017 !important;
-  color: #ffffff !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.04em !important;
-  box-shadow: 0 4px 14px rgba(83, 0, 23, 0.25) !important;
+  border: 1px solid #530017 !important;
+  color: #fff6eb !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+  box-shadow: 0 4px 14px rgba(83, 0, 23, 0.22) !important;
+  transition: all 0.18s ease !important;
 }
 
-.cropper-save-btn:hover {
-  background: #6e001f !important;
+.cropper-save-btn:hover:not(:disabled) {
+  background: #3f0011 !important;
+  border-color: #3f0011 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(83, 0, 23, 0.28) !important;
 }
 
 .cropper-remove-link {
@@ -451,22 +373,27 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
   gap: 6px;
   background: transparent;
   border: none;
-  color: #991b1b;
+  color: #8c6b73;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   padding: 6px 0 2px;
-  transition: opacity 0.15s ease;
+  transition: all 0.18s ease;
   width: 100%;
 }
 
-.cropper-remove-link:hover {
-  opacity: 0.8;
-  text-decoration: underline;
+.cropper-remove-link:hover:not(:disabled) {
+  color: #a82333;
 }
 
 .cropper-remove-link span {
   font-size: 16px !important;
+  color: inherit;
+  transition: transform 0.15s ease;
+}
+
+.cropper-remove-link:hover:not(:disabled) span {
+  transform: scale(1.08);
 }
 .stitch-user-info strong{display:block;color:#332225;font-size:12.5px;line-height:1.2}
 .stitch-user-info span{color:#8c787a;font-size:10.5px}
