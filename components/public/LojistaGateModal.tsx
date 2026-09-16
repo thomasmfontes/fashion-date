@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
+import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 
 interface LojistaGateModalProps {
   onEligible: () => void;
@@ -35,6 +36,7 @@ export function LojistaGateModal({ onEligible }: LojistaGateModalProps) {
   );
 
   const isOpen = !isConfirmed && !isDismissed;
+  useLockBodyScroll(isOpen);
 
   if (!isOpen) return null;
 

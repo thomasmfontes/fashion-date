@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import type { DrawItem } from "@/types/drawCollection.types";
 import type { ParticipantTicket, SavedParticipant } from "@/types/participant.types";
 import { useSoundFx } from "@/hooks/useSoundFx";
+import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 
 const CONFETTI_COLORS = ["#c99b36", "#530017", "#e8c66d", "#8b2f47", "#f8efe1"];
 
@@ -54,14 +55,10 @@ export function TicketConfirmedModal({
     }
   }, [isOpen, playSuccess]);
 
+  useLockBodyScroll(isOpen);
+
   useEffect(() => {
     if (!isOpen) return;
-
-    const originalOverflow = document.body.style.overflow;
-    const originalTouchAction = document.body.style.touchAction;
-
-    document.body.style.overflow = "hidden";
-    document.body.style.touchAction = "none";
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") handleClose();
@@ -69,8 +66,6 @@ export function TicketConfirmedModal({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = originalOverflow;
-      document.body.style.touchAction = originalTouchAction;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen]);

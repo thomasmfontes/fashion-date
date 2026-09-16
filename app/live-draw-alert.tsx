@@ -74,16 +74,17 @@ export default function LiveDrawAlert({ luckyNumber }: LiveDrawAlertProps) {
 
           {/* Action button */}
           <div className="stitch-live-alert-actions" style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-            <button
-              type="button"
-              className="stitch-button outline"
-              onClick={triggerTest}
-              title="Testar som e celebração no celular"
-            >
-              <span className="material-symbols-outlined">volume_up</span>
-              <span>Testar Alerta</span>
-            </button>
-            {!isEnabled && (
+            {isEnabled ? (
+              <button
+                type="button"
+                className="stitch-button outline"
+                onClick={triggerTest}
+                title="Testar som e celebração no celular"
+              >
+                <span className="material-symbols-outlined">volume_up</span>
+                <span>Testar Alerta</span>
+              </button>
+            ) : (
               <button
                 type="button"
                 className="stitch-button filled"

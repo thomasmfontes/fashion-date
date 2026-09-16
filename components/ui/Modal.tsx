@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 
 interface ModalProps {
   isOpen: boolean;
@@ -34,15 +35,13 @@ export function Modal({
   const triggerRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
 
+  useLockBodyScroll(isOpen);
+
   // Save trigger element and handle Escape & focus containment
   useEffect(() => {
     if (!isOpen) return;
 
     triggerRef.current = document.activeElement as HTMLElement | null;
-
-    // Lock body scroll while modal is active
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
 
     // Set initial focus to first input or dialog container
     const timer = window.setTimeout(() => {
@@ -98,7 +97,6 @@ export function Modal({
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = originalOverflow;
       if (triggerRef.current && typeof triggerRef.current.focus === "function") {
         triggerRef.current.focus();
       }

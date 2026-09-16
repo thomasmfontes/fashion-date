@@ -52,16 +52,17 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
 
         {/* Ação Primária no Cabeçalho Oficial */}
         <div className="stitch-actions" style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-          <button
-            type="button"
-            className="stitch-button outline"
-            onClick={triggerTest}
-            title="Testar som e celebração no aparelho"
-          >
-            <span className="material-symbols-outlined">volume_up</span>
-            <span>Testar Alerta</span>
-          </button>
-          {!isEnabled && (
+          {isEnabled ? (
+            <button
+              type="button"
+              className="stitch-button outline"
+              onClick={triggerTest}
+              title="Testar som e celebração no aparelho"
+            >
+              <span className="material-symbols-outlined">volume_up</span>
+              <span>Testar Alerta</span>
+            </button>
+          ) : (
             <button
               type="button"
               className="stitch-button filled"

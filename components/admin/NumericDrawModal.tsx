@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { NumericDrawConfig, NumericDrawWinner } from "@/types/numericDraw.types";
+import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 
 interface NumericDrawModalProps {
   isOpen: boolean;
@@ -20,6 +21,8 @@ export function NumericDrawModal({
   onClearHistory,
   onRemoveHistoryItem,
 }: NumericDrawModalProps) {
+  useLockBodyScroll(isOpen);
+
   const [min, setMin] = useState(config.min);
   const [max, setMax] = useState(config.max);
   const [prizeTitle, setPrizeTitle] = useState(config.prizeTitle);

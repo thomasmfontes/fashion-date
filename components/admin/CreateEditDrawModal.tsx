@@ -6,6 +6,7 @@ import type { DrawItem, CreateDrawDTO } from "@/types/drawCollection.types";
 import type { UserType } from "@/types/participant.types";
 import { USER_TYPE_LABELS, USER_TYPE_ICONS } from "@/types/participant.types";
 import { parseBlockedRanges, countUniqueBlockedNumbers } from "@/utils/blockedNumbers";
+import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 
 interface CreateEditDrawModalProps {
   isOpen: boolean;
@@ -22,6 +23,8 @@ export function CreateEditDrawModal({
   onSave,
   initialData,
 }: CreateEditDrawModalProps) {
+  useLockBodyScroll(isOpen);
+
   const isEditing = Boolean(initialData);
 
   const [title, setTitle] = useState(initialData?.title || "");

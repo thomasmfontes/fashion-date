@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 
 interface PwaInstallModalProps {
   isOpen: boolean;
@@ -112,6 +113,8 @@ export function PwaInstallModal({
   canPromptNative = false,
   onPromptNative,
 }: PwaInstallModalProps) {
+  useLockBodyScroll(isOpen);
+
   const [platform, setPlatform] = useState<"ios" | "android">(defaultPlatform || "ios");
 
   useEffect(() => {
@@ -197,11 +200,8 @@ export function PwaInstallModal({
               lineHeight: 1.25,
             }}
           >
-            Adicionar à Tela de Início
+            Instalar no Celular
           </h3>
-          <p style={{ margin: "4px 0 0", fontSize: "12.5px", color: "#786568", lineHeight: 1.4 }}>
-            Acesse seus Números da Sorte com 1 toque no evento.
-          </p>
 
           {/* Abas Seletoras de SO */}
           <div
@@ -209,7 +209,7 @@ export function PwaInstallModal({
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
               gap: "6px",
-              marginTop: "14px",
+              marginTop: "12px",
               background: "rgba(83, 0, 23, 0.05)",
               padding: "3px",
               borderRadius: "9px",

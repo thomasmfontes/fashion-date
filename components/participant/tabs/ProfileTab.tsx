@@ -15,6 +15,7 @@ import { useSavedParticipant } from "@/hooks/useSavedParticipant";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatName, formatPhone, formatInstagram, formatDate } from "@/utils/formatters";
+import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 
 /**
  * Tenta fazer upload para o bucket 'avatars' no Supabase Storage.
@@ -63,6 +64,8 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
+
+  useLockBodyScroll(isDeleteModalOpen);
 
   // Photo management state
   const fileInputRef = useRef<HTMLInputElement>(null);

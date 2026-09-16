@@ -3,6 +3,7 @@
 import { useState, useEffect, type MouseEvent } from "react";
 import type { AdminView } from "@/types/admin.types";
 import { DrawTransitionLink } from "@/components/admin/DrawTransitionLink";
+import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 
 interface AdminSidebarProps {
   view: AdminView;
@@ -33,16 +34,7 @@ export function AdminSidebar({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isMobileMenuOpen]);
 
-  // Lock body scroll when mobile menu is open
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prev;
-      };
-    }
-  }, [isMobileMenuOpen]);
+  useLockBodyScroll(isMobileMenuOpen);
 
   function handleMobileNav(nextView: AdminView, event?: MouseEvent<HTMLAnchorElement>) {
     setIsMobileMenuOpen(false);

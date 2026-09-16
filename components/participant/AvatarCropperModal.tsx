@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 
 interface AvatarCropperModalProps {
   isOpen: boolean;
@@ -25,6 +26,8 @@ export function AvatarCropperModal({
   hasCurrentPhoto,
   isSaving,
 }: AvatarCropperModalProps) {
+  useLockBodyScroll(isOpen);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [imgElement, setImgElement] = useState<HTMLImageElement | null>(null);
 

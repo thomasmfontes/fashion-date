@@ -8,6 +8,7 @@ import type { ParticipantTicket } from "@/types/participant.types";
 import { TicketsTab } from "./tabs/TicketsTab";
 import { LiveTab } from "./tabs/LiveTab";
 import { ProfileTab } from "./tabs/ProfileTab";
+import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 
 export type ParticipantTab = "tickets" | "live" | "profile" | "home";
 
@@ -67,16 +68,7 @@ export function ParticipantAppShell({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isMobileMenuOpen]);
 
-  // Lock body scroll when mobile menu is open
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prev;
-      };
-    }
-  }, [isMobileMenuOpen]);
+  useLockBodyScroll(isMobileMenuOpen);
 
   function handleSelectTab(tab: ParticipantTab) {
     const targetTab = tab === "home" ? "tickets" : tab;
