@@ -75,6 +75,11 @@ export function ParticipantAppShell({
     setCurrentTab(targetTab);
     setIsMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("app:screenchange", { detail: { tab: targetTab } })
+      );
+    }
   }
 
   const isTicketsActive = currentTab === "tickets" || currentTab === "home";

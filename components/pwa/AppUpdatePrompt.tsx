@@ -4,110 +4,163 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 const CURRENT_VERSION = process.env.NEXT_PUBLIC_BUILD_VERSION || "dev";
-const CHECK_COOLDOWN_MS = 8000; // Mínimo de 8s entre requisições de checagem
-const AUTO_CHECK_INTERVAL_MS = 60000; // Checagem periódica a cada 60s
+const AUTO_CHECK_INTERVAL_MS = 15000; // Checagem periódica a cada 15s
 
 export function AppUpdatePrompt() {
   const pathname = usePathname();
   const [hasUpdate, setHasUpdate] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const lastCheckTimeRef = useRef(0);
+  const isCheckingRef = useRef(false);
   const waitingWorkerRef = useRef<ServiceWorker | null>(null);
+  const baseVersionRef = useRef<string | null>(
+    CURRENT_VERSION !== "dev" ? CURRENT_VERSION : null
+  );
 
   // Executa checagem de nova versão no servidor e no Service Worker
-  const checkForUpdate = useCallback(async () => {
-    if (typeof window === "undefined" || hasUpdate) return;
+  const checkForUpdate = useCallback(
+    async (force = false) => {
+      if (typeof window === "undefined" || hasUpdate || isCheckingRef.current) return;
 
-    const now = Date.now();
-    if (now - lastCheckTimeRef.current < CHECK_COOLDOWN_MS) {
-      return;
-    }
-    lastCheckTimeRef.current = now;
+      const now = Date.now();
+      const minCooldown = force ? 1500 : 5000;
+      if (now - lastCheckTimeRef.current < minCooldown) {
+        return;
+      }
+      lastCheckTimeRef.current = now;
+      isCheckingRef.current = true;
 
-    // 1. Checa se o Service Worker encontrou uma nova versão
-    if ("serviceWorker" in navigator) {
       try {
-        const registration = await navigator.serviceWorker.getRegistration();
-        if (registration) {
-          // Solicita ao navegador buscar por arquivo sw.js atualizado
-          await registration.update().catch(() => {});
+        // 1. Checa se o Service Worker encontrou uma nova versão
+        if ("serviceWorker" in navigator) {
+          try {
+            const registration = await navigator.serviceWorker.getRegistration();
+            if (registration) {
+              await registration.update().catch(() => {});
+              if (registration.waiting) {
+                waitingWorkerRef.current = registration.waiting;
+                setHasUpdate(true);
+                return;
+              }
+            }
+          } catch {
+            // Silencioso em caso de restrição do navegador
+          }
+        }
 
-          if (registration.waiting) {
-            waitingWorkerRef.current = registration.waiting;
-            setHasUpdate(true);
-            return;
+        // 2. Checa o endpoint de versão com cache-buster (detecta commits/deploys novos na hora)
+        const response = await fetch(`/api/version?_t=${now}`, {
+          cache: "no-store",
+          headers: {
+            Pragma: "no-cache",
+            "Cache-Control": "no-cache",
+          },
+        });
+
+        if (response.ok) {
+          const data = (await response.json()) as { version?: string };
+          const serverVersion = data.version;
+
+          if (serverVersion && serverVersion !== "dev") {
+            if (!baseVersionRef.current) {
+              // Registra versão inicial no primeiro fetch
+              baseVersionRef.current = serverVersion;
+            } else if (
+              serverVersion !== baseVersionRef.current ||
+              (CURRENT_VERSION !== "dev" && serverVersion !== CURRENT_VERSION)
+            ) {
+              if (navigator.vibrate) {
+                try {
+                  navigator.vibrate([70, 40, 70]);
+                } catch {
+                  // ignore
+                }
+              }
+              setHasUpdate(true);
+            }
           }
         }
       } catch {
-        // Silencioso em caso de restrição do navegador
+        // Ignora falhas pontuais de conexão
+      } finally {
+        isCheckingRef.current = false;
       }
-    }
+    },
+    [hasUpdate]
+  );
 
-    // 2. Checa o endpoint de versão com cache-buster (detecta commits/deploys novos na hora)
-    try {
-      const response = await fetch(`/api/version?_t=${now}`, {
-        cache: "no-store",
-        headers: {
-          Pragma: "no-cache",
-          "Cache-Control": "no-cache",
-        },
-      });
-
-      if (response.ok) {
-        const data = (await response.json()) as { version?: string };
-        if (
-          data.version &&
-          CURRENT_VERSION !== "dev" &&
-          data.version !== "dev" &&
-          data.version !== CURRENT_VERSION
-        ) {
-          if (navigator.vibrate) {
-            try {
-              navigator.vibrate([70, 40, 70]);
-            } catch {
-              // ignore
-            }
-          }
-          setHasUpdate(true);
-        }
-      }
-    } catch {
-      // Ignora falhas pontuais de conexão
-    }
-  }, [hasUpdate]);
-
-  // A) Checa ao sair e voltar do aplicativo (visibilidade e foco)
+  // A) Checa ao sair e voltar do aplicativo (visibilidade, foco, pageshow no mobile)
   useEffect(() => {
-    if (typeof document === "undefined") return;
+    if (typeof window === "undefined" || typeof document === "undefined") return;
 
-    function handleVisibilityChange() {
+    function handleTrigger(force = true) {
+      checkForUpdate(force);
+    }
+
+    function handleVisibility() {
       if (document.visibilityState === "visible") {
-        checkForUpdate();
+        handleTrigger(true);
       }
     }
 
-    function handleWindowFocus() {
-      checkForUpdate();
+    function handlePageShow() {
+      handleTrigger(true);
     }
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", handleWindowFocus);
+    function handleFocus() {
+      handleTrigger(true);
+    }
+
+    function handleResume() {
+      handleTrigger(true);
+    }
+
+    function handleScreenChange() {
+      handleTrigger(true);
+    }
+
+    function handleDocClick(e: MouseEvent) {
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.closest?.("a") ||
+        target?.closest?.(".stitch-nav-item") ||
+        target?.closest?.(".stitch-drawer-link") ||
+        target?.closest?.("button")
+      ) {
+        handleTrigger(false);
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("pageshow", handlePageShow);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("resume", handleResume);
+    window.addEventListener("app:screenchange", handleScreenChange);
+    window.addEventListener("hashchange", handleScreenChange);
+    window.addEventListener("popstate", handleScreenChange);
+    document.addEventListener("click", handleDocClick, { passive: true });
 
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("resume", handleResume);
+      window.removeEventListener("app:screenchange", handleScreenChange);
+      window.removeEventListener("hashchange", handleScreenChange);
+      window.removeEventListener("popstate", handleScreenChange);
+      document.removeEventListener("click", handleDocClick);
     };
   }, [checkForUpdate]);
 
   // B) Checa ao mudar de tela (navegação de rotas no Next.js)
   useEffect(() => {
-    checkForUpdate();
+    checkForUpdate(true);
   }, [pathname, checkForUpdate]);
 
-  // C) Checagem periódica em segundo plano
+  // C) Checagem periódica rápida em segundo plano (a cada 15s)
   useEffect(() => {
     const interval = setInterval(() => {
-      checkForUpdate();
+      checkForUpdate(false);
     }, AUTO_CHECK_INTERVAL_MS);
 
     return () => clearInterval(interval);
@@ -136,9 +189,12 @@ export function AppUpdatePrompt() {
       });
     }
 
-    navigator.serviceWorker.getRegistration().then((reg) => {
-      if (reg) listenRegistration(reg);
-    }).catch(() => {});
+    navigator.serviceWorker
+      .getRegistration()
+      .then((reg) => {
+        if (reg) listenRegistration(reg);
+      })
+      .catch(() => {});
   }, []);
 
   function handleApplyUpdate() {
@@ -148,12 +204,20 @@ export function AppUpdatePrompt() {
       waitingWorkerRef.current.postMessage({ type: "SKIP_WAITING" });
     }
 
+    // Limpa caches locais do navegador
+    if (typeof window !== "undefined" && "caches" in window) {
+      caches
+        .keys()
+        .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+        .catch(() => {});
+    }
+
     // Força recarregamento limpo do app para puxar a nova versão
     setTimeout(() => {
       if (typeof window !== "undefined") {
         window.location.reload();
       }
-    }, 250);
+    }, 200);
   }
 
   if (!hasUpdate) {
