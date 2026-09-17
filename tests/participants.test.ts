@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GET, POST } from "@/app/api/participants/route";
+import { POST as updateAvatar } from "@/app/api/participants/avatar/route";
 import { POST as claimTicket } from "@/app/api/participants/tickets/route";
 import { resetInMemStore, inMemStore } from "@/tests/mocks/cloudflare-workers";
 
@@ -286,6 +287,93 @@ describe("Business Flow: Participant Registration & Public Lookup", () => {
       );
       const otherRes = await GET(otherPhoneReq);
       expect(otherRes.status).toBe(404);
+    });
+  });
+
+  describe("POST /api/participants/avatar (Profile Picture Persistence)", () => {
+    it("AVATAR-01: successfully updates participant avatar URL", async () => {
+      // 1. Register a participant
+      const regReq = new Request("http://localhost/api/participants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Ester Soares",
+          store: "Ester Modas",
+          city: "Goiânia - GO",
+          phone: "(11) 97777-5555",
+          instagram: "@estersoares",
+          consent: true,
+        }),
+      });
+      const regRes = await POST(regReq);
+      expect(regRes.status).toBe(201);
+      const regData = await regRes.json();
+      const pId = regData.participant.id;
+
+      // 2. Update avatar
+      const avatarUrl = "https://example.com/storage/v1/object/public/avatars/1/avatar-123.jpg";
+      const updateReq = new Request("http://localhost/api/participants/avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: pId,
+          phone: "11977775555",
+          avatarUrl,
+        }),
+      });
+      const updateRes = await updateAvatar(updateReq);
+      expect(updateRes.status).toBe(200);
+
+      const updateData = await updateRes.json();
+      expect(updateData.ok).toBe(true);
+      expect(updateData.avatarUrl).toBe(avatarUrl);
+      expect(updateData.participant.avatarUrl).toBe(avatarUrl);
+    });
+
+    it("AVATAR-02: successfully removes participant avatar when avatarUrl is null", async () => {
+      // 1. Register participant first
+      await POST(
+        new Request("http://localhost/api/participants", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "Ester Soares",
+            store: "Ester Modas",
+            city: "Goiânia - GO",
+            phone: "(11) 97777-5555",
+            instagram: "@estersoares",
+            consent: true,
+          }),
+        }),
+      );
+
+      const updateReq = new Request("http://localhost/api/participants/avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: "11977775555",
+          avatarUrl: null,
+        }),
+      });
+      const updateRes = await updateAvatar(updateReq);
+      expect(updateRes.status).toBe(200);
+
+      const updateData = await updateRes.json();
+      expect(updateData.ok).toBe(true);
+      expect(updateData.avatarUrl).toBeNull();
+      expect(updateData.participant.avatarUrl).toBeNull();
+    });
+
+    it("AVATAR-03: rejects requests missing participant identifiers with 400", async () => {
+      const req = new Request("http://localhost/api/participants/avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          avatarUrl: "https://example.com/photo.jpg",
+        }),
+      });
+      const res = await updateAvatar(req);
+      expect(res.status).toBe(400);
     });
   });
 });

@@ -62,6 +62,7 @@ async function runMigration() {
     await sql`ALTER TABLE public.t_participants DROP CONSTRAINT IF EXISTS uq_t_participants_nr_sorte;`.catch(() => {});
     await sql`ALTER TABLE public.t_participants DROP COLUMN IF EXISTS nr_sorte;`.catch(() => {});
     await sql`ALTER TABLE public.t_participants ADD COLUMN IF NOT EXISTS user_type TEXT NOT NULL DEFAULT 'lojista';`.catch(() => {});
+    await sql`ALTER TABLE public.t_participants ADD COLUMN IF NOT EXISTS ds_avatar_url TEXT;`.catch(() => {});
     console.log("   ✅ t_participants pronta.");
 
     // 2. Tabela t_draw_definitions (Sorteios Gerenciados pelo Admin)
@@ -149,6 +150,38 @@ async function runMigration() {
       ALTER TABLE public.t_draw_definitions ENABLE ROW LEVEL SECURITY;
       ALTER TABLE public.t_draw_tickets ENABLE ROW LEVEL SECURITY;
       ALTER TABLE public.t_draw_winners ENABLE ROW LEVEL SECURITY;
+    `.catch(() => {});
+
+    // 7. Supabase Storage - Bucket 'avatars'
+    console.log("7️⃣ Configurando bucket 'avatars' no Supabase Storage...");
+    await sql`
+      INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+      VALUES (
+        'avatars',
+        'avatars',
+        true,
+        10485760,
+        ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        public = true,
+        file_size_limit = 10485760,
+        allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+    `.catch(() => {});
+    await sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Public Access Avatars'
+        ) THEN
+          CREATE POLICY "Public Access Avatars" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+        END IF;
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Allow Upload Avatars'
+        ) THEN
+          CREATE POLICY "Allow Upload Avatars" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars');
+        END IF;
+      END $$;
     `.catch(() => {});
 
     console.log("\n=======================================================");

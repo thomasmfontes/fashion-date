@@ -20,6 +20,7 @@ export async function GET(request: Request) {
           p.user_type AS user_type,
           p.st_participante AS status,
           p.dt_cadastro AS created_at,
+          p.ds_avatar_url AS avatar_url,
           (SELECT MAX(d.dt_sorteio) FROM t_draws d WHERE d.id_participante=p.id_participante) AS won_at,
           COALESCE(
             (

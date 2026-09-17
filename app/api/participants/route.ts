@@ -155,9 +155,11 @@ export async function GET(request: Request) {
         id: full.id,
         name: full.name,
         store: full.store,
+        city: full.city,
         luckyNumber: full.luckyNumber,
         userType: full.userType,
         tickets: full.tickets,
+        avatarUrl: full.avatarUrl || null,
       },
     });
   } catch {

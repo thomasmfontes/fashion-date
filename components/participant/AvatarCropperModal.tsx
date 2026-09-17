@@ -54,7 +54,9 @@ export function AvatarCropperModal({
     }
 
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    if (imageSrc.startsWith("http://") || imageSrc.startsWith("https://")) {
+      img.crossOrigin = "anonymous";
+    }
     img.onload = () => {
       setImgElement(img);
       setZoom(1);

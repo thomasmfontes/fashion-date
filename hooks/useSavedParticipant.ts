@@ -99,14 +99,18 @@ export function useSavedParticipant() {
       .then((res) => {
         if (!active) return;
         if (res.ok && res.participant) {
-          // Only update if properties differ (e.g. synced userType)
           if (
             res.participant.id !== savedParticipant.id ||
             res.participant.userType !== savedParticipant.userType ||
             res.participant.luckyNumber !== savedParticipant.luckyNumber ||
-            res.participant.name !== savedParticipant.name
+            res.participant.name !== savedParticipant.name ||
+            (res.participant.avatarUrl !== undefined && res.participant.avatarUrl !== savedParticipant.avatarUrl)
           ) {
-            saveParticipant(res.participant);
+            saveParticipant({
+              ...savedParticipant,
+              ...res.participant,
+              avatarUrl: res.participant.avatarUrl !== undefined ? res.participant.avatarUrl : savedParticipant.avatarUrl,
+            });
           }
         } else {
           clearParticipant();

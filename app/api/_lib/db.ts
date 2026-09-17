@@ -31,7 +31,8 @@ export const participantFields = `
   st_participante AS status,
   dt_cadastro AS created_at,
   ds_email AS email,
-  auth_user_id AS auth_user_id
+  auth_user_id AS auth_user_id,
+  ds_avatar_url AS avatar_url
 `;
 
 export function database() {
@@ -179,6 +180,7 @@ export function row(raw: Record<string, unknown>): Participant {
       : null,
     email: raw.email ? String(raw.email).trim().toLowerCase() : undefined,
     authUserId: raw.auth_user_id ? String(raw.auth_user_id).trim() : undefined,
+    avatarUrl: raw.avatar_url ? String(raw.avatar_url).trim() : (raw.avatarUrl ? String(raw.avatarUrl).trim() : null),
     isAnonymous: Boolean(raw.is_anonymous || raw.isAnonymous),
   };
 }

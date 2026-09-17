@@ -18,16 +18,22 @@ import { formatName, formatPhone, formatInstagram, formatDate } from "@/utils/fo
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 
 /**
- * Tenta fazer upload para o bucket 'avatars' no Supabase Storage.
- * Caso o bucket ou permissões não estejam disponíveis, usa o próprio data URL otimizado como fallback.
+ * Faz upload da foto para o bucket 'avatars' no Supabase Storage.
+ * Utiliza o ID de autenticação ou ID numérico do participante como pasta.
+ * Caso o upload falhe, utiliza o próprio data URL otimizado como fallback.
  */
-async function uploadAvatarOrFallback(dataUrl: string, userId?: string): Promise<string> {
+async function uploadAvatarOrFallback(
+  dataUrl: string,
+  userId?: string,
+  participantId?: number,
+): Promise<string> {
   const supabase = getSupabaseBrowserClient();
-  if (supabase && userId) {
+  const folder = userId || (participantId ? `p_${participantId}` : `anon_${Date.now()}`);
+  if (supabase) {
     try {
       const res = await fetch(dataUrl);
       const blob = await res.blob();
-      const fileName = `${userId}/avatar-${Date.now()}.jpg`;
+      const fileName = `${folder}/avatar-${Date.now()}.jpg`;
       const { data, error } = await supabase.storage
         .from("avatars")
         .upload(fileName, blob, {
@@ -42,9 +48,11 @@ async function uploadAvatarOrFallback(dataUrl: string, userId?: string): Promise
         if (publicUrlData?.publicUrl) {
           return publicUrlData.publicUrl;
         }
+      } else if (error) {
+        console.warn("Supabase storage upload error:", error);
       }
-    } catch {
-      // Fallback gracioso para data URL
+    } catch (err) {
+      console.warn("Avatar upload network exception:", err);
     }
   }
   return dataUrl;
@@ -137,19 +145,46 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
     setIsSavingPhoto(true);
 
     try {
-      const finalAvatarUrl = await uploadAvatarOrFallback(croppedDataUrl, participant?.authUserId);
+      const finalAvatarUrl = await uploadAvatarOrFallback(
+        croppedDataUrl,
+        participant?.authUserId,
+        participant?.id,
+      );
 
-      // 1. Atualiza metadados no Supabase Auth
-      const supabase = getSupabaseBrowserClient();
-      if (supabase) {
-        await supabase.auth.updateUser({
-          data: { avatar_url: finalAvatarUrl },
-        }).catch((err) => {
-          console.warn("Supabase auth updateUser avatar warning:", err);
-        });
+      // 1. Persiste no PostgreSQL (single source of truth)
+      const saveRes = await fetch("/api/participants/avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: participant?.id,
+          authUserId: participant?.authUserId,
+          phone: participant?.phone,
+          avatarUrl: finalAvatarUrl,
+        }),
+      });
+
+      if (!saveRes.ok) {
+        const errData = await saveRes.json().catch(() => null);
+        console.warn("Aviso ao salvar avatar no banco de dados:", errData?.error);
       }
 
-      // 2. Atualiza participante em cache local
+      // 2. Atualiza metadados no Supabase Auth (somente se não for data URL gigante)
+      const supabase = getSupabaseBrowserClient();
+      if (supabase && participant?.authUserId) {
+        const metaAvatar = finalAvatarUrl.startsWith("data:") ? undefined : finalAvatarUrl;
+        await supabase.auth
+          .updateUser({
+            data: {
+              avatar_url: metaAvatar,
+              custom_avatar_removed: false,
+            },
+          })
+          .catch((err) => {
+            console.warn("Supabase auth updateUser avatar warning:", err);
+          });
+      }
+
+      // 3. Atualiza participante em cache local
       if (participant) {
         saveParticipant({
           ...participant,
@@ -157,7 +192,7 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
         });
       }
 
-      // 3. Atualiza estado local e pai
+      // 4. Atualiza estado local e pai
       setCurrentAvatarUrl(finalAvatarUrl);
       setAvatarError(false);
       onUpdateAvatar?.(finalAvatarUrl);
@@ -178,13 +213,33 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
     setIsSavingPhoto(true);
 
     try {
+      // 1. Remove do PostgreSQL
+      await fetch("/api/participants/avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: participant?.id,
+          authUserId: participant?.authUserId,
+          phone: participant?.phone,
+          avatarUrl: null,
+        }),
+      }).catch((err) => console.warn("Erro ao remover avatar no banco:", err));
+
+      // 2. Atualiza metadados do Supabase Auth com flag explícita
       const supabase = getSupabaseBrowserClient();
-      if (supabase) {
-        await supabase.auth.updateUser({
-          data: { avatar_url: "" },
-        }).catch(() => {});
+      if (supabase && participant?.authUserId) {
+        await supabase.auth
+          .updateUser({
+            data: {
+              avatar_url: null,
+              picture: null,
+              custom_avatar_removed: true,
+            },
+          })
+          .catch(() => {});
       }
 
+      // 3. Atualiza participante em cache local
       if (participant) {
         saveParticipant({
           ...participant,
@@ -196,7 +251,8 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
       setAvatarError(false);
       onUpdateAvatar?.(null);
 
-      showToast("Foto de perfil removida.", "info");
+      setIsModalPreviewOpen(false);
+      showToast("Foto de perfil removida com sucesso.", "info");
     } catch {
       showToast("Erro ao remover foto de perfil.", "error");
     } finally {

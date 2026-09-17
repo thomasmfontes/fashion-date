@@ -73,12 +73,26 @@ export function useAuthGuard(): AuthGuardState {
 
       setUser(authUser);
 
-      const userAvatar =
-        authUser.user_metadata?.avatar_url ||
-        authUser.user_metadata?.picture ||
-        (authUser.email
-          ? `https://unavatar.io/${encodeURIComponent(authUser.email.toLowerCase().trim())}?fallback=false`
-          : null);
+      const currentUser = authUser;
+      const isExplicitlyRemoved =
+        currentUser.user_metadata?.custom_avatar_removed === true;
+
+      function resolveAvatar(preferred?: string | null): string | null {
+        // 1. Prioridade máxima: avatar explícito do participante / banco de dados
+        if (typeof preferred === "string" && preferred.trim() !== "") {
+          return preferred.trim();
+        }
+        // 2. Se o participante removeu expressamente a foto, não restaura Google picture
+        if (isExplicitlyRemoved || preferred === null) {
+          return null;
+        }
+        // 3. Fallback inicial apenas se o participante nunca definiu ou removeu
+        return (
+          currentUser.user_metadata?.avatar_url ||
+          currentUser.user_metadata?.picture ||
+          null
+        );
+      }
 
       // 1. Fast path: check if currently cached participant belongs to this authenticated user
       const cachedMatches =
@@ -91,7 +105,7 @@ export function useAuthGuard(): AuthGuardState {
       if (cachedMatches) {
         const enrichedCached = {
           ...savedParticipant,
-          avatarUrl: userAvatar || savedParticipant.avatarUrl || null,
+          avatarUrl: resolveAvatar(savedParticipant.avatarUrl),
         };
         setParticipant(enrichedCached);
         setStatus("authenticated_registered");
@@ -120,9 +134,14 @@ export function useAuthGuard(): AuthGuardState {
             setRegistrationsOpen(data.registrationsOpen);
           }
           if (data?.registered && data?.participant) {
+            const resolved = resolveAvatar(
+              data.participant.avatarUrl !== undefined
+                ? data.participant.avatarUrl
+                : savedParticipant?.avatarUrl,
+            );
             const enrichedParticipant = {
               ...data.participant,
-              avatarUrl: userAvatar || data.participant.avatarUrl || null,
+              avatarUrl: resolved,
             };
             saveParticipant(enrichedParticipant);
             setParticipant(enrichedParticipant);

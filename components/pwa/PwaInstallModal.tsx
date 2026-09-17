@@ -83,6 +83,29 @@ function SafariAddIcon() {
   );
 }
 
+function IosDotsIcon() {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "22px",
+        height: "22px",
+        borderRadius: "5px",
+        background: "#edf2f7",
+        border: "1px solid #cbd5e1",
+        verticalAlign: "middle",
+        margin: "0 3px",
+      }}
+    >
+      <span className="material-symbols-outlined" style={{ fontSize: "16px", color: "#475569" }}>
+        more_horiz
+      </span>
+    </span>
+  );
+}
+
 function ChromeDotsIcon() {
   return (
     <span
@@ -291,9 +314,9 @@ export function PwaInstallModal({
                   1
                 </div>
                 <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45, flex: 1 }}>
-                  Abra o Safari e toque no botão de <strong>Compartilhar</strong>
-                  <SafariShareIcon />
-                  na barra inferior.
+                  Toque no menu de <strong>três pontinhos (...)</strong>
+                  <IosDotsIcon />
+                  no navegador (ou vá direto no botão do Safari).
                 </div>
               </div>
 
@@ -317,8 +340,8 @@ export function PwaInstallModal({
                   2
                 </div>
                 <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45, flex: 1 }}>
-                  Role para baixo e selecione <strong>Adicionar à Tela de Início</strong>
-                  <SafariAddIcon />.
+                  Selecione o botão de <strong>Compartilhar</strong>
+                  <SafariShareIcon />.
                 </div>
               </div>
 
@@ -340,6 +363,31 @@ export function PwaInstallModal({
                   }}
                 >
                   3
+                </div>
+                <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45, flex: 1 }}>
+                  Role para baixo e selecione <strong>Adicionar à Tela de Início</strong>
+                  <SafariAddIcon />.
+                </div>
+              </div>
+
+              {/* Passo 4 iOS */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                <div
+                  style={{
+                    width: "24px",
+                    height: "24px",
+                    borderRadius: "50%",
+                    background: "rgba(83, 0, 23, 0.08)",
+                    color: "#530017",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    display: "grid",
+                    placeItems: "center",
+                    flexShrink: 0,
+                    marginTop: "1px",
+                  }}
+                >
+                  4
                 </div>
                 <div style={{ fontSize: "13px", color: "#332225", lineHeight: 1.45, flex: 1 }}>
                   No canto superior direito, toque em <strong>Adicionar</strong> para confirmar.

@@ -15,6 +15,9 @@ export interface ParticipantRecord {
   created_at: string;
   won_at?: string | null;
   user_type?: string;
+  auth_user_id?: string;
+  avatar_url?: string | null;
+  ds_avatar_url?: string | null;
 }
 
 export interface DrawRecord {
@@ -446,11 +449,11 @@ export function createMockD1Database(): MockD1Database {
         cols.forEach((col, idx) => {
           bindObj[col] = String(bindings[idx] ?? "");
         });
-        name = bindObj.name || "";
-        store = bindObj.store || "";
-        city = bindObj.city || "";
-        phone = bindObj.phone || "";
-        instagram = bindObj.instagram || "";
+        name = bindObj.name || bindObj.nm_participante || "";
+        store = bindObj.store || bindObj.nm_loja || "";
+        city = bindObj.city || bindObj.nm_cidade || "";
+        phone = bindObj.phone || bindObj.nr_whatsapp || "";
+        instagram = bindObj.instagram || bindObj.nm_instagram || "";
         lucky_number = bindObj.lucky_number || "";
       } else if (trimmed.includes("VALUES(NULL,") || trimmed.includes("VALUES (NULL,")) {
         name = String(bindings[0] || "");
@@ -498,6 +501,23 @@ export function createMockD1Database(): MockD1Database {
       };
       inMemStore.draws.push(newDraw);
       return { results: [newDraw], success: true };
+    }
+
+    // UPDATE participants SET ds_avatar_url
+    if (trimmed.includes("SET ds_avatar_url")) {
+      const [avatarUrl, id, authUserId, phone] = bindings;
+      const p = inMemStore.participants.find(
+        (item) =>
+          (id && Number(id) > 0 && item.id === Number(id)) ||
+          (authUserId && item.auth_user_id === authUserId) ||
+          (phone && item.phone === phone),
+      );
+      if (p) {
+        p.avatar_url = avatarUrl ? String(avatarUrl) : null;
+        p.ds_avatar_url = avatarUrl ? String(avatarUrl) : null;
+        return { results: [p], success: true };
+      }
+      return { results: [], success: true };
     }
 
     // UPDATE participants SET ... WHERE id=?

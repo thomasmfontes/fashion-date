@@ -63,12 +63,11 @@ export default function HomePage() {
   const avatarUrl =
     customAvatar !== undefined
       ? customAvatar
-      : (participant?.avatarUrl ||
-         user?.user_metadata?.avatar_url ||
-         user?.user_metadata?.picture ||
-         (user?.email
-           ? `https://unavatar.io/${encodeURIComponent(user.email.toLowerCase().trim())}?fallback=false`
-           : null));
+      : (participant?.avatarUrl !== undefined
+          ? participant.avatarUrl
+          : (user?.user_metadata?.custom_avatar_removed
+              ? null
+              : (user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null)));
 
   return (
     <>
