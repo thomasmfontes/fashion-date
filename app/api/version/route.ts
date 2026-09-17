@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+// Teste de publicacao e deteccao de atualizacao automatica
 
 export async function GET() {
   const version =
