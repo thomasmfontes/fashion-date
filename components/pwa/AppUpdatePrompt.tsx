@@ -239,7 +239,7 @@ export function AppUpdatePrompt() {
         }
         @keyframes spinUpdate {
           from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+          to { transform: rotate(-360deg); }
         }
       `}</style>
       <aside
@@ -305,12 +305,13 @@ export function AppUpdatePrompt() {
           <span
             className="material-symbols-outlined"
             style={{
-              fontSize: "19px",
-              animation: isUpdating ? "spinUpdate 0.9s linear infinite" : undefined,
+              fontSize: "20px",
+              animation: isUpdating ? "spinUpdate 0.85s linear infinite" : undefined,
               lineHeight: 1,
+              display: "inline-block",
             }}
           >
-            refresh
+            sync
           </span>
         </button>
       </aside>
