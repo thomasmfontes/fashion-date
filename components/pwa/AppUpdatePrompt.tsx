@@ -11,13 +11,12 @@ export function AppUpdatePrompt() {
   const pathname = usePathname();
   const [hasUpdate, setHasUpdate] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
   const lastCheckTimeRef = useRef(0);
   const waitingWorkerRef = useRef<ServiceWorker | null>(null);
 
   // Executa checagem de nova versão no servidor e no Service Worker
   const checkForUpdate = useCallback(async () => {
-    if (typeof window === "undefined" || hasUpdate || isDismissed) return;
+    if (typeof window === "undefined" || hasUpdate) return;
 
     const now = Date.now();
     if (now - lastCheckTimeRef.current < CHECK_COOLDOWN_MS) {
@@ -75,7 +74,7 @@ export function AppUpdatePrompt() {
     } catch {
       // Ignora falhas pontuais de conexão
     }
-  }, [hasUpdate, isDismissed]);
+  }, [hasUpdate]);
 
   // A) Checa ao sair e voltar do aplicativo (visibilidade e foco)
   useEffect(() => {
@@ -157,152 +156,100 @@ export function AppUpdatePrompt() {
     }, 250);
   }
 
-  function handleDismiss() {
-    setIsDismissed(true);
-    // Volta a alertar após 15 minutos se o usuário ainda não tiver atualizado
-    setTimeout(() => {
-      setIsDismissed(false);
-    }, 15 * 60 * 1000);
-  }
-
-  if (!hasUpdate || isDismissed) {
+  if (!hasUpdate) {
     return null;
   }
 
   return (
-    <aside
-      className="stitch-update-prompt"
-      role="alert"
-      aria-live="polite"
-      style={{
-        position: "fixed",
-        bottom: "clamp(16px, 3.5vw, 28px)",
-        left: "50%",
-        transform: "translateX(-50%)",
-        zIndex: 11000,
-        width: "min(calc(100vw - 28px), 440px)",
-        background: "linear-gradient(135deg, #530017 0%, #3e0011 100%)",
-        border: "1.5px solid #d4ab48",
-        borderRadius: "14px",
-        boxShadow: "0 14px 45px rgba(45, 0, 14, 0.45), 0 2px 10px rgba(0, 0, 0, 0.25)",
-        color: "#fff7e8",
-        padding: "16px 18px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: "14px",
-        animation: "slideUpFade 0.36s cubic-bezier(0.16, 1, 0.3, 1) both",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
-        <div
+    <>
+      <style>{`
+        @keyframes slideUpFadeUpdate {
+          from {
+            opacity: 0;
+            transform: translate(-50%, 16px);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+        @keyframes spinUpdate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+      <aside
+        className="stitch-update-prompt"
+        role="alert"
+        aria-live="polite"
+        style={{
+          position: "fixed",
+          bottom: "clamp(16px, 3.5vw, 28px)",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 11000,
+          maxWidth: "min(calc(100vw - 32px), 360px)",
+          width: "max-content",
+          background: "linear-gradient(135deg, #530017 0%, #3e0011 100%)",
+          border: "1.5px solid #d4ab48",
+          borderRadius: "9999px",
+          boxShadow: "0 10px 30px rgba(45, 0, 14, 0.45), 0 2px 10px rgba(0, 0, 0, 0.25)",
+          color: "#fff7e8",
+          padding: "7px 8px 7px 18px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "14px",
+          animation: "slideUpFadeUpdate 0.3s cubic-bezier(0.16, 1, 0.3, 1) both",
+        }}
+      >
+        <span
           style={{
-            display: "grid",
-            placeItems: "center",
-            width: "38px",
-            height: "38px",
-            borderRadius: "10px",
-            background: "rgba(212, 171, 72, 0.2)",
-            border: "1px solid rgba(212, 171, 72, 0.4)",
-            color: "#e7c275",
-            flexShrink: 0,
+            fontFamily: "var(--font-fashion, serif)",
+            fontSize: "13.5px",
+            fontWeight: 700,
+            letterSpacing: "0.02em",
+            color: "#fff7e8",
+            whiteSpace: "nowrap",
           }}
         >
-          <span className="material-symbols-outlined" style={{ fontSize: "22px" }}>
-            system_update
-          </span>
-        </div>
+          Nova Versão Disponível
+        </span>
 
-        <div style={{ minWidth: 0, textAlign: "left" }}>
-          <strong
-            style={{
-              display: "block",
-              fontFamily: "var(--font-fashion, serif)",
-              fontSize: "14px",
-              fontWeight: 700,
-              letterSpacing: "0.02em",
-              color: "#fff7e8",
-              lineHeight: 1.2,
-            }}
-          >
-            Nova Versão Disponível
-          </strong>
-          <span
-            style={{
-              display: "block",
-              fontSize: "11.5px",
-              color: "#eed8b2",
-              marginTop: "2px",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            Uma atualização foi publicada
-          </span>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
         <button
           type="button"
           onClick={handleApplyUpdate}
           disabled={isUpdating}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "6px",
-            minHeight: "36px",
-            padding: "0 14px",
-            borderRadius: "8px",
-            background: "linear-gradient(135deg, #f5e4bf 0%, #dfbe75 100%)",
-            color: "#430014",
-            border: "1px solid #c79a36",
-            fontSize: "11px",
-            fontWeight: 800,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-            transition: "all 0.16s ease",
-          }}
-        >
-          {isUpdating ? (
-            <span>Atualizando...</span>
-          ) : (
-            <>
-              <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
-                refresh
-              </span>
-              <span>Atualizar</span>
-            </>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={handleDismiss}
-          aria-label="Fechar notificação de atualização"
-          title="Fechar"
+          aria-label="Atualizar aplicativo"
+          title="Atualizar aplicativo"
           style={{
             display: "grid",
             placeItems: "center",
-            width: "28px",
-            height: "28px",
-            background: "transparent",
-            border: "none",
-            color: "#eed8b2",
-            cursor: "pointer",
+            width: "34px",
+            height: "34px",
             borderRadius: "50%",
+            background: "linear-gradient(135deg, #f5e4bf 0%, #dfbe75 100%)",
+            color: "#430014",
+            border: "1px solid #c79a36",
+            cursor: isUpdating ? "wait" : "pointer",
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+            transition: "transform 0.16s ease, filter 0.16s ease",
             padding: 0,
+            flexShrink: 0,
           }}
         >
-          <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
-            close
+          <span
+            className="material-symbols-outlined"
+            style={{
+              fontSize: "19px",
+              animation: isUpdating ? "spinUpdate 0.9s linear infinite" : undefined,
+              lineHeight: 1,
+            }}
+          >
+            refresh
           </span>
         </button>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
