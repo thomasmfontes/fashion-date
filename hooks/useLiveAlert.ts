@@ -78,6 +78,8 @@ export function useLiveAlert(
             navigator.vibrate([350, 100, 350, 100, 600]);
           } else if (mode === "test") {
             navigator.vibrate([150, 75, 150]);
+          } else if (mode === "not-winner") {
+            navigator.vibrate([140]);
           }
         } catch {
           // Ignora caso restrito pelas políticas do navegador
@@ -153,14 +155,11 @@ export function useLiveAlert(
         setActiveDrawTitle(matchedWin.drawTitle || announcedDrawTitle || "");
         setActivePrizeTitle(matchedWin.prizeTitle || announcedPrizeTitle || "");
         celebrate("winner", winnerNumber);
-      } else if (ticketForThisDraw) {
-        setWinningTicket(ticketForThisDraw);
-        setActiveDrawTitle(ticketForThisDraw.drawTitle || announcedDrawTitle || "");
-        setActivePrizeTitle(ticketForThisDraw.prizeTitle || announcedPrizeTitle || "");
-        celebrate("not-winner", winnerNumber);
       } else {
-        // O sorteio anunciado era de outra rodada na qual o participante não possui bilhete.
-        // Não disparamos falso alarme nem confetes indevidos.
+        setWinningTicket(ticketForThisDraw || null);
+        setActiveDrawTitle(ticketForThisDraw?.drawTitle || announcedDrawTitle || "");
+        setActivePrizeTitle(ticketForThisDraw?.prizeTitle || announcedPrizeTitle || "");
+        celebrate("not-winner", winnerNumber);
       }
     },
     [celebrate, ticketsList],
@@ -169,8 +168,6 @@ export function useLiveAlert(
   // 1. Supabase Realtime (WebSockets) Subscription
   // Conecta imediatamente no canal assim que a tela abre, garantindo zero latência de conexão
   useEffect(() => {
-    if (!hasUserNumbers) return;
-
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
 
@@ -213,7 +210,7 @@ export function useLiveAlert(
       setIsWebSocketActive(false);
       supabase.removeChannel(channel);
     };
-  }, [hasUserNumbers, handleWinnerAnnounced]);
+  }, [handleWinnerAnnounced]);
 
   // 2. HTTP Polling as Fallback & Initial Baseline Sync
   const etagRef = useRef<string | null>(null);
@@ -222,7 +219,6 @@ export function useLiveAlert(
 
   const checkDraw = useCallback(
     async (baseline = false) => {
-      if (!hasUserNumbers) return;
       try {
         const headers: Record<string, string> = {};
         if (etagRef.current && !baseline) {

@@ -156,7 +156,7 @@ export function MobileDrawSlider({
       >
         <strong className="slider-track-title">
           {isSpinning
-            ? "Girando Tambores..."
+            ? "Sorteando Número..."
             : disabled
               ? disabledReason || "Sem Participantes"
               : "Deslize para Sortear"}

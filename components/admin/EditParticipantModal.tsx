@@ -88,7 +88,7 @@ function EditFormContent({
             />
           </label>
           <label htmlFor="edit-store">
-            <span>Nome da Loja / Marca</span>
+            <span>Nome da Marca / Empresa</span>
             <input
               id="edit-store"
               value={store}

@@ -126,7 +126,7 @@ export default function InscricaoPage() {
     }
 
     if (!trimmedCity || trimmedCity.length < 2) {
-      errors.city = "Informe sua cidade e estado.";
+      errors.city = "Informe sua cidade.";
     }
 
     if (!digitsOnly || digitsOnly.length < 10 || digitsOnly.length > 11) {
@@ -399,7 +399,7 @@ export default function InscricaoPage() {
             )}
 
             <div className="signup-field-group">
-              <label htmlFor="signup-city">Cidade e Estado *</label>
+              <label htmlFor="signup-city">Cidade *</label>
               <input
                 ref={cityInputRef}
                 id="signup-city"

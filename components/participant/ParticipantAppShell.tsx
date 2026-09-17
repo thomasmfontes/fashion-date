@@ -169,9 +169,7 @@ export function ParticipantAppShell({
             </div>
             <div className="stitch-user-info">
               <strong>{participant?.name || "Participante"}</strong>
-              <span>
-                {userTypeLabel} &middot; {participant?.store && participant.store !== "—" ? participant.store : "Fashion Date"}
-              </span>
+              <span>{userTypeLabel}</span>
             </div>
           </div>
 
@@ -217,7 +215,8 @@ export function ParticipantAppShell({
       <aside
         className={`stitch-mobile-drawer ${isMobileMenuOpen ? "is-open" : ""}`}
         role="dialog"
-        aria-modal="true"
+        aria-modal={isMobileMenuOpen ? "true" : undefined}
+        aria-hidden={!isMobileMenuOpen}
         aria-label="Menu do Participante"
       >
         <div className="stitch-drawer-header">
@@ -327,9 +326,7 @@ export function ParticipantAppShell({
             </div>
             <div className="stitch-drawer-user-info">
               <strong>{participant?.name || "Participante"}</strong>
-              <span>
-                {userTypeLabel} &middot; {participant?.store && participant.store !== "—" ? participant.store : "Fashion Date"}
-              </span>
+              <span>{userTypeLabel}</span>
             </div>
           </div>
 

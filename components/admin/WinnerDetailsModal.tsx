@@ -24,7 +24,7 @@ export function WinnerDetailsModal({
       title="Detalhes do Sorteio"
       badge={
         <span className="edit-ticket-badge">
-          Bilhete: <strong>#{winner.luckyNumber}</strong>
+          Número da Sorte: <strong>#{winner.luckyNumber}</strong>
         </span>
       }
     >

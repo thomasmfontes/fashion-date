@@ -168,6 +168,11 @@ export default function UnifiedDrawPage() {
   const isMuted = slotMachine.isMuted;
   const toggleMute = slotMachine.toggleMute;
   const hasWinner = Boolean(slotMachine.winner);
+  const isAnonymous = Boolean(
+    slotMachine.winner?.isAnonymous ||
+    activeDraw?.allowTicketGeneration === false ||
+    (slotMachine.winner && Number(slotMachine.winner.id) === 0),
+  );
 
   const targetTypes = activeDraw?.targetUserTypes || ["lojista", "revendedor", "influencer", "visitante"];
   const isAllTypes = targetTypes.length >= 4;
@@ -235,7 +240,7 @@ export default function UnifiedDrawPage() {
 
         <div className="draw-event-title" suppressHydrationWarning>
           <span suppressHydrationWarning>
-            <i /> {isAllTypes ? "Todos os Participantes" : targetTypes.map((t) => USER_TYPE_LABELS[t]).join(", ")}{numberLimitText}
+            <i /> {activeDraw?.allowTicketGeneration === false ? `Sorteio Presencial${numberLimitText}` : (isAllTypes ? "Todos os Participantes" : targetTypes.map((t) => USER_TYPE_LABELS[t]).join(", ")) + numberLimitText}
           </span>
           <h1 suppressHydrationWarning>{activeDraw?.title || "Sorteio Oficial"}</h1>
         </div>
@@ -391,63 +396,84 @@ export default function UnifiedDrawPage() {
             </div>
 
             <div className="winner-card-body">
-              <div className="winner-prize-banner">
-                <span className="winner-prize-kicker">Ganhador do Sorteio</span>
-              </div>
+              {isAnonymous ? (
+                <p
+                  style={{
+                    fontSize: "clamp(17px, 2vw, 22px)",
+                    fontFamily: 'var(--font-fashion, "Bodoni Moda", "Cinzel", serif)',
+                    fontWeight: 600,
+                    color: "#530017",
+                    letterSpacing: "0.03em",
+                    margin: "12px 0 6px",
+                    textAlign: "center",
+                  }}
+                >
+                  Contemplado/a, apresente-se!
+                </p>
+              ) : (
+                <>
+                  <div className="winner-prize-banner">
+                    <span className="winner-prize-kicker">Ganhador do Sorteio</span>
+                  </div>
 
-              <h2 className="winner-name">{slotMachine.winner.name}</h2>
+                  <h2 className="winner-name">{slotMachine.winner.name}</h2>
 
-              <div className="winner-meta">
-                <span className="winner-pill winner-pill-type">
-                  <span className="material-symbols-outlined">{USER_TYPE_ICONS[winnerType]}</span>
-                  <span>{USER_TYPE_LABELS[winnerType]}</span>
-                </span>
+                  <div className="winner-meta">
+                    <span className="winner-pill winner-pill-type">
+                      <span className="material-symbols-outlined">{USER_TYPE_ICONS[winnerType]}</span>
+                      <span>{USER_TYPE_LABELS[winnerType]}</span>
+                    </span>
 
-                <span className="winner-pill winner-pill-store">
-                  <span className="material-symbols-outlined">storefront</span>
-                  <span>{slotMachine.winner.store}</span>
-                </span>
+                    <span className="winner-pill winner-pill-store">
+                      <span className="material-symbols-outlined">storefront</span>
+                      <span>{slotMachine.winner.store}</span>
+                    </span>
 
-                {slotMachine.winner.instagram && (
-                  <a
-                    className="winner-pill winner-pill-instagram"
-                    href={buildInstagramUrl(slotMachine.winner.instagram)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <img
-                      className="winner-social-icon"
-                      src="https://cdn.simpleicons.org/instagram/e1306c"
-                      alt="Instagram"
-                      width={16}
-                      height={16}
-                      style={{ width: 16, height: 16, minWidth: 16, minHeight: 16, maxWidth: 16, maxHeight: 16, display: "inline-block", verticalAlign: "middle" }}
-                    />
-                    <span>@{cleanInstagramHandle(slotMachine.winner.instagram)}</span>
-                  </a>
-                )}
+                    {slotMachine.winner.instagram && (
+                      <a
+                        className="winner-pill winner-pill-instagram"
+                        href={buildInstagramUrl(slotMachine.winner.instagram)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <img
+                          className="winner-social-icon"
+                          src="https://cdn.simpleicons.org/instagram/e1306c"
+                          alt="Instagram"
+                          width={16}
+                          height={16}
+                          style={{ width: 16, height: 16, minWidth: 16, minHeight: 16, maxWidth: 16, maxHeight: 16, display: "inline-block", verticalAlign: "middle" }}
+                        />
+                        <span>@{cleanInstagramHandle(slotMachine.winner.instagram)}</span>
+                      </a>
+                    )}
 
-                {slotMachine.winner.phone && (
-                  <a
-                    className="winner-pill winner-pill-whatsapp"
-                    href={`https://wa.me/55${slotMachine.winner.phone.replace(/\D/g, "")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <img
-                      className="winner-social-icon"
-                      src="https://cdn.simpleicons.org/whatsapp/25d366"
-                      alt="WhatsApp"
-                      width={16}
-                      height={16}
-                      style={{ width: 16, height: 16, minWidth: 16, minHeight: 16, maxWidth: 16, maxHeight: 16, display: "inline-block", verticalAlign: "middle" }}
-                    />
-                    <span>WhatsApp</span>
-                  </a>
-                )}
-              </div>
+                    {slotMachine.winner.phone && (
+                      <a
+                        className="winner-pill winner-pill-whatsapp"
+                        href={`https://wa.me/55${slotMachine.winner.phone.replace(/\D/g, "")}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <img
+                          className="winner-social-icon"
+                          src="https://cdn.simpleicons.org/whatsapp/25d366"
+                          alt="WhatsApp"
+                          width={16}
+                          height={16}
+                          style={{ width: 16, height: 16, minWidth: 16, minHeight: 16, maxWidth: 16, maxHeight: 16, display: "inline-block", verticalAlign: "middle" }}
+                        />
+                        <span>WhatsApp</span>
+                      </a>
+                    )}
+                  </div>
+                </>
+              )}
 
-              <div className="winner-actions">
+              <div
+                className="winner-actions"
+                style={isAnonymous ? { marginTop: "14px" } : undefined}
+              >
                 <button
                   className="winner-btn-primary"
                   type="button"
@@ -468,9 +494,7 @@ export default function UnifiedDrawPage() {
         <section className="draw-stage">
           <div className="draw-status" suppressHydrationWarning>
             <i />
-            {slotMachine.isRunning
-              ? "Tambores girando... Aguarde a revelação"
-              : `Prêmio em disputa: ${activeDraw?.prizeTitle || "Prêmio Especial"}`}
+            {`Prêmio em disputa: ${activeDraw?.prizeTitle || "Prêmio Especial"}`}
           </div>
 
           <div className="draw-card">
@@ -490,10 +514,12 @@ export default function UnifiedDrawPage() {
               {slotMachine.isRunning
                 ? slotMachine.lockedCount > 0
                   ? `Fixando dígitos (${slotMachine.lockedCount}/4)...`
-                  : "Rufem os tambores..."
+                  : "Sorteando o número da sorte..."
                 : !eligibility.hasEligible
-                  ? "Nenhum participante disponível para esta rodada"
-                  : `Boa sorte aos participantes (${isAllTypes ? "Todos os Perfis" : targetTypes.map((t) => USER_TYPE_LABELS[t]).join(", ")})`}
+                  ? "Nenhum número disponível para esta rodada"
+                  : activeDraw?.allowTicketGeneration === false
+                    ? `Boa sorte aos participantes (${activeDraw?.hasNumberLimit && activeDraw?.maxNumber ? `Até Nº ${String(activeDraw.maxNumber).padStart(4, "0")}` : "Nº 0001 a 9999"})`
+                    : `Boa sorte aos participantes (${isAllTypes ? "Todos os Perfis" : targetTypes.map((t) => USER_TYPE_LABELS[t]).join(", ")})`}
             </strong>
 
             {/* Alavanca Mecânica de Luxo Embutida na Moldura (Desktop) */}

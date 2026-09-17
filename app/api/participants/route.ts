@@ -220,7 +220,7 @@ export async function POST(request: Request) {
 
   if (!city || city.length < 2) {
     return Response.json(
-      { error: "Informe sua cidade e estado (mínimo 2 caracteres)." },
+      { error: "Informe sua cidade (mínimo 2 caracteres)." },
       { status: 400 },
     );
   }

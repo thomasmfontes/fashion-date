@@ -46,7 +46,8 @@ export function WinnersTable({
   const availableUserTypes = useMemo(() => {
     const map = new Map<string, { label: string; rawType: string; count: number }>();
     winners.forEach((w) => {
-      const raw = (w.userType || "lojista").toLowerCase().trim();
+      if (!w.userType) return;
+      const raw = w.userType.toLowerCase().trim();
       const label = USER_TYPE_LABELS[raw as UserType] || raw;
       const current = map.get(raw) || { label, rawType: raw, count: 0 };
       current.count += 1;
@@ -74,8 +75,8 @@ export function WinnersTable({
     if (userTypeFilter !== "all") {
       list = list.filter(
         (item) =>
-          (item.userType || "lojista").toLowerCase() ===
-          userTypeFilter.toLowerCase(),
+          item.userType &&
+          item.userType.toLowerCase() === userTypeFilter.toLowerCase(),
       );
     }
 

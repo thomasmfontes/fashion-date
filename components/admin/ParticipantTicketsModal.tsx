@@ -24,10 +24,10 @@ export function ParticipantTicketsModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Bilhetes do Participante"
+      title="Números da Sorte do Participante"
       badge={
         <span className="edit-ticket-badge">
-          Bilhetes: <strong>{count}</strong>
+          Números: <strong>{count}</strong>
         </span>
       }
     >
@@ -36,7 +36,17 @@ export function ParticipantTicketsModal({
         {participant.store && participant.store !== "—" ? ` (${participant.store})` : ""}
       </p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          maxHeight: "380px",
+          overflowY: "auto",
+          paddingRight: "4px",
+          WebkitOverflowScrolling: "touch",
+        }}
+      >
         {hasTickets ? (
           tickets.map((t) => (
             <div
@@ -107,7 +117,7 @@ export function ParticipantTicketsModal({
           </div>
         ) : (
           <p style={{ color: "#78686a", fontSize: "13px", textAlign: "center", padding: "16px 0", margin: 0 }}>
-            Nenhum bilhete emitido ainda.
+            Nenhum número da sorte emitido ainda.
           </p>
         )}
       </div>

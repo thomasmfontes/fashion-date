@@ -42,65 +42,136 @@ export async function POST(request: Request) {
     let winnerRow: Record<string, unknown> | null = null;
     let winningTicketNumber = "";
 
-    // 1. Try selecting from t_draw_tickets if drawIdTarget is provided
+    // 1. Try selecting from t_draw_tickets or physical numbers if drawIdTarget is provided
     if (drawIdTarget) {
       const drawDef = await transaction
-        .prepare("SELECT blocked_ranges FROM t_draw_definitions WHERE id_sorteio = ?")
+        .prepare(
+          "SELECT blocked_ranges, COALESCE(permite_gerar_numero, true) AS permite_gerar_numero, tem_limite, nr_limite_maximo FROM t_draw_definitions WHERE id_sorteio = ?",
+        )
         .bind(drawIdTarget)
-        .first<{ blocked_ranges?: string | null }>();
+        .first<{
+          blocked_ranges?: string | null;
+          permite_gerar_numero?: boolean;
+          tem_limite?: boolean;
+          nr_limite_maximo?: number | null;
+        }>();
 
-      let ticketFilter = "WHERE t.id_sorteio = ?";
-      if (maxNumber) {
-        ticketFilter += ` AND t.nr_bilhete ~ '^[0-9]+$' AND CAST(t.nr_bilhete AS INTEGER) <= ${maxNumber}`;
-      }
-      if (targetTypes.length > 0) {
-        const typesStr = targetTypes.map((t) => `'${t}'`).join(",");
-        ticketFilter += ` AND LOWER(COALESCE(p.user_type, 'lojista')) IN (${typesStr})`;
-      }
+      if (drawDef && drawDef.permite_gerar_numero === false) {
+        // Modalidade Sorteio Presencial / Pulseiras / Senhas Físicas (Sem participante atrelado no app)
+        const upperLimit =
+          maxNumber && maxNumber > 0
+            ? maxNumber
+            : drawDef.tem_limite && drawDef.nr_limite_maximo
+              ? Number(drawDef.nr_limite_maximo)
+              : 9999;
 
-      if (drawDef?.blocked_ranges) {
-        const blockedRanges = parseBlockedRanges(drawDef.blocked_ranges);
-        for (const range of blockedRanges) {
-          ticketFilter += ` AND NOT (t.nr_bilhete ~ '^[0-9]+$' AND CAST(t.nr_bilhete AS INTEGER) >= ${range.start} AND CAST(t.nr_bilhete AS INTEGER) <= ${range.end})`;
+        const blockedRanges = drawDef.blocked_ranges
+          ? parseBlockedRanges(drawDef.blocked_ranges)
+          : [];
+
+        // Exclui números já contemplados nesta rodada
+        const previousWinners = await transaction
+          .prepare("SELECT nr_bilhete FROM t_draw_winners WHERE id_sorteio = ?")
+          .bind(drawIdTarget)
+          .all<{ nr_bilhete: string }>();
+
+        const wonSet = new Set(
+          previousWinners.results.map((w) => String(parseInt(w.nr_bilhete, 10))),
+        );
+
+        const availableNumbers: number[] = [];
+        for (let n = 1; n <= upperLimit; n++) {
+          if (wonSet.has(String(n))) continue;
+          const isBlocked = blockedRanges.some(
+            (range) => n >= range.start && n <= range.end,
+          );
+          if (!isBlocked) {
+            availableNumbers.push(n);
+          }
         }
-      }
 
-      // Exclude previous winners of this specific draw
-      ticketFilter += ` AND t.id_participante NOT IN (SELECT id_participante FROM t_draw_winners WHERE id_sorteio = '${drawIdTarget}')`;
+        if (availableNumbers.length === 0) {
+          throw new Error("Todos os números desta rodada já foram sorteados.");
+        }
 
-      const ticketWinner = await transaction
-        .prepare(`
-          SELECT 
-            t.id_ticket,
-            t.nr_bilhete AS lucky_number,
-            p.id_participante AS id,
-            p.nm_participante AS name,
-            p.nm_loja AS store,
-            p.nr_whatsapp AS phone,
-            p.nm_instagram AS instagram,
-            p.user_type,
-            'winner' AS status,
-            p.dt_cadastro AS created_at
-          FROM t_draw_tickets t
-          JOIN t_participants p ON t.id_participante = p.id_participante
-          ${ticketFilter}
-          ORDER BY RANDOM() LIMIT 1 FOR UPDATE SKIP LOCKED
-        `)
-        .bind(drawIdTarget)
-        .first<Record<string, unknown>>();
+        const pickedNumber =
+          availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
+        winningTicketNumber = String(pickedNumber).padStart(4, "0");
 
-      if (ticketWinner) {
-        winnerRow = ticketWinner;
-        winningTicketNumber = String(ticketWinner.lucky_number || "").padStart(4, "0");
-        winnerRow.lucky_number = winningTicketNumber;
-
-        // Record in t_draw_winners
+        // Grava em t_draw_winners com id_participante NULL
         await transaction
           .prepare(
-            "INSERT INTO t_draw_winners (id_sorteio, id_participante, nr_bilhete) VALUES (?, ?, ?)",
+            "INSERT INTO t_draw_winners (id_sorteio, id_participante, nr_bilhete) VALUES (?, NULL, ?)",
           )
-          .bind(drawIdTarget, Number(ticketWinner.id), winningTicketNumber)
+          .bind(drawIdTarget, winningTicketNumber)
           .run();
+
+        winnerRow = {
+          id: 0,
+          name: "Apresente seu Número da Sorte",
+          store: "—",
+          phone: "",
+          instagram: "",
+          lucky_number: winningTicketNumber,
+          is_anonymous: true,
+          user_type: null,
+          status: "winner",
+          created_at: new Date().toISOString(),
+        };
+      } else {
+        let ticketFilter = "WHERE t.id_sorteio = ?";
+        if (maxNumber) {
+          ticketFilter += ` AND t.nr_bilhete ~ '^[0-9]+$' AND CAST(t.nr_bilhete AS INTEGER) <= ${maxNumber}`;
+        }
+        if (targetTypes.length > 0) {
+          const typesStr = targetTypes.map((t) => `'${t}'`).join(",");
+          ticketFilter += ` AND LOWER(COALESCE(p.user_type, 'lojista')) IN (${typesStr})`;
+        }
+
+        if (drawDef?.blocked_ranges) {
+          const blockedRanges = parseBlockedRanges(drawDef.blocked_ranges);
+          for (const range of blockedRanges) {
+            ticketFilter += ` AND NOT (t.nr_bilhete ~ '^[0-9]+$' AND CAST(t.nr_bilhete AS INTEGER) >= ${range.start} AND CAST(t.nr_bilhete AS INTEGER) <= ${range.end})`;
+          }
+        }
+
+        // Exclude previous winners of this specific draw
+        ticketFilter += ` AND t.id_participante NOT IN (SELECT id_participante FROM t_draw_winners WHERE id_sorteio = '${drawIdTarget}')`;
+
+        const ticketWinner = await transaction
+          .prepare(`
+            SELECT 
+              t.id_ticket,
+              t.nr_bilhete AS lucky_number,
+              p.id_participante AS id,
+              p.nm_participante AS name,
+              p.nm_loja AS store,
+              p.nr_whatsapp AS phone,
+              p.nm_instagram AS instagram,
+              p.user_type,
+              'winner' AS status,
+              p.dt_cadastro AS created_at
+            FROM t_draw_tickets t
+            JOIN t_participants p ON t.id_participante = p.id_participante
+            ${ticketFilter}
+            ORDER BY RANDOM() LIMIT 1 FOR UPDATE SKIP LOCKED
+          `)
+          .bind(drawIdTarget)
+          .first<Record<string, unknown>>();
+
+        if (ticketWinner) {
+          winnerRow = ticketWinner;
+          winningTicketNumber = String(ticketWinner.lucky_number || "").padStart(4, "0");
+          winnerRow.lucky_number = winningTicketNumber;
+
+          // Record in t_draw_winners
+          await transaction
+            .prepare(
+              "INSERT INTO t_draw_winners (id_sorteio, id_participante, nr_bilhete) VALUES (?, ?, ?)",
+            )
+            .bind(drawIdTarget, Number(ticketWinner.id), winningTicketNumber)
+            .run();
+        }
       }
     }
 
@@ -141,11 +212,14 @@ export async function POST(request: Request) {
       winningTicketNumber = String(winnerRow.lucky_number || "").padStart(4, "0");
       winnerRow.lucky_number = winningTicketNumber;
 
+      const participantId =
+        winnerRow.id && Number(winnerRow.id) > 0 ? Number(winnerRow.id) : null;
+
       await transaction
         .prepare(
           "INSERT INTO t_draws(id_sorteio,id_participante,nr_sorte) VALUES(?,?,?)",
         )
-        .bind(sessionDrawId, Number(winnerRow.id), winningTicketNumber)
+        .bind(sessionDrawId, participantId, winningTicketNumber)
         .run();
     }
 
@@ -317,12 +391,49 @@ export async function GET(request: Request) {
   try {
     if (drawId) {
       const drawDef = await db
-        .prepare("SELECT blocked_ranges FROM t_draw_definitions WHERE id_sorteio = ?")
+        .prepare(
+          "SELECT blocked_ranges, COALESCE(permite_gerar_numero, true) AS permite_gerar_numero, tem_limite, nr_limite_maximo FROM t_draw_definitions WHERE id_sorteio = ?",
+        )
         .bind(drawId)
-        .first<{ blocked_ranges?: string | null }>();
+        .first<{
+          blocked_ranges?: string | null;
+          permite_gerar_numero?: boolean;
+          tem_limite?: boolean;
+          nr_limite_maximo?: number | null;
+        }>();
 
-      let ticketFilter = "WHERE t.id_sorteio = ?";
-      if (maxNumber) {
+      if (drawDef && drawDef.permite_gerar_numero === false) {
+        const upperLimit =
+          maxNumber && maxNumber > 0
+            ? maxNumber
+            : drawDef.tem_limite && drawDef.nr_limite_maximo
+              ? Number(drawDef.nr_limite_maximo)
+              : 9999;
+
+        const blockedRanges = drawDef.blocked_ranges
+          ? parseBlockedRanges(drawDef.blocked_ranges)
+          : [];
+
+        const previousWinners = await db
+          .prepare("SELECT nr_bilhete FROM t_draw_winners WHERE id_sorteio = ?")
+          .bind(drawId)
+          .all<{ nr_bilhete: string }>();
+
+        const wonSet = new Set(
+          previousWinners.results.map((w) => String(parseInt(w.nr_bilhete, 10))),
+        );
+
+        let availableCount = 0;
+        for (let n = 1; n <= upperLimit; n++) {
+          if (wonSet.has(String(n))) continue;
+          if (!blockedRanges.some((range) => n >= range.start && n <= range.end)) {
+            availableCount++;
+          }
+        }
+        count = availableCount;
+      } else {
+        let ticketFilter = "WHERE t.id_sorteio = ?";
+        if (maxNumber) {
         ticketFilter += ` AND t.nr_bilhete ~ '^[0-9]+$' AND CAST(t.nr_bilhete AS INTEGER) <= ${maxNumber}`;
       }
       if (targetTypes.length > 0) {
@@ -369,7 +480,8 @@ export async function GET(request: Request) {
           .first<{ count: number }>();
         count = Number(pRes?.count || 0);
       }
-    } else {
+    }
+  } else {
       let filterClause = "WHERE st_participante = 'active'";
       if (targetTypes.length > 0) {
         const typesStr = targetTypes.map((t) => `'${t}'`).join(",");

@@ -323,10 +323,10 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                   style={{
                     fontFamily: 'var(--font-fashion, "Playfair Display", Georgia, serif)',
                     color: isNotWinner ? "#530017" : "#fff7e8",
-                    fontSize: "clamp(38px, 8.5vw, 68px)",
+                    fontSize: "clamp(34px, 7.5vw, 56px)",
                     fontWeight: 600,
-                    lineHeight: 1.1,
-                    margin: "8px 0 14px",
+                    lineHeight: 1.15,
+                    margin: "8px 0 16px",
                     letterSpacing: "-0.02em",
                     textShadow: isNotWinner ? "none" : "0 3px 16px rgba(0, 0, 0, 0.45)",
                   }}
@@ -334,28 +334,27 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                   {celebration === "winner"
                     ? "Você ganhou!"
                     : isNotWinner
-                      ? "Não foi dessa vez"
+                      ? "Número Sorteado"
                       : "Tudo pronto!"}
                 </h2>
 
-                {/* Subtítulo do Prêmio quando o usuário for contemplado */}
-                {celebration === "winner" && (activePrizeTitle || activeDrawTitle) && (
+                {(activePrizeTitle || activeDrawTitle) && (
                   <div
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "6px",
-                      padding: "4px 14px",
+                      padding: "5px 16px",
                       borderRadius: "999px",
-                      background: "rgba(231, 194, 117, 0.16)",
-                      border: "1px solid rgba(231, 194, 117, 0.4)",
-                      color: "#f3d48d",
-                      fontSize: "12px",
+                      background: isNotWinner ? "rgba(154, 116, 26, 0.08)" : "rgba(231, 194, 117, 0.16)",
+                      border: isNotWinner ? "1px solid rgba(154, 116, 26, 0.25)" : "1px solid rgba(231, 194, 117, 0.4)",
+                      color: isNotWinner ? "#855e09" : "#f3d48d",
+                      fontSize: "12.5px",
                       fontWeight: 600,
                       marginBottom: "16px",
                     }}
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: "16px", color: "#f3d48d" }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: "16px", color: isNotWinner ? "#855e09" : "#f3d48d" }}>
                       workspace_premium
                     </span>
                     <span>
@@ -446,22 +445,23 @@ export function LiveTab({ participant, tickets }: LiveTabProps) {
                   </strong>
                 </div>
 
-                {!isNotWinner && (
-                  <p
-                    style={{
-                      color: "rgba(255, 247, 232, 0.9)",
-                      fontSize: "14.5px",
-                      lineHeight: "1.6",
-                      maxWidth: "460px",
-                      margin: "20px auto 0",
-                      textShadow: "0 1px 3px rgba(0,0,0,0.4)",
-                    }}
-                  >
-                    {celebration === "winner"
-                      ? `Parabéns! Você foi contemplado(a)${activeDrawTitle ? ` no sorteio "${activeDrawTitle}"` : ""}. Apresente esta tela à organização do evento para receber seu prêmio.`
-                      : "Quando o seu número for sorteado, esta celebração aparecerá automaticamente no seu celular."}
-                  </p>
-                )}
+                <p
+                  style={{
+                    color: isNotWinner ? "#6b585b" : "rgba(255, 247, 232, 0.9)",
+                    fontSize: "14.5px",
+                    lineHeight: "1.55",
+                    maxWidth: "460px",
+                    margin: "20px auto 0",
+                    textAlign: "center",
+                    textShadow: isNotWinner ? "none" : "0 1px 3px rgba(0,0,0,0.4)",
+                  }}
+                >
+                  {celebration === "winner"
+                    ? `Parabéns! Você foi contemplado(a)${activeDrawTitle ? ` no sorteio "${activeDrawTitle}"` : ""}. Apresente esta tela à organização do evento para receber seu prêmio.`
+                    : celebration === "test"
+                      ? "Quando o seu número for sorteado, esta celebração aparecerá automaticamente no seu celular."
+                      : "Contemplado/a, caso este seja o seu número da sorte, apresente-se à organização para retirar seu prêmio!"}
+                </p>
 
                 {celebration === "test" ? (
                   <button

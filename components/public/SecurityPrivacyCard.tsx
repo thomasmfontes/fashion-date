@@ -211,19 +211,6 @@ export function SecurityPrivacyCard({
             </button>
           )}
         </div>
-
-        {/* Rodapé discreto */}
-        <p
-          style={{
-            margin: 0,
-            fontSize: "11.5px",
-            color: "#8c787a",
-            textAlign: "center",
-            lineHeight: "1.45",
-          }}
-        >
-          Seus dados estão protegidos e vinculados exclusivamente aos sorteios oficiais.
-        </p>
       </div>
     </div>
   );

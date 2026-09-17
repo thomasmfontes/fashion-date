@@ -251,7 +251,8 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
   const formattedInstagram = participant?.instagram && participant.instagram !== "—"
     ? formatInstagram(participant.instagram)
     : "Não informado";
-  const userType = (participant?.userType?.toLowerCase() || "lojista") as UserType;
+  const userType = (participant?.userType?.toLowerCase() || (participant?.store && participant.store !== "—" ? "lojista" : "visitante")) as UserType;
+  const isStoreProfile = userType === "lojista" || userType === "revendedor";
   const userTypeLabel = USER_TYPE_LABELS[userType] || USER_TYPE_LABELS.lojista;
   const userTypeIcon = USER_TYPE_ICONS[userType] || "storefront";
   const storeName = participant?.store && participant.store !== "—" ? participant.store : "Participante Individual";
@@ -457,28 +458,30 @@ export function ProfileTab({ participant, avatarUrl, onLogout, onUpdateAvatar }:
               </strong>
             </div>
 
-            {/* Loja / Empresa */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "12px 14px",
-                border: "1px solid #ebdcc5",
-                borderRadius: "10px",
-                background: "#fdfaf6",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: "18px", color: "#530017" }}>
-                  {userType === "revendedor" ? "local_mall" : "storefront"}
-                </span>
-                <span style={{ fontSize: "12.5px", color: "#786568", fontWeight: 600 }}>Loja / Marca</span>
+            {/* Loja / Empresa (Apenas para Lojista/Atacado e Revendedor/Marca) */}
+            {isStoreProfile && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "12px 14px",
+                  border: "1px solid #ebdcc5",
+                  borderRadius: "10px",
+                  background: "#fdfaf6",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: "18px", color: "#530017" }}>
+                    {userType === "revendedor" ? "local_mall" : "storefront"}
+                  </span>
+                  <span style={{ fontSize: "12.5px", color: "#786568", fontWeight: 600 }}>Marca / Empresa</span>
+                </div>
+                <strong style={{ fontSize: "13px", color: "#332225" }}>
+                  {storeName}
+                </strong>
               </div>
-              <strong style={{ fontSize: "13px", color: "#332225" }}>
-                {storeName}
-              </strong>
-            </div>
+            )}
 
             {/* Cidade */}
             <div

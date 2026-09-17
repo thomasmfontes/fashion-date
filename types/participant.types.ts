@@ -64,6 +64,7 @@ export interface Participant {
   email?: string;
   authUserId?: string;
   avatarUrl?: string | null;
+  isAnonymous?: boolean;
 }
 
 export interface ParticipantFormData {

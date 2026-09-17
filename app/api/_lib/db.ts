@@ -17,6 +17,7 @@ export type Participant = {
   email?: string;
   authUserId?: string;
   avatarUrl?: string | null;
+  isAnonymous?: boolean;
 };
 
 export const participantFields = `
@@ -178,5 +179,6 @@ export function row(raw: Record<string, unknown>): Participant {
       : null,
     email: raw.email ? String(raw.email).trim().toLowerCase() : undefined,
     authUserId: raw.auth_user_id ? String(raw.auth_user_id).trim() : undefined,
+    isAnonymous: Boolean(raw.is_anonymous || raw.isAnonymous),
   };
 }

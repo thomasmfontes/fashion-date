@@ -16,7 +16,7 @@ export async function GET(request: Request) {
           COALESCE(d.nm_titulo, w.id_sorteio) AS draw_title,
           COALESCE(d.nm_premio, 'Prêmio Especial') AS prize_title,
           w.id_participante AS participant_id,
-          COALESCE(p.nm_participante, 'Participante') AS name,
+          COALESCE(p.nm_participante, 'Sorteio Presencial') AS name,
           COALESCE(p.nm_loja, '—') AS store,
           COALESCE(p.nm_cidade, '') AS city,
           COALESCE(p.nr_whatsapp, '') AS phone,
@@ -33,10 +33,12 @@ export async function GET(request: Request) {
 
     const winners: DrawWinnerItem[] = result.results.map((r) => {
       const wonAt = r.won_at;
-      const rawType = String(r.user_type || "lojista").toLowerCase() as UserType;
-      const userType: UserType = ["lojista", "revendedor", "influencer", "visitante"].includes(rawType)
-        ? rawType
-        : "lojista";
+      const isAnonymous = !r.participant_id;
+      const rawType = r.user_type ? (String(r.user_type).toLowerCase() as UserType) : undefined;
+      const userType: UserType | undefined =
+        !isAnonymous && rawType && ["lojista", "revendedor", "influencer", "visitante"].includes(rawType)
+          ? rawType
+          : undefined;
 
       return {
         id: Number(r.id),
@@ -45,11 +47,11 @@ export async function GET(request: Request) {
         drawTitle: String(r.draw_title || "Sorteio Oficial"),
         prizeTitle: String(r.prize_title || "Prêmio Especial"),
         participantId: Number(r.participant_id || 0),
-        name: String(r.name || "Participante"),
-        store: String(r.store || "—"),
-        city: String(r.city || "").trim() || undefined,
-        phone: String(r.phone || ""),
-        instagram: String(r.instagram || ""),
+        name: isAnonymous ? "Sorteio Presencial" : String(r.name || "Participante"),
+        store: isAnonymous ? "—" : String(r.store || "—"),
+        city: isAnonymous ? undefined : (String(r.city || "").trim() || undefined),
+        phone: isAnonymous ? "" : String(r.phone || ""),
+        instagram: isAnonymous ? "" : String(r.instagram || ""),
         userType,
         luckyNumber: String(r.lucky_number || ""),
         wonAt: wonAt instanceof Date ? wonAt.toISOString() : String(wonAt),

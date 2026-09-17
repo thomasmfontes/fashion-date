@@ -513,35 +513,8 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
 .draw-transition.is-leaving{pointer-events:none}.draw-transition.is-leaving .draw-transition-brand{opacity:0;transform:scale(.975);transition:opacity .48s ease,transform .55s ease}.draw-transition.is-leaving::before,.draw-transition.is-leaving::after{opacity:0;transition:opacity .45s ease}.draw-transition.is-leaving .draw-transition-panel{transform:scaleX(0)!important;filter:brightness(.68);transition:transform .75s cubic-bezier(.76,0,.24,1) .1s,filter .55s ease!important}
 .draw-page{animation:none}.draw-page::after{display:none}.draw-page>.draw-header,.draw-page>.draw-stage,.draw-page>.winner-panel{animation:drawContentReveal .9s cubic-bezier(.2,.8,.2,1) .12s both}@keyframes drawScreenReveal{from{opacity:1}to{opacity:0;visibility:hidden}}@keyframes drawContentReveal{from{opacity:0;transform:scale(.985) translateY(8px)}to{opacity:1;transform:none}}
 .stitch-contacts a.social-icon{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;padding:0;border-radius:50%;transition:transform .18s ease,box-shadow .18s ease}.stitch-contacts a.social-icon:hover{transform:translateY(-2px);box-shadow:0 5px 14px rgba(27,28,25,.12)}.stitch-contacts .social-icon img{display:block;width:18px;height:18px}.stitch-contacts .social-icon.whatsapp{border-color:rgba(18,140,126,.28);background:rgba(18,140,126,.07)}.stitch-contacts .social-icon.instagram{border-color:rgba(225,48,108,.28);background:rgba(225,48,108,.07)}
-/* =========================================================
-   BLOQUEIO UNIVERSAL DE ROLAGEM DE FUNDO (MODAIS E GAVETAS)
-   ========================================================= */
-body:has(.edit-modal-backdrop),
-body:has(.admin-modal-backdrop),
-body:has(.cropper-modal-backdrop),
-body:has(.gate-modal-backdrop),
-body:has(.draw-side-drawer-backdrop.is-open),
-body:has(.stitch-mobile-backdrop.is-open),
-body:has([role="dialog"][aria-modal="true"]),
-body.stitch-modal-open {
-  overflow: hidden !important;
-  overscroll-behavior: contain !important;
-}
-
-.edit-modal-backdrop,
-.admin-modal-backdrop,
-.cropper-modal-backdrop,
-.gate-modal-backdrop,
-.draw-side-drawer-panel,
-.stitch-mobile-drawer,
-.edit-modal,
-[role="dialog"] {
-  overscroll-behavior: contain !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-
-.edit-modal-backdrop{position:fixed !important;inset:0 !important;z-index:11500 !important;display:flex !important;justify-content:center !important;align-items:center !important;padding:20px !important;background:rgba(30,5,12,.68) !important;backdrop-filter:blur(6px) !important;-webkit-backdrop-filter:blur(6px) !important;overflow-y:auto !important;overscroll-behavior:contain !important}
-.edit-modal{width:min(100%,580px);max-height:calc(100vh - 40px);overflow-y:auto;overscroll-behavior:contain;padding:32px;border:1px solid #dfd4c9;border-radius:14px;background:#fff;box-shadow:0 35px 100px rgba(45,0,14,.35);animation:editModalIn .25s ease both;margin:auto;text-align:left}
+.edit-modal-backdrop{position:fixed !important;inset:0 !important;z-index:11500 !important;display:flex !important;justify-content:center !important;align-items:center !important;padding:20px !important;background:rgba(30,5,12,.68) !important;backdrop-filter:blur(6px) !important;-webkit-backdrop-filter:blur(6px) !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch !important}
+.edit-modal{width:min(100%,580px);max-height:calc(100vh - 40px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:32px;border:1px solid #dfd4c9;border-radius:14px;background:#fff;box-shadow:0 35px 100px rgba(45,0,14,.35);animation:editModalIn .25s ease both;margin:auto;text-align:left}
 .edit-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;text-align:left}
 .edit-modal-header>div{display:flex;flex-direction:column;align-items:flex-start;text-align:left}
 .edit-ticket-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;background:#fbf6ec;border:1px solid #ecdcb6;color:#775a19;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-align:left}

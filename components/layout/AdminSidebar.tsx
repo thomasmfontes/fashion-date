@@ -151,7 +151,8 @@ export function AdminSidebar({
       <aside
         className={`stitch-mobile-drawer ${isMobileMenuOpen ? "is-open" : ""}`}
         role="dialog"
-        aria-modal="true"
+        aria-modal={isMobileMenuOpen ? "true" : undefined}
+        aria-hidden={!isMobileMenuOpen}
         aria-label="Menu de Navegação"
       >
         {/* Drawer Header (Matches standard mobile topbar exactly) */}
