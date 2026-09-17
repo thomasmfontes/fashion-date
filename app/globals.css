@@ -108,9 +108,71 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
 .stitch-nav-badge.gold{background:#fdf1d4;color:#846014;border:1px solid #e7cca0}
 .stitch-nav-pill{padding:3px 8px;border-radius:5px;background:#eef7f0;border:1px solid #d3ebd8;color:#1e7239;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
 .stitch-sidebar-footer{margin-top:auto;display:flex;flex-direction:column;gap:12px;padding-top:20px;border-top:1px solid #f1ece4}
-.stitch-admin-user{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #ede4da;border-radius:10px;background:#fcfaf7}
-.stitch-avatar{display:grid;place-items:center;width:36px;height:36px;border-radius:8px;background:rgba(83,0,23,.09);color:#530017}
-.stitch-avatar span{font-size:20px}
+.stitch-admin-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #ede4da;
+  border-radius: 12px;
+  background: #fcfaf7;
+}
+.stitch-avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  border-radius: 10px;
+  background: rgba(83, 0, 23, 0.09);
+  color: #530017;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.stitch-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+.stitch-avatar span {
+  font-size: 20px;
+}
+.stitch-user-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+.stitch-user-info strong {
+  display: block;
+  color: #332225;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  padding: 0;
+}
+.stitch-user-info span {
+  display: block;
+  color: #8c787a;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  padding: 0;
+}
 
 /* =========================================================
    PROFILE AVATAR EDIT & PREVIEW — Haute Couture
@@ -444,11 +506,71 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
 .stitch-drawer-link.active .stitch-drawer-pill{background:rgba(255,244,212,.2);border-color:rgba(231,194,117,.4);color:#fff4d4}
 
 .stitch-drawer-footer{padding:14px 16px 18px;border-top:1px solid #f1ece4;background:#ffffff;display:flex;flex-direction:column;gap:10px;margin-top:auto}
-.stitch-drawer-profile{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;background:#faf7f2;border:1px solid #ebdcc5}
-.stitch-drawer-avatar{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:rgba(83,0,23,.09);color:#530017}
-.stitch-drawer-avatar span{font-size:19px}
-.stitch-drawer-user-info strong{display:block;color:#332225;font-size:12.5px;line-height:1.2}
-.stitch-drawer-user-info span{color:#8c787a;font-size:10.5px}
+.stitch-drawer-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #faf7f2;
+  border: 1px solid #ebdcc5;
+}
+.stitch-drawer-avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  border-radius: 10px;
+  background: rgba(83, 0, 23, 0.09);
+  color: #530017;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.stitch-drawer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+.stitch-drawer-avatar span {
+  font-size: 20px;
+}
+.stitch-drawer-user-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+.stitch-drawer-user-info strong {
+  display: block;
+  color: #332225;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  padding: 0;
+}
+.stitch-drawer-user-info span {
+  display: block;
+  color: #8c787a;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  padding: 0;
+}
 .stitch-drawer-logout-btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:42px;border:1.5px solid #e2d6ca;border-radius:10px;background:#ffffff;color:#7a6568;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .18s ease}
 .stitch-drawer-logout-btn:hover{border-color:#a83a45;color:#a83a45;background:#fdf2f3}
 
@@ -776,11 +898,13 @@ img.winner-social-icon,.winner-social-icon{width:16px!important;height:16px!impo
  
  /* Drawer Footer */
  .stitch-drawer-footer{padding:14px 16px 18px !important;border-top:1px solid #f1ece4 !important;background:#ffffff !important;display:flex !important;flex-direction:column !important;gap:10px !important;margin-top:auto !important}
- .stitch-drawer-profile{display:flex !important;align-items:center !important;gap:12px !important;padding:10px 12px !important;border-radius:10px !important;background:#faf7f2 !important;border:1px solid #ebdcc5 !important}
- .stitch-drawer-avatar{display:grid !important;place-items:center !important;width:34px !important;height:34px !important;border-radius:8px !important;background:rgba(83,0,23,.09) !important;color:#530017 !important}
- .stitch-drawer-avatar span{font-size:19px !important}
- .stitch-drawer-user-info strong{display:block !important;color:#332225 !important;font-size:12.5px !important;line-height:1.2 !important}
- .stitch-drawer-user-info span{color:#8c787a !important;font-size:10.5px !important}
+  .stitch-drawer-profile{display:flex !important;align-items:center !important;gap:12px !important;padding:10px 12px !important;border-radius:12px !important;background:#faf7f2 !important;border:1px solid #ebdcc5 !important}
+  .stitch-drawer-avatar{display:grid !important;place-items:center !important;width:38px !important;height:38px !important;min-width:38px !important;min-height:38px !important;border-radius:10px !important;background:rgba(83,0,23,.09) !important;color:#530017 !important;flex-shrink:0 !important;overflow:hidden !important}
+  .stitch-drawer-avatar img{width:100% !important;height:100% !important;object-fit:cover !important;border-radius:10px !important;display:block !important}
+  .stitch-drawer-avatar span{font-size:20px !important}
+  .stitch-drawer-user-info{display:flex !important;flex-direction:column !important;justify-content:center !important;min-width:0 !important;flex:1 !important;gap:2px !important}
+  .stitch-drawer-user-info strong{display:block !important;color:#332225 !important;font-size:13px !important;font-weight:700 !important;line-height:1.25 !important;letter-spacing:-0.01em !important;margin:0 !important;padding:0 !important}
+  .stitch-drawer-user-info span{display:block !important;color:#8c787a !important;font-size:11px !important;font-weight:500 !important;line-height:1.2 !important;margin:0 !important;padding:0 !important}
  .stitch-drawer-logout-btn{display:flex !important;align-items:center !important;justify-content:center !important;gap:8px !important;min-height:42px !important;border:1.5px solid #e2d6ca !important;border-radius:10px !important;background:#ffffff !important;color:#7a6568 !important;font-size:11.5px !important;font-weight:700 !important;letter-spacing:.08em !important;text-transform:uppercase !important;cursor:pointer !important;transition:all .18s ease !important}
  .stitch-drawer-logout-btn:hover{border-color:#a83a45 !important;color:#a83a45 !important;background:#fdf2f3 !important}
  .stitch-content{min-width:0 !important;width:100% !important;padding:18px 12px 32px !important}

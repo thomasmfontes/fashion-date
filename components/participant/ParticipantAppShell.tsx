@@ -9,6 +9,7 @@ import { TicketsTab } from "./tabs/TicketsTab";
 import { LiveTab } from "./tabs/LiveTab";
 import { ProfileTab } from "./tabs/ProfileTab";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
+import { formatName } from "@/utils/formatters";
 
 export type ParticipantTab = "tickets" | "live" | "profile" | "home";
 
@@ -53,6 +54,7 @@ export function ParticipantAppShell({
   }
 
   const resolvedAvatar = !avatarError ? currentAvatarUrl : null;
+  const displayName = participant?.name ? formatName(participant.name) : "Participante";
   const userType: UserType = participant?.userType || "lojista";
   const userTypeLabel = USER_TYPE_LABELS[userType] || USER_TYPE_LABELS.lojista;
 
@@ -158,22 +160,22 @@ export function ParticipantAppShell({
               {resolvedAvatar ? (
                 <img
                   src={resolvedAvatar}
-                  alt={participant?.name || "Participante"}
+                  alt={displayName}
                   style={{
                     width: "100%",
                     height: "100%",
                     objectFit: "cover",
-                    borderRadius: "8px",
+                    borderRadius: "10px",
                   }}
                   referrerPolicy="no-referrer"
                   onError={() => setAvatarError(true)}
                 />
               ) : (
-                participant?.name?.charAt(0) || "P"
+                displayName.charAt(0)
               )}
             </div>
             <div className="stitch-user-info">
-              <strong>{participant?.name || "Participante"}</strong>
+              <strong>{displayName}</strong>
               <span>{userTypeLabel}</span>
             </div>
           </div>
@@ -313,24 +315,24 @@ export function ParticipantAppShell({
               {resolvedAvatar ? (
                 <img
                   src={resolvedAvatar}
-                  alt={participant?.name || "Participante"}
+                  alt={displayName}
                   style={{
                     width: "100%",
                     height: "100%",
                     objectFit: "cover",
-                    borderRadius: "8px",
+                    borderRadius: "10px",
                   }}
                   referrerPolicy="no-referrer"
                   onError={() => setAvatarError(true)}
                 />
               ) : (
                 <span style={{ fontSize: "16px", fontWeight: 700, fontFamily: "var(--font-fashion, serif)" }}>
-                  {participant?.name?.charAt(0) || "P"}
+                  {displayName.charAt(0)}
                 </span>
               )}
             </div>
             <div className="stitch-drawer-user-info">
-              <strong>{participant?.name || "Participante"}</strong>
+              <strong>{displayName}</strong>
               <span>{userTypeLabel}</span>
             </div>
           </div>
