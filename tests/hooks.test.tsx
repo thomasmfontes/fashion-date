@@ -128,7 +128,7 @@ describe("Custom React Hooks Unit Tests", () => {
       expect(result.current.error).toBeNull();
     });
 
-    it("captures API errors gracefully during triggerDraw", async () => {
+    it("captures API errors gracefully during triggerDraw, restores digits and supports clearError", async () => {
       vi.spyOn(drawService, "performDraw").mockRejectedValue(
         new Error("Falha na conexão com o servidor"),
       );
@@ -141,6 +141,35 @@ describe("Custom React Hooks Unit Tests", () => {
 
       expect(result.current.isRunning).toBe(false);
       expect(result.current.error).toContain("Falha na conexão");
+      expect(result.current.digits).toEqual(["0", "0", "0", "0"]);
+
+      act(() => {
+        result.current.clearError();
+      });
+      expect(result.current.error).toBeNull();
+    });
+
+    it("allows manual emergency cancellation with cancelDraw", async () => {
+      // Simula uma requisição que demora ou trava indefinidamente
+      vi.spyOn(drawService, "performDraw").mockImplementation(
+        () => new Promise(() => {}),
+      );
+
+      const { result } = renderHook(() => useSlotMachine("admin-token"));
+
+      act(() => {
+        result.current.triggerDraw();
+      });
+      expect(result.current.isRunning).toBe(true);
+
+      // Dispara parada de emergência manual
+      act(() => {
+        result.current.cancelDraw();
+      });
+
+      expect(result.current.isRunning).toBe(false);
+      expect(result.current.digits).toEqual(["0", "0", "0", "0"]);
+      expect(result.current.error).toContain("interrompido manualmente");
     });
 
     it("F13 Regression: cleanly cancels in-flight timers and state updates on unmount", async () => {

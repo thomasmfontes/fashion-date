@@ -22,6 +22,8 @@ export function useSlotMachine(adminKey: string) {
   const lockedRef = useRef<boolean[]>([false, false, false, false]);
   const isMountedRef = useRef(true);
   const activeTimersRef = useRef<number[]>([]);
+  const initialDigitsRef = useRef<string[]>(["0", "0", "0", "0"]);
+  const circuitBreakerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const liveChannelRef = useRef<ReturnType<NonNullable<ReturnType<typeof getSupabaseBrowserClient>>["channel"]> | null>(null);
 
   useEffect(() => {
@@ -49,6 +51,10 @@ export function useSlotMachine(adminKey: string) {
     if (rollIntervalRef.current) {
       clearInterval(rollIntervalRef.current);
       rollIntervalRef.current = null;
+    }
+    if (circuitBreakerRef.current) {
+      clearTimeout(circuitBreakerRef.current);
+      circuitBreakerRef.current = null;
     }
     activeTimersRef.current.forEach((id) => window.clearTimeout(id));
     activeTimersRef.current = [];
@@ -88,10 +94,25 @@ export function useSlotMachine(adminKey: string) {
       setError(null);
       setIsRunning(true);
 
+      // Salva os dígitos atuais para restaurar em caso de falha de conexão
+      initialDigitsRef.current = [...digits];
+
       lockedRef.current = [false, false, false, false];
       setLockedDigits([false, false, false, false]);
 
-      // Start rolling animation & tick sounds
+      // Circuit Breaker de segurança máxima (8.5s): se a chamada não responder, interrompe os giros
+      if (circuitBreakerRef.current) clearTimeout(circuitBreakerRef.current);
+      circuitBreakerRef.current = setTimeout(() => {
+        if (!isMountedRef.current) return;
+        cancelTimers();
+        setIsRunning(false);
+        setDigits(initialDigitsRef.current);
+        lockedRef.current = [false, false, false, false];
+        setLockedDigits([false, false, false, false]);
+        setError("Tempo limite de conexão esgotado (8s). A roleta foi interrompida com segurança.");
+      }, 8500);
+
+      // Inicia animação rápida dos tambores e cliques sonoros
       rollIntervalRef.current = setInterval(() => {
         if (!isMountedRef.current) return;
         setDigits((prev) =>
@@ -109,6 +130,13 @@ export function useSlotMachine(adminKey: string) {
           maxNumber,
           drawId,
         );
+
+        // Se respondeu com sucesso, cancela o circuit breaker
+        if (circuitBreakerRef.current) {
+          clearTimeout(circuitBreakerRef.current);
+          circuitBreakerRef.current = null;
+        }
+
         if (!isMountedRef.current) return;
         if (!response || !response.winner) {
           throw new Error("Não foi possível realizar o sorteio.");
@@ -203,18 +231,24 @@ export function useSlotMachine(adminKey: string) {
             console.warn("Backend announcement sync warning:", announceErr);
           });
       } catch (err: unknown) {
-      cancelTimers();
-      if (isMountedRef.current) {
-        setError(
-          err instanceof Error ? err.message : "Erro ao processar o sorteio.",
-        );
+        cancelTimers();
+        if (isMountedRef.current) {
+          // Restaura os dígitos anteriores com segurança para não deixar valores randômicos na tela
+          setDigits(initialDigitsRef.current);
+          lockedRef.current = [false, false, false, false];
+          setLockedDigits([false, false, false, false]);
+          setError(
+            err instanceof Error ? err.message : "Erro ao processar o sorteio.",
+          );
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setIsRunning(false);
+        }
       }
-    } finally {
-      if (isMountedRef.current) {
-        setIsRunning(false);
-      }
-    }
-  }, [adminKey, isRunning, playTick, playLock, playVictory, delay, cancelTimers]);
+    },
+    [adminKey, isRunning, digits, playTick, playLock, playVictory, delay, cancelTimers],
+  );
 
   const resetDraw = useCallback(() => {
     cancelTimers();
@@ -222,8 +256,22 @@ export function useSlotMachine(adminKey: string) {
     setWinner(null);
     setError(null);
     setDigits(["0", "0", "0", "0"]);
+    initialDigitsRef.current = ["0", "0", "0", "0"];
     lockedRef.current = [false, false, false, false];
     setLockedDigits([false, false, false, false]);
+  }, [cancelTimers]);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  const cancelDraw = useCallback(() => {
+    cancelTimers();
+    setIsRunning(false);
+    setDigits(initialDigitsRef.current);
+    lockedRef.current = [false, false, false, false];
+    setLockedDigits([false, false, false, false]);
+    setError("O sorteio foi interrompido manualmente.");
   }, [cancelTimers]);
 
   const slotStates: SlotDigitState[] = digits.map((digit, idx) => ({
@@ -239,6 +287,8 @@ export function useSlotMachine(adminKey: string) {
     isRunning,
     winner,
     error,
+    clearError,
+    cancelDraw,
     isMuted,
     toggleMute,
     triggerDraw,

@@ -7,12 +7,14 @@ interface SocialAuthGateProps {
   initialError?: string | null;
   onOpenPrivacy?: () => void;
   onOpenTerms?: () => void;
+  children?: React.ReactNode;
 }
 
 export function SocialAuthGate({
   initialError,
   onOpenPrivacy,
   onOpenTerms,
+  children,
 }: SocialAuthGateProps) {
   const [loadingProvider, setLoadingProvider] = useState<"google" | "microsoft" | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(initialError || null);
@@ -47,16 +49,14 @@ export function SocialAuthGate({
 
   return (
     <div className="social-auth-gate">
+      {children}
+
       {errorMessage && (
         <div className="social-auth-error" role="alert">
           <span className="material-symbols-outlined">warning</span>
           <span>{errorMessage}</span>
         </div>
       )}
-
-      <div className="social-auth-prompt">
-        <span>Escolha como deseja se conectar:</span>
-      </div>
 
       <div className="social-auth-buttons">
         {/* Google OAuth Button */}

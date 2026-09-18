@@ -49,6 +49,79 @@ export default function UnifiedDrawPage() {
   const slotMachine = useSlotMachine(adminKey);
   const { toast, showToast, dismissToast } = useToast();
 
+  const [isOnline, setIsOnline] = useState(true);
+  const [showEmergencyCancel, setShowEmergencyCancel] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let isMounted = true;
+
+    async function probeConnection() {
+      // 1. Checagem rápida de hardware
+      if (!navigator.onLine) {
+        if (isMounted) setIsOnline(false);
+        return;
+      }
+
+      // 2. Checagem ativa real de tráfego de rede (elimina falsos positivos de loopback ou Wi-Fi sem WAN)
+      try {
+        const isLocalhost =
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1";
+
+        const targetUrl = isLocalhost
+          ? "https://www.google.com/favicon.ico"
+          : `/api/version?_t=${Date.now()}`;
+
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 2000);
+
+        await fetch(targetUrl, {
+          method: "HEAD",
+          mode: isLocalhost ? "no-cors" : "same-origin",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        clearTimeout(timer);
+        if (isMounted) setIsOnline(true);
+      } catch {
+        if (isMounted) setIsOnline(false);
+      }
+    }
+
+    probeConnection();
+
+    const handleOnline = () => probeConnection();
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    // Heartbeat a cada 3 segundos para detecção em tempo real
+    const interval = setInterval(probeConnection, 3000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    if (slotMachine.isRunning) {
+      timer = setTimeout(() => setShowEmergencyCancel(true), 4500);
+    } else {
+      setShowEmergencyCancel(false);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [slotMachine.isRunning]);
+
   useEffect(() => {
     if (slotMachine.error) {
       showToast(slotMachine.error, "error");
@@ -528,6 +601,21 @@ export default function UnifiedDrawPage() {
               disabled={!eligibility.hasEligible || slotMachine.isRunning}
               isSpinning={slotMachine.isRunning}
             />
+
+            {/* Botão de Parada de Emergência (exibido caso a roleta demore mais de 4.5s) */}
+            {showEmergencyCancel && (
+              <div className="draw-emergency-wrap">
+                <button
+                  type="button"
+                  className="draw-emergency-btn"
+                  onClick={slotMachine.cancelDraw}
+                  title="Interromper giro da roleta imediatamente"
+                >
+                  <span className="material-symbols-outlined">stop_circle</span>
+                  <span>Interromper Giro (Segurança)</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Console Tátil Exclusivo para Dispositivos Móveis (Slider Interativo) */}
@@ -552,6 +640,49 @@ export default function UnifiedDrawPage() {
           </div>
         </section>
       )}
+
+      {/* Modal de Contingência de Erro de Conexão no Sorteio */}
+      {slotMachine.error && (
+        <div className="draw-error-overlay" role="alertdialog" aria-modal="true">
+          <div className="draw-error-modal">
+            <div className="draw-error-badge">
+              <span className="material-symbols-outlined">wifi_off</span>
+              <span>Atenção na Conexão</span>
+            </div>
+            <h2>Instabilidade no Sorteio</h2>
+            <p>{slotMachine.error}</p>
+            <div className="draw-error-actions">
+              <button
+                type="button"
+                className="draw-error-retry-btn"
+                onClick={slotMachine.clearError}
+              >
+                <span className="material-symbols-outlined">refresh</span>
+                <span>Tentar Novamente</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Indicador Flutuante Discreto de Conexão no Canto Direito Inferior */}
+      <div
+        className={`draw-floating-network-badge ${isOnline ? "is-online" : "is-offline"}`}
+        title={isOnline ? "Conexão de rede ativa e estável" : "Atenção: computador sem internet"}
+        role="status"
+        aria-live="polite"
+        style={{
+          position: "fixed",
+          bottom: "68px",
+          right: "72px",
+          left: "auto",
+          top: "auto",
+          zIndex: 9999,
+        }}
+      >
+        <span className="draw-network-dot" />
+        <span>{isOnline ? "Online" : "Offline"}</span>
+      </div>
 
       <Toast message={toast} onDismiss={dismissToast} />
     </main>

@@ -94,6 +94,7 @@ export const drawService = {
     return request<PerformDrawResponse>(APP_CONFIG.api.adminDraw, {
       method: "POST",
       adminKey,
+      timeoutMs: 8000,
       body: JSON.stringify(bodyPayload),
     });
   },

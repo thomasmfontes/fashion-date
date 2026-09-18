@@ -54,6 +54,16 @@ export default function InscricaoPage() {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
 
+  // Pre-fill phone from URL query param if present
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const p = params.get("phone");
+    if (p) {
+      setPhone(formatPhone(p));
+    }
+  }, []);
+
   // Pre-fill user name from authenticated account
   useEffect(() => {
     if (user) {
@@ -67,17 +77,15 @@ export default function InscricaoPage() {
     }
   }, [user]);
 
-  // Strict Route Guard for "/inscricao"
+  // Route Guard for "/inscricao": Only redirect if already registered
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/");
-    } else if (status === "authenticated_registered") {
+    if (status === "authenticated_registered") {
       router.replace("/home");
     }
   }, [status, router]);
 
   // If redirecting, do not render registration form
-  if (status === "unauthenticated" || status === "authenticated_registered") {
+  if (status === "authenticated_registered") {
     return null;
   }
 
@@ -292,13 +300,15 @@ export default function InscricaoPage() {
             </p>
           </header>
 
-          {/* Authenticated User Badge */}
-          <AuthUserBadge
-            name={authenticatedName}
-            email={authenticatedEmail}
-            avatarUrl={authenticatedAvatar}
-            onLoggedOut={() => router.replace("/")}
-          />
+          {/* Authenticated User Badge (somente se conectado via Google/Microsoft) */}
+          {user && (
+            <AuthUserBadge
+              name={authenticatedName}
+              email={authenticatedEmail}
+              avatarUrl={authenticatedAvatar}
+              onLoggedOut={() => router.replace("/")}
+            />
+          )}
 
         {/* The Registration Form */}
         <form

@@ -65,6 +65,37 @@ export function useAuthGuard(): AuthGuardState {
       if (!authUser) {
         checkedUserIdRef.current = null;
         setUser(null);
+
+        // Se o usuário possui cadastro salvo via WhatsApp, preserva e autentica
+        if (savedParticipant && savedParticipant.phone) {
+          setParticipant(savedParticipant);
+          setStatus("authenticated_registered");
+
+          // Sincroniza em background os dados mais recentes do participante
+          const phoneDigits = String(savedParticipant.phone).replace(/\D/g, "");
+          if (phoneDigits) {
+            fetch(`/api/participants?phone=${phoneDigits}`, { cache: "no-store" })
+              .then((res) => (res.ok ? res.json() : null))
+              .then((data) => {
+                if (!active) return;
+                if (data?.participant) {
+                  const updated = {
+                    ...savedParticipant,
+                    ...data.participant,
+                    avatarUrl:
+                      data.participant.avatarUrl !== undefined
+                        ? data.participant.avatarUrl
+                        : savedParticipant.avatarUrl,
+                  };
+                  saveParticipant(updated);
+                  setParticipant(updated);
+                }
+              })
+              .catch(() => {});
+          }
+          return;
+        }
+
         setParticipant(null);
         clearParticipant();
         setStatus("unauthenticated");

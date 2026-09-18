@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import "./signup-form.css";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useSavedParticipant } from "@/hooks/useSavedParticipant";
+import { participantService } from "@/services/participantService";
+import { ApiError } from "@/services/apiClient";
+import { formatPhone, cleanPhone } from "@/utils/formatters";
 import { SocialAuthGate } from "@/components/public/SocialAuthGate";
 import { PrivacyPolicyModal } from "@/components/public/PrivacyPolicyModal";
 import { TermsOfUseModal } from "@/components/public/TermsOfUseModal";
@@ -13,6 +17,13 @@ const HERO_IMAGE_URL = "/renata-hero.jpg";
 export default function RootLandingPage() {
   const router = useRouter();
   const { status, isLoading, registrationsOpen } = useAuthGuard();
+  const { savedParticipant, saveParticipant, clearParticipant } = useSavedParticipant();
+
+  // Phone-First form state
+  const [phone, setPhone] = useState("");
+  const [isChecking, setIsChecking] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [showSwitchPhone, setShowSwitchPhone] = useState(false);
 
   // Legal Modals State
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -49,6 +60,43 @@ export default function RootLandingPage() {
 
   if (status === "authenticated_registered" || status === "authenticated_unregistered") {
     return null;
+  }
+
+  const isRecognized = Boolean(savedParticipant?.phone && !showSwitchPhone);
+
+  async function handlePhoneSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const raw = cleanPhone(phone);
+    if (!raw || raw.length < 10 || raw.length > 11) {
+      setPhoneError("Informe um WhatsApp com DDD válido.");
+      return;
+    }
+
+    setPhoneError(null);
+    setIsChecking(true);
+
+    try {
+      const res = await participantService.lookupByPhone(raw);
+      if (res?.participant) {
+        saveParticipant(res.participant);
+        router.push("/home");
+        return;
+      }
+      router.push(`/inscricao?phone=${encodeURIComponent(raw)}`);
+      return;
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.status === 404) {
+        // Não cadastrado ainda: leva para preencher o formulário com o telefone já preenchido
+        router.push(`/inscricao?phone=${encodeURIComponent(raw)}`);
+        return;
+      }
+      setIsChecking(false);
+      setPhoneError(
+        err instanceof Error
+          ? err.message
+          : "Erro ao consultar WhatsApp. Verifique sua conexão e tente novamente.",
+      );
+    }
   }
 
   return (
@@ -128,16 +176,110 @@ export default function RootLandingPage() {
             </h2>
             <p>
               {registrationsOpen
-                ? "Conecte-se para preencher sua inscrição e concorrer aos prêmios do evento."
-                : "Inscrições de novos participantes encerradas. Já cadastrado? Conecte-se para ver seus números da sorte."}
+                ? "Digite seu WhatsApp para conferir seus números da sorte ou fazer sua inscrição."
+                : "Inscrições encerradas. Digite seu WhatsApp para consultar seus números."}
             </p>
           </header>
 
-          {/* Social Auth Gate (Google / Microsoft) */}
+          {/* Social Auth Gate encloses all identification & login methods */}
           <SocialAuthGate
             onOpenTerms={() => setIsTermsOpen(true)}
             onOpenPrivacy={() => setIsPrivacyOpen(true)}
-          />
+          >
+            {/* Phone-First Identification Card */}
+            {isRecognized && savedParticipant ? (
+              <div className="signup-recognized-card">
+                <span className="signup-recognized-badge">
+                  <span className="material-symbols-outlined" style={{ fontSize: "15px" }}>
+                    check_circle
+                  </span>
+                  <span>Participante Reconhecido</span>
+                </span>
+
+                <div>
+                  <h3 className="signup-recognized-name">{savedParticipant.name}</h3>
+                  <p className="signup-recognized-phone">
+                    WhatsApp: <strong>{formatPhone(savedParticipant.phone)}</strong>
+                    {savedParticipant.store && savedParticipant.store !== "—" ? ` · ${savedParticipant.store}` : ""}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="signup-phone-submit-btn"
+                  onClick={() => router.push("/home")}
+                >
+                  <span>Acessar Meus Números da Sorte</span>
+                  <span className="material-symbols-outlined">arrow_forward</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="signup-recognized-switch-btn"
+                  onClick={() => {
+                    clearParticipant();
+                    setShowSwitchPhone(true);
+                  }}
+                >
+                  Entrar com outro número de WhatsApp
+                </button>
+              </div>
+            ) : (
+              <form className="signup-phone-card" onSubmit={handlePhoneSubmit} noValidate>
+                <div className="signup-phone-field">
+                  <label htmlFor="landing-phone">Informe seu WhatsApp</label>
+                  <div className="signup-phone-input-wrap">
+                    <input
+                      id="landing-phone"
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      className="signup-phone-input"
+                      placeholder="(00) 00000-0000"
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(formatPhone(e.target.value));
+                        if (phoneError) setPhoneError(null);
+                      }}
+                      aria-invalid={Boolean(phoneError)}
+                      aria-describedby={phoneError ? "landing-phone-error" : undefined}
+                      disabled={isChecking}
+                    />
+                    <button
+                      type="submit"
+                      className="signup-phone-inline-submit-btn"
+                      disabled={isChecking}
+                      aria-label="Continuar"
+                      title="Continuar"
+                    >
+                      {isChecking ? (
+                        <span className="social-btn-spinner" aria-hidden="true" />
+                      ) : (
+                        <span className="material-symbols-outlined" aria-hidden="true">
+                          arrow_forward
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                  {phoneError && (
+                    <span id="landing-phone-error" className="field-error-message" role="alert">
+                      <span className="material-symbols-outlined error-icon" aria-hidden="true">
+                        error
+                      </span>
+                      <span>{phoneError}</span>
+                    </span>
+                  )}
+                </div>
+              </form>
+            )}
+
+            {/* Haute Couture Symmetrical Divider */}
+            <div className="signup-divider">
+              <span className="signup-divider-line" />
+              <span className="signup-divider-text">ou continue com</span>
+              <span className="signup-divider-line" />
+            </div>
+          </SocialAuthGate>
 
           <footer className="signup-footer">
             <span>

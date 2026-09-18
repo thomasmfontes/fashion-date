@@ -1119,12 +1119,18 @@
    MODERN MINIMALIST FORM VALIDATION & ERROR SYSTEM
    ========================================================= */
 
+.signup-phone-input[aria-invalid="true"],
 .signup-field-group input[aria-invalid="true"],
 .signup-instagram-wrap.is-invalid {
   border-color: #ba4758 !important;
   background-color: #fffbfa !important;
   box-shadow: 0 0 0 3px rgba(186, 71, 88, 0.08) !important;
   animation: fieldShake 0.32s cubic-bezier(0.36, 0.07, 0.19, 0.97) both !important;
+}
+
+.signup-phone-input[aria-invalid="true"]:focus {
+  border-color: #ba4758 !important;
+  box-shadow: 0 0 0 3px rgba(186, 71, 88, 0.14) !important;
 }
 
 .signup-terms-box.is-invalid {
@@ -1153,5 +1159,248 @@
   flex-shrink: 0 !important;
   line-height: 1 !important;
 }
+
+/* =========================================================
+   PHONE-FIRST SMART ROUTING STYLES
+   ========================================================= */
+
+.signup-phone-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+.signup-phone-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.signup-phone-field label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #786568;
+}
+
+.signup-phone-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 50px;
+}
+
+.signup-phone-input {
+  width: 100%;
+  height: 50px;
+  min-height: 50px;
+  padding: 0 54px 0 16px;
+  border-radius: 10px;
+  border: 1.5px solid #dfd4c8;
+  background: #ffffff;
+  color: #382427;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(67, 0, 20, 0.02);
+  transition: all 0.18s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.signup-phone-input::placeholder {
+  color: #9b8a8c;
+  font-weight: 500;
+}
+
+.signup-phone-input:focus {
+  border-color: #530017;
+  box-shadow: 0 0 0 3px rgba(83, 0, 23, 0.08);
+}
+
+.signup-phone-inline-submit-btn {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  bottom: 6px;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  border: none;
+  background: #530017;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(83, 0, 23, 0.18);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.signup-phone-inline-submit-btn:hover:not(:disabled) {
+  background: #3f0011;
+  transform: scale(1.04);
+  box-shadow: 0 4px 12px rgba(83, 0, 23, 0.28);
+}
+
+.signup-phone-inline-submit-btn:active:not(:disabled) {
+  transform: scale(0.96);
+  box-shadow: 0 1px 3px rgba(83, 0, 23, 0.14);
+}
+
+.signup-phone-inline-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+}
+
+.signup-phone-inline-submit-btn .material-symbols-outlined {
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.signup-phone-inline-submit-btn .social-btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+}
+
+.signup-phone-submit-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 20px !important;
+  border-radius: 10px !important;
+  border: 1px solid #530017 !important;
+  background: #530017 !important;
+  color: #ffffff !important;
+  font-family: inherit !important;
+  font-size: 14.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 3px rgba(83, 0, 23, 0.1) !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  user-select: none !important;
+}
+
+.signup-phone-submit-btn:hover:not(:disabled) {
+  background: #3f0011 !important;
+  border-color: #3f0011 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(83, 0, 23, 0.18) !important;
+}
+
+.signup-phone-submit-btn:active:not(:disabled) {
+  transform: translateY(0) !important;
+  box-shadow: 0 1px 3px rgba(83, 0, 23, 0.1) !important;
+}
+
+.signup-phone-submit-btn:disabled {
+  opacity: 0.75 !important;
+  cursor: wait !important;
+  transform: none !important;
+}
+
+/* Recognized returning user card */
+.signup-recognized-card {
+  width: 100%;
+  padding: 18px 16px;
+  border-radius: 14px;
+  border: 1px solid #ebdcc5;
+  background: #fdfbf9;
+  box-shadow: 0 2px 8px rgba(67, 0, 20, 0.03);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  margin-bottom: 0;
+  animation: bootCardIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-sizing: border-box;
+}
+
+.signup-recognized-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #edf7ef;
+  border: 1px solid #c7e8cf;
+  color: #1e7239;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.signup-recognized-name {
+  font-family: var(--font-fashion), "Bodoni Moda", "Cinzel", serif;
+  font-size: 19px;
+  font-weight: 700;
+  color: #530017;
+  margin: 0;
+}
+
+.signup-recognized-phone {
+  font-size: 12.5px;
+  color: #735a5e;
+  margin: 0;
+}
+
+.signup-recognized-switch-btn {
+  background: none;
+  border: none;
+  color: #9a741a;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px 8px;
+  margin-top: 2px;
+  transition: color 0.15s ease;
+}
+
+.signup-recognized-switch-btn:hover {
+  color: #530017;
+}
+
+/* Divider */
+.signup-divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 12px 0 12px;
+  gap: 12px;
+}
+
+.signup-divider-line {
+  flex: 1;
+  height: 1px;
+  background: #ebdcc5;
+}
+
+.signup-divider-text {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #8c777a;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 
 
