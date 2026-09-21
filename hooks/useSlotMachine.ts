@@ -3,7 +3,7 @@ import type { SlotDigitState } from "@/types/draw.types";
 import type { Participant } from "@/types/participant.types";
 import { drawService } from "@/services/drawService";
 import { useSoundFx } from "./useSoundFx";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { realtimeLiveDraw } from "@/lib/supabase/realtime";
 
 export function useSlotMachine(adminKey: string) {
   const [digits, setDigits] = useState<string[]>(["0", "0", "0", "0"]);
@@ -24,27 +24,10 @@ export function useSlotMachine(adminKey: string) {
   const activeTimersRef = useRef<number[]>([]);
   const initialDigitsRef = useRef<string[]>(["0", "0", "0", "0"]);
   const circuitBreakerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const liveChannelRef = useRef<ReturnType<NonNullable<ReturnType<typeof getSupabaseBrowserClient>>["channel"]> | null>(null);
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
-
-    const channel = supabase.channel("live-draw", {
-      config: {
-        broadcast: { ack: false },
-      },
-    });
-
-    channel.subscribe();
-    liveChannelRef.current = channel;
-
-    return () => {
-      if (liveChannelRef.current && supabase) {
-        supabase.removeChannel(liveChannelRef.current);
-        liveChannelRef.current = null;
-      }
-    };
+    // Pré-aquece a conexão centralizada para transmissão instantânea
+    realtimeLiveDraw.connect();
   }, []);
 
   const cancelTimers = useCallback(() => {
@@ -206,23 +189,17 @@ export function useSlotMachine(adminKey: string) {
         const effectiveTargetDrawId =
           (response as { targetDrawId?: string })?.targetDrawId || drawId || "";
 
-        if (liveChannelRef.current) {
-          liveChannelRef.current
-            .send({
-              type: "broadcast",
-              event: "winner-announced",
-              payload: {
-                drawId: effectiveTargetDrawId,
-                drawTitle: drawTitle || undefined,
-                prizeTitle: prizeTitle || undefined,
-                winnerNumber: targetNumber,
-                timestamp: new Date().toISOString(),
-              },
-            })
-            .catch((broadcastErr) => {
-              console.warn("Direct WebSocket broadcast warning:", broadcastErr);
-            });
-        }
+        realtimeLiveDraw
+          .broadcast("winner-announced", {
+            drawId: effectiveTargetDrawId,
+            drawTitle: drawTitle || undefined,
+            prizeTitle: prizeTitle || undefined,
+            winnerNumber: targetNumber,
+            timestamp: new Date().toISOString(),
+          })
+          .catch((broadcastErr) => {
+            console.warn("Direct WebSocket broadcast warning:", broadcastErr);
+          });
 
         // Concomitantemente, persiste o sorteio no backend sem travar a interface
         drawService

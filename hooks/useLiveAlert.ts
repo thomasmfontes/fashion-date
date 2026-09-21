@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useWakeLock } from "./useWakeLock";
 import { useSoundFx } from "./useSoundFx";
 import { APP_CONFIG } from "@/constants/config";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { realtimeLiveDraw, type WinnerAnnouncedPayload } from "@/lib/supabase/realtime";
 
 export type CelebrationMode = "test" | "winner" | "not-winner" | null;
 
@@ -166,49 +166,24 @@ export function useLiveAlert(
   );
 
   // 1. Supabase Realtime (WebSockets) Subscription
-  // Conecta imediatamente no canal assim que a tela abre, garantindo zero latência de conexão
+  // Conecta via gerenciador unificado com deduplicação de conexões
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
+    setIsWebSocketActive(true);
+    setIsConnected(true);
 
-    const channel = supabase.channel("live-draw", {
-      config: {
-        broadcast: { ack: false },
-      },
-    });
-
-    channel
-      .on(
-        "broadcast",
-        { event: "winner-announced" },
-        (payload: {
-          payload?: {
-            drawId?: string;
-            winnerNumber?: string;
-            drawTitle?: string;
-            prizeTitle?: string;
-            timestamp?: string;
-          };
-        }) => {
-          const { drawId, winnerNumber, drawTitle, prizeTitle, timestamp } =
-            payload?.payload || {};
-          if (drawId && winnerNumber) {
-            handleWinnerAnnounced(drawId, winnerNumber, drawTitle, prizeTitle, timestamp);
-          }
-        },
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          setIsWebSocketActive(true);
-          setIsConnected(true);
-        } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
-          setIsWebSocketActive(false);
+    const unsubscribe = realtimeLiveDraw.subscribe<WinnerAnnouncedPayload>(
+      "winner-announced",
+      (payload) => {
+        const { drawId, winnerNumber, drawTitle, prizeTitle, timestamp } = payload || {};
+        if (drawId && winnerNumber) {
+          handleWinnerAnnounced(drawId, winnerNumber, drawTitle, prizeTitle, timestamp);
         }
-      });
+      },
+    );
 
     return () => {
       setIsWebSocketActive(false);
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [handleWinnerAnnounced]);
 

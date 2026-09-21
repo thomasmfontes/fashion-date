@@ -6,7 +6,7 @@ import type { ParticipantTicket, UserType } from "@/types/participant.types";
 import { useSavedParticipant } from "./useSavedParticipant";
 import { useDrawCollection } from "./useDrawCollection";
 import { ticketService } from "@/services/ticketService";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { realtimeLiveDraw, type WinnerAnnouncedPayload } from "@/lib/supabase/realtime";
 
 const TICKET_EVENT = "fashiondate_ticket_wallet_change";
 
@@ -100,25 +100,12 @@ export function useParticipantWallet() {
 
     fetchTicketsFromDb();
 
-    // Supabase Realtime channel for instantaneous winner update (<50ms)
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) {
-      return () => {
-        active = false;
-      };
-    }
-
-    const channel = supabase.channel(`wallet-draw-sync-${participantKey}`, {
-      config: { broadcast: { ack: false } },
-    });
-
-    channel
-      .on("broadcast", { event: "winner-announced" }, (eventMsg) => {
-        const payload = (eventMsg?.payload || eventMsg || {}) as {
-          winnerNumber?: string;
-          drawId?: string;
-        };
-        const cleanWinner = String(payload.winnerNumber || "").replace(/\D/g, "");
+    // Supabase Realtime unificado (<50ms de latência sem abrir conexão duplicada)
+    const unsubscribe = realtimeLiveDraw.subscribe<WinnerAnnouncedPayload>(
+      "winner-announced",
+      (payload) => {
+        if (!active) return;
+        const cleanWinner = String(payload?.winnerNumber || "").replace(/\D/g, "");
 
         if (cleanWinner) {
           try {
@@ -152,12 +139,12 @@ export function useParticipantWallet() {
 
         // Also fetch full DB state to ensure complete consistency
         fetchTicketsFromDb();
-      })
-      .subscribe();
+      },
+    );
 
     return () => {
       active = false;
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [savedParticipant, pId, pPhone, participantKey]);
 
